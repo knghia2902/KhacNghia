@@ -106,6 +106,148 @@ const SEED_DOCS = [
     }
 ];
 
+// --- Available Icons for Icon Picker ---
+const AVAILABLE_ICONS = [
+    'folder', 'description', 'star', 'favorite', 'bookmark', 'label',
+    'home', 'work', 'school', 'science', 'code', 'terminal',
+    'folder_open', 'inventory_2', 'category', 'dashboard', 'widgets', 'extension',
+    'lightbulb', 'emoji_objects', 'psychology', 'hub', 'rocket_launch', 'auto_awesome',
+    'edit_note', 'note_add', 'article', 'newspaper', 'menu_book', 'library_books',
+    'task', 'checklist', 'event', 'schedule', 'timer', 'alarm',
+    'photo_camera', 'image', 'palette', 'brush', 'design_services', 'architecture',
+    'music_note', 'headphones', 'mic', 'movie', 'videocam', 'podcasts',
+    'shopping_cart', 'payments', 'account_balance', 'savings', 'credit_card', 'receipt',
+    'flight', 'directions_car', 'train', 'sailing', 'hiking', 'sports_esports'
+];
+
+// --- Context Menu Component ---
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, itemType }) => {
+    useEffect(() => {
+        if (isOpen) {
+            const handleClickOutside = () => onClose();
+            setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    const menuItems = [
+        { icon: 'edit', label: 'Đổi tên', action: onRename },
+        { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
+        { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
+    ];
+
+    return (
+        <div
+            className="fixed z-[100] min-w-48 py-2 bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-[#1d2624]/10 animate-[fadeIn_0.15s_ease-out]"
+            style={{ top: position.y, left: position.x }}
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 border-b border-[#1d2624]/5 mb-1">
+                {itemType === 'folder' ? 'Folder' : 'Trang'}
+            </div>
+            {menuItems.map((item, idx) => (
+                <button
+                    key={idx}
+                    onClick={item.action}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${item.danger ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-[#1d2624]/5'}`}
+                >
+                    <span className={`material-symbols-outlined text-[18px] ${item.danger ? 'text-red-400' : 'text-[#1d2624]/50'}`}>{item.icon}</span>
+                    <span>{item.label}</span>
+                </button>
+            ))}
+        </div>
+    );
+};
+
+// --- Rename Modal with Icon Picker ---
+const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, itemType }) => {
+    const [name, setName] = useState(initialName || '');
+    const [selectedIcon, setSelectedIcon] = useState(initialIcon || 'folder');
+    const [showIconPicker, setShowIconPicker] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialName || '');
+            setSelectedIcon(initialIcon || 'folder');
+            setShowIconPicker(false);
+        }
+    }, [isOpen, initialName, initialIcon]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (name.trim()) {
+            onSubmit(name.trim(), selectedIcon);
+            onClose();
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-md bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 animate-[fadeIn_0.2s_ease-out]">
+                <h2 className="text-lg font-bold text-[#1d2624] dark:text-white mb-4">
+                    Đổi tên {itemType === 'folder' ? 'Folder' : 'Trang'}
+                </h2>
+
+                <form onSubmit={handleSubmit}>
+                    {/* Icon + Name Input Row */}
+                    <div className="flex items-center gap-3 mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowIconPicker(!showIconPicker)}
+                            className="size-12 shrink-0 rounded-xl bg-[#1d2624]/5 hover:bg-[#1d2624]/10 flex items-center justify-center transition-colors border border-[#1d2624]/10"
+                            title="Chọn icon"
+                        >
+                            <span className="material-symbols-outlined text-2xl text-primary">{selectedIcon}</span>
+                        </button>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Nhập tên..."
+                            className="flex-1 px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* Icon Picker */}
+                    {showIconPicker && (
+                        <div className="mb-4 p-3 bg-[#1d2624]/5 rounded-xl max-h-48 overflow-y-auto">
+                            <div className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 mb-2">Chọn biểu tượng</div>
+                            <div className="grid grid-cols-8 gap-1">
+                                {AVAILABLE_ICONS.map(icon => (
+                                    <button
+                                        key={icon}
+                                        type="button"
+                                        onClick={() => { setSelectedIcon(icon); setShowIconPicker(false); }}
+                                        className={`size-9 rounded-lg flex items-center justify-center transition-all ${selectedIcon === icon ? 'bg-primary text-white' : 'hover:bg-white/50'}`}
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Buttons */}
+                    <div className="flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#1d2624]/20 text-[#1d2624]/60 font-semibold hover:bg-white/50 transition-colors">
+                            Hủy
+                        </button>
+                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-[#1d2624] text-white font-semibold shadow-lg hover:scale-[1.02] transition-all">
+                            Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // --- Toast Component ---
 const Toast = ({ message, isVisible, onClose }) => {
     useEffect(() => {
@@ -198,6 +340,11 @@ const Docs = () => {
     });
 
     const [activeFolderId, setActiveFolderId] = useState('folder-favorites');
+    const [expandedFolders, setExpandedFolders] = useState(() => {
+        // Initialize all folders as expanded
+        const saved = localStorage.getItem('zen_expanded_folders');
+        return saved ? JSON.parse(saved) : ['folder-favorites', 'folder-projects', 'folder-personal'];
+    });
     const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -219,6 +366,91 @@ const Docs = () => {
         setIsToastVisible(true);
     };
 
+    // Context Menu State
+    const [contextMenu, setContextMenu] = useState({ isOpen: false, position: { x: 0, y: 0 }, itemId: null, itemType: null });
+    const [renameModal, setRenameModal] = useState({ isOpen: false, itemId: null, itemType: null, name: '', icon: '' });
+
+    const openContextMenu = (e, itemId, itemType) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({
+            isOpen: true,
+            position: { x: e.clientX, y: e.clientY },
+            itemId,
+            itemType
+        });
+    };
+
+    const closeContextMenu = () => setContextMenu({ ...contextMenu, isOpen: false });
+
+    const openRenameModal = () => {
+        const { itemId, itemType } = contextMenu;
+        if (itemType === 'folder') {
+            const folder = folders.find(f => f.id === itemId);
+            setRenameModal({ isOpen: true, itemId, itemType, name: folder?.title || '', icon: folder?.icon || 'folder' });
+        } else {
+            const doc = docs.find(d => d.id === itemId);
+            setRenameModal({ isOpen: true, itemId, itemType, name: doc?.title || '', icon: doc?.icon || 'description' });
+        }
+        closeContextMenu();
+    };
+
+    const handleRename = (newName, newIcon) => {
+        const { itemId, itemType } = renameModal;
+        if (itemType === 'folder') {
+            setFolders(folders.map(f => f.id === itemId ? { ...f, title: newName, icon: newIcon } : f));
+        } else {
+            setDocs(docs.map(d => d.id === itemId ? { ...d, title: newName, icon: newIcon } : d));
+        }
+        showToast(`Đã đổi tên thành "${newName}"`);
+    };
+
+    const handleDuplicate = () => {
+        const { itemId, itemType } = contextMenu;
+        if (itemType === 'folder') {
+            const folder = folders.find(f => f.id === itemId);
+            if (folder) {
+                const newFolder = { ...folder, id: `folder-${Date.now()}`, title: `${folder.title} (Copy)` };
+                setFolders([...folders, newFolder]);
+                showToast(`Đã sao chép "${folder.title}"`);
+            }
+        } else {
+            const doc = docs.find(d => d.id === itemId);
+            if (doc) {
+                const newDoc = { ...doc, id: `doc-${Date.now()}`, title: `${doc.title} (Copy)` };
+                setDocs([...docs, newDoc]);
+                showToast(`Đã sao chép "${doc.title}"`);
+            }
+        }
+        closeContextMenu();
+    };
+
+    const handleContextDelete = () => {
+        const { itemId, itemType } = contextMenu;
+        if (itemType === 'folder') {
+            const folderDocs = docs.filter(d => d.parentId === itemId);
+            if (folderDocs.length > 0) {
+                alert("Vui lòng xóa hết tài liệu trong folder trước.");
+                closeContextMenu();
+                return;
+            }
+            const folder = folders.find(f => f.id === itemId);
+            if (window.confirm(`Xóa folder "${folder?.title}"?`)) {
+                setFolders(folders.filter(f => f.id !== itemId));
+                if (activeFolderId === itemId) setActiveFolderId(folders[0]?.id || null);
+                showToast(`Đã xóa folder "${folder?.title}"`);
+            }
+        } else {
+            const doc = docs.find(d => d.id === itemId);
+            if (window.confirm(`Xóa trang "${doc?.title}"?`)) {
+                setDocs(docs.filter(d => d.id !== itemId));
+                if (activeDocId === itemId) setActiveDocId(null);
+                showToast(`Đã xóa "${doc?.title}"`);
+            }
+        }
+        closeContextMenu();
+    };
+
     // --- Effects ---
     useEffect(() => {
         localStorage.setItem('zen_folders', JSON.stringify(folders));
@@ -227,6 +459,10 @@ const Docs = () => {
     useEffect(() => {
         localStorage.setItem('zen_docs', JSON.stringify(docs));
     }, [docs]);
+
+    useEffect(() => {
+        localStorage.setItem('zen_expanded_folders', JSON.stringify(expandedFolders));
+    }, [expandedFolders]);
 
     useEffect(() => {
         if (!activeDocId && docs.length > 0) {
@@ -258,6 +494,15 @@ const Docs = () => {
         setActiveFolderId(folderId);
         setSearchQuery('');
         setIsEditing(false);
+    };
+
+    const toggleFolderExpand = (folderId, e) => {
+        e.stopPropagation();
+        setExpandedFolders(prev =>
+            prev.includes(folderId)
+                ? prev.filter(id => id !== folderId)
+                : [...prev, folderId]
+        );
     };
 
     const handleDocClick = (docId) => {
@@ -376,30 +621,96 @@ const Docs = () => {
                 onClose={() => setIsToastVisible(false)}
             />
 
+            {/* Context Menu */}
+            <ContextMenu
+                isOpen={contextMenu.isOpen}
+                position={contextMenu.position}
+                onClose={closeContextMenu}
+                onRename={openRenameModal}
+                onDelete={handleContextDelete}
+                onDuplicate={handleDuplicate}
+                itemType={contextMenu.itemType}
+            />
+
+            {/* Rename Modal */}
+            <RenameModal
+                isOpen={renameModal.isOpen}
+                onClose={() => setRenameModal({ ...renameModal, isOpen: false })}
+                onSubmit={handleRename}
+                initialName={renameModal.name}
+                initialIcon={renameModal.icon}
+                itemType={renameModal.itemType}
+            />
+
             <aside className="w-64 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 transition-width duration-300 md:w-64 hidden md:flex" id="sidebar-folders">
                 <div className="p-6">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2">Workspace</h3>
-                    <nav className="space-y-2">
-                        {folders.map(folder => (
-                            <div key={folder.id} className="group relative">
-                                <button
-                                    onClick={() => handleFolderClick(folder.id)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold text-left transition-colors ${activeFolderId === folder.id ? 'bg-white/40 dark:bg-white/5 text-[#1d2624] dark:text-white shadow-sm' : 'hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60'}`}
-                                >
-                                    <span className={`material-symbols-outlined text-[20px] ${folder.iconColor} ${activeFolderId === folder.id ? 'font-variation-settings-fill' : ''}`}>{folder.icon}</span>
-                                    <span className="flex-1 truncate">{folder.title}</span>
-                                </button>
-                                {isAuthenticated && folder.id !== 'folder-favorites' && (
-                                    <button
-                                        onClick={(e) => handleDeleteFolder(folder.id, e)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 text-[#1d2624]/40 transition-all"
-                                        title="Delete Folder"
-                                    >
-                                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
+                    <nav className="space-y-1">
+                        {folders.map(folder => {
+                            const isExpanded = expandedFolders.includes(folder.id);
+                            const folderDocs = docs.filter(d => d.parentId === folder.id);
+
+                            return (
+                                <div key={folder.id} className="select-none">
+                                    {/* Folder Row */}
+                                    <div className="group relative flex items-center">
+                                        <button
+                                            onClick={(e) => toggleFolderExpand(folder.id, e)}
+                                            className="size-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors shrink-0"
+                                        >
+                                            <span className={`material-symbols-outlined text-[14px] text-[#1d2624]/40 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+                                                expand_more
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleFolderClick(folder.id)}
+                                            className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium text-left transition-colors ${activeFolderId === folder.id ? 'bg-white/30 text-[#1d2624]' : 'hover:bg-white/15 text-[#1d2624]/70'}`}
+                                        >
+                                            <span className={`material-symbols-outlined text-[18px] ${folder.iconColor}`}>{folder.icon}</span>
+                                            <span className="flex-1 truncate">{folder.title}</span>
+                                            {isAuthenticated && (
+                                                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                                                    <span
+                                                        onClick={(e) => { e.stopPropagation(); setActiveFolderId(folder.id); setIsNoteModalOpen(true); }}
+                                                        className="material-symbols-outlined text-[16px] hover:text-primary cursor-pointer p-0.5"
+                                                        title="Thêm trang"
+                                                    >add</span>
+                                                    <span
+                                                        onClick={(e) => openContextMenu(e, folder.id, 'folder')}
+                                                        className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5"
+                                                        title="Tùy chọn"
+                                                    >more_horiz</span>
+                                                </div>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* Nested Documents */}
+                                    {isExpanded && folderDocs.length > 0 && (
+                                        <div className="ml-6 mt-1 space-y-0.5 border-l border-[#1d2624]/10 pl-2">
+                                            {folderDocs.map(doc => (
+                                                <div key={doc.id} className="group/doc relative flex items-center">
+                                                    <button
+                                                        onClick={() => { handleFolderClick(folder.id); handleDocClick(doc.id); }}
+                                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-left transition-colors ${activeDocId === doc.id ? 'bg-white/30 text-[#1d2624] font-medium' : 'hover:bg-white/15 text-[#1d2624]/60'}`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px] text-amber-600/70">{doc.icon || 'description'}</span>
+                                                        <span className="flex-1 truncate">{doc.title}</span>
+                                                        {isAuthenticated && (
+                                                            <span
+                                                                onClick={(e) => openContextMenu(e, doc.id, 'doc')}
+                                                                className="material-symbols-outlined text-[14px] opacity-0 group-hover/doc:opacity-100 hover:text-[#1d2624] cursor-pointer"
+                                                                title="Tùy chọn"
+                                                            >more_horiz</span>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </nav>
                 </div>
                 <div className="mt-auto p-6 border-t border-white/10">

@@ -335,12 +335,32 @@ const Docs = () => {
     // --- State ---
     const [folders, setFolders] = useState(() => {
         const saved = localStorage.getItem('zen_folders');
-        return saved ? JSON.parse(saved) : SEED_FOLDERS;
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Migration: Ensure parentId exists (Notion-style update)
+                return parsed.map(f => ({
+                    ...f,
+                    parentId: (f.parentId === undefined ? null : f.parentId)
+                }));
+            } catch (e) { return SEED_FOLDERS; }
+        }
+        return SEED_FOLDERS;
     });
 
     const [docs, setDocs] = useState(() => {
         const saved = localStorage.getItem('zen_docs');
-        return saved ? JSON.parse(saved) : SEED_DOCS;
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Migration: Ensure parentId exists
+                return parsed.map(d => ({
+                    ...d,
+                    parentId: (d.parentId === undefined ? null : d.parentId)
+                }));
+            } catch (e) { return SEED_DOCS; }
+        }
+        return SEED_DOCS;
     });
 
     const [activeFolderId, setActiveFolderId] = useState('folder-favorites');
@@ -604,6 +624,17 @@ const Docs = () => {
         }
     };
 
+    const handleResetWorkspace = () => {
+        if (window.confirm('Cảnh báo: Hành động này sẽ xóa toàn bộ dữ liệu hiện tại và khôi phục về mặc định. Bạn có chắc chắn muốn tiếp tục?')) {
+            setFolders(SEED_FOLDERS);
+            setDocs(SEED_DOCS);
+            setExpandedFolders(['folder-favorites', 'folder-projects', 'folder-personal']);
+            setActiveFolderId('folder-favorites');
+            setActiveDocId(null);
+            showToast('Workspace has been reset to default.');
+        }
+    };
+
     // --- Recursive Sidebar Render ---
     const renderFolderTree = (parentId, depth = 0) => {
         const currentFolders = folders.filter(f => f.parentId === parentId);
@@ -744,15 +775,25 @@ const Docs = () => {
                         {renderFolderTree(null)}
                     </nav>
                 </div>
-                <div className="mt-auto p-6 border-t border-white/10">
+                <div className="mt-auto p-4 space-y-2 border-t border-white/10">
                     {isAuthenticated && (
-                        <button
-                            onClick={() => setIsFolderModalOpen(true)}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#1d2624]/20 text-sm font-medium hover:bg-white/20 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
-                            New Folder
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setIsFolderModalOpen(true)}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[#1d2624]/20 text-sm font-medium hover:bg-white/20 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
+                                New Folder
+                            </button>
+                            <button
+                                onClick={handleResetWorkspace}
+                                className="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-wider text-[#1d2624]/30 hover:text-red-500 transition-colors"
+                                title="Reset to default data"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                                Reset Workspace
+                            </button>
+                        </>
                     )}
                 </div>
             </aside>

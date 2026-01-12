@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -333,42 +334,12 @@ const Docs = () => {
     const { isAuthenticated } = useAuth();
 
     // --- State ---
-    const [folders, setFolders] = useState(() => {
-        const saved = localStorage.getItem('zen_folders');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Migration: Ensure parentId exists (Notion-style update)
-                return parsed.map(f => ({
-                    ...f,
-                    parentId: (f.parentId === undefined ? null : f.parentId)
-                }));
-            } catch (e) { return SEED_FOLDERS; }
-        }
-        return SEED_FOLDERS;
-    });
+    const [folders, setFolders] = useState([]);
+    const [docs, setDocs] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [docs, setDocs] = useState(() => {
-        const saved = localStorage.getItem('zen_docs');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Migration: Ensure parentId exists
-                return parsed.map(d => ({
-                    ...d,
-                    parentId: (d.parentId === undefined ? null : d.parentId)
-                }));
-            } catch (e) { return SEED_DOCS; }
-        }
-        return SEED_DOCS;
-    });
-
-    const [activeFolderId, setActiveFolderId] = useState('folder-favorites');
-    const [expandedFolders, setExpandedFolders] = useState(() => {
-        // Initialize all folders as expanded
-        const saved = localStorage.getItem('zen_expanded_folders');
-        return saved ? JSON.parse(saved) : ['folder-favorites', 'folder-projects', 'folder-personal'];
-    });
+    const [activeFolderId, setActiveFolderId] = useState(null);
+    const [expandedFolders, setExpandedFolders] = useState(['folder-favorites', 'folder-projects', 'folder-personal']);
     const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -421,70 +392,126 @@ const Docs = () => {
         closeContextMenu();
     };
 
-    const handleRename = (newName, newIcon) => {
+    const handleRename = async (newName, newIcon) => {
         const { itemId, itemType } = renameModal;
-        if (itemType === 'folder') {
-            setFolders(folders.map(f => f.id === itemId ? { ...f, title: newName, icon: newIcon } : f));
-        } else {
-            setDocs(docs.map(d => d.id === itemId ? { ...d, title: newName, icon: newIcon } : d));
+        const table = itemType === 'folder' ? 'folders' : 'docs';
+
+        try {
+            const { error } = await supabase
+                .from(table)
+                .update({ title: newName, icon: newIcon })
+                .eq('id', itemId);
+
+            if (error) throw error;
+
+            if (itemType === 'folder') {
+                setFolders(folders.map(f => f.id === itemId ? { ...f, title: newName, icon: newIcon } : f));
+            } else {
+                setDocs(docs.map(d => d.id === itemId ? { ...d, title: newName, icon: newIcon } : d));
+            }
+            showToast(`Đã đổi tên thành "${newName}"`);
+        } catch (error) {
+            console.error('Error renaming:', error);
+            showToast('Lỗi khi đổi tên');
         }
-        showToast(`Đã đổi tên thành "${newName}"`);
     };
 
-    const handleDuplicate = () => {
+    const handleDuplicate = async () => {
         const { itemId, itemType } = contextMenu;
-        if (itemType === 'folder') {
-            const folder = folders.find(f => f.id === itemId);
-            if (folder) {
-                const newFolder = { ...folder, id: `folder-${Date.now()}`, title: `${folder.title} (Copy)` };
-                setFolders([...folders, newFolder]);
-                showToast(`Đã sao chép "${folder.title}"`);
+        try {
+            if (itemType === 'folder') {
+                const folder = folders.find(f => f.id === itemId);
+                if (folder) {
+                    const newFolder = { ...folder, id: `folder-${Date.now()}`, title: `${folder.title} (Copy)` };
+                    const { error } = await supabase.from('folders').insert([newFolder]);
+                    if (error) throw error;
+                    setFolders([...folders, newFolder]);
+                    showToast(`Đã sao chép "${folder.title}"`);
+                }
+            } else {
+                const doc = docs.find(d => d.id === itemId);
+                if (doc) {
+                    const newDoc = { ...doc, id: `doc-${Date.now()}`, title: `${doc.title} (Copy)` };
+                    const { error } = await supabase.from('docs').insert([newDoc]);
+                    if (error) throw error;
+                    setDocs([...docs, newDoc]);
+                    showToast(`Đã sao chép "${doc.title}"`);
+                }
             }
-        } else {
-            const doc = docs.find(d => d.id === itemId);
-            if (doc) {
-                const newDoc = { ...doc, id: `doc-${Date.now()}`, title: `${doc.title} (Copy)` };
-                setDocs([...docs, newDoc]);
-                showToast(`Đã sao chép "${doc.title}"`);
-            }
+        } catch (error) {
+            console.error('Error duplicating:', error);
+            showToast('Lỗi khi sao chép');
         }
         closeContextMenu();
     };
 
-    const handleContextDelete = () => {
+    const handleContextDelete = async () => {
         const { itemId, itemType } = contextMenu;
-        if (itemType === 'folder') {
-            const folderDocs = docs.filter(d => d.parentId === itemId);
-            if (folderDocs.length > 0) {
-                alert("Vui lòng xóa hết tài liệu trong folder trước.");
-                closeContextMenu();
-                return;
+        try {
+            if (itemType === 'folder') {
+                const folderDocs = docs.filter(d => d.parentId === itemId);
+                if (folderDocs.length > 0) {
+                    alert("Vui lòng xóa hết tài liệu trong folder trước.");
+                    closeContextMenu();
+                    return;
+                }
+                const folder = folders.find(f => f.id === itemId);
+                if (window.confirm(`Xóa folder "${folder?.title}"?`)) {
+                    const { error } = await supabase.from('folders').delete().eq('id', itemId);
+                    if (error) throw error;
+                    setFolders(folders.filter(f => f.id !== itemId));
+                    if (activeFolderId === itemId) setActiveFolderId(folders[0]?.id || null);
+                    showToast(`Đã xóa folder "${folder?.title}"`);
+                }
+            } else {
+                const doc = docs.find(d => d.id === itemId);
+                if (window.confirm(`Xóa trang "${doc?.title}"?`)) {
+                    const { error } = await supabase.from('docs').delete().eq('id', itemId);
+                    if (error) throw error;
+                    setDocs(docs.filter(d => d.id !== itemId));
+                    if (activeDocId === itemId) setActiveDocId(null);
+                    showToast(`Đã xóa "${doc?.title}"`);
+                }
             }
-            const folder = folders.find(f => f.id === itemId);
-            if (window.confirm(`Xóa folder "${folder?.title}"?`)) {
-                setFolders(folders.filter(f => f.id !== itemId));
-                if (activeFolderId === itemId) setActiveFolderId(folders[0]?.id || null);
-                showToast(`Đã xóa folder "${folder?.title}"`);
-            }
-        } else {
-            const doc = docs.find(d => d.id === itemId);
-            if (window.confirm(`Xóa trang "${doc?.title}"?`)) {
-                setDocs(docs.filter(d => d.id !== itemId));
-                if (activeDocId === itemId) setActiveDocId(null);
-                showToast(`Đã xóa "${doc?.title}"`);
-            }
+        } catch (error) {
+            console.error('Error deleting:', error);
+            showToast('Lỗi khi xóa');
         }
         closeContextMenu();
     };
 
     // --- Effects ---
-    useEffect(() => {
-        localStorage.setItem('zen_folders', JSON.stringify(folders));
-    }, [folders]);
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const { data: foldersData, error: fError } = await supabase.from('folders').select('*').order('created_at', { ascending: true });
+            const { data: docsData, error: dError } = await supabase.from('docs').select('*').order('created_at', { ascending: true });
+
+            if (fError || dError) throw fError || dError;
+
+            if (foldersData.length === 0 && docsData.length === 0) {
+                // Seed if empty
+                await supabase.from('folders').insert(SEED_FOLDERS);
+                await supabase.from('docs').insert(SEED_DOCS);
+                setFolders(SEED_FOLDERS);
+                setDocs(SEED_DOCS);
+            } else {
+                setFolders(foldersData);
+                setDocs(docsData);
+            }
+            if (foldersData.length > 0 && !activeFolderId) {
+                setActiveFolderId(foldersData[0].id);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        localStorage.setItem('zen_docs', JSON.stringify(docs));
-    }, [docs]);
+        fetchData();
+    }, []);
 
     useEffect(() => {
         localStorage.setItem('zen_expanded_folders', JSON.stringify(expandedFolders));
@@ -536,7 +563,7 @@ const Docs = () => {
         setIsEditing(false);
     };
 
-    const handleCreateFolder = (name, parentId = null) => {
+    const handleCreateFolder = async (name, parentId = null) => {
         const newFolder = {
             id: `folder-${Date.now()}`,
             title: name,
@@ -544,30 +571,46 @@ const Docs = () => {
             iconColor: 'text-gray-400',
             parentId: parentId
         };
-        setFolders([...folders, newFolder]);
-        setActiveFolderId(newFolder.id);
-        if (parentId) {
-            setExpandedFolders(prev => prev.includes(parentId) ? prev : [...prev, parentId]);
+        try {
+            const { error } = await supabase.from('folders').insert([newFolder]);
+            if (error) throw error;
+
+            setFolders([...folders, newFolder]);
+            setActiveFolderId(newFolder.id);
+            if (parentId) {
+                setExpandedFolders(prev => prev.includes(parentId) ? prev : [...prev, parentId]);
+            }
+            showToast(`Folder "${name}" created!`);
+        } catch (error) {
+            console.error('Error creating folder:', error);
+            showToast('Lỗi khi tạo folder');
         }
-        showToast(`Folder "${name}" created!`);
     };
 
-    const handleCreateDoc = (title) => {
+    const handleCreateDoc = async (title) => {
         const newDoc = {
             id: `doc-${Date.now()}`,
             parentId: activeFolderId,
             title: title,
-            date: 'Just now',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             tags: ['New'],
             bg: 'https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=2070',
             content: '<p class="lead">Start writing your thoughts here...</p>'
         };
-        setDocs([...docs, newDoc]);
-        setActiveDocId(newDoc.id);
-        setEditTitle(newDoc.title);
-        setEditContent(newDoc.content);
-        setIsEditing(true);
-        showToast(`Note "${title}" created!`);
+        try {
+            const { error } = await supabase.from('docs').insert([newDoc]);
+            if (error) throw error;
+
+            setDocs([...docs, newDoc]);
+            setActiveDocId(newDoc.id);
+            setEditTitle(newDoc.title);
+            setEditContent(newDoc.content);
+            setIsEditing(true);
+            showToast(`Note "${title}" created!`);
+        } catch (error) {
+            console.error('Error creating doc:', error);
+            showToast('Lỗi khi tạo note');
+        }
     };
 
     const startEditing = () => {
@@ -577,35 +620,55 @@ const Docs = () => {
         setIsEditing(true);
     };
 
-    const saveEdit = () => {
+    const saveEdit = async () => {
         if (!activeDoc) return;
-        const updatedDocs = docs.map(d =>
-            d.id === activeDocId
-                ? { ...d, title: editTitle, content: editContent, date: 'Edited now' }
-                : d
-        );
-        setDocs(updatedDocs);
-        setIsEditing(false);
-        showToast('Changes saved successfully!');
+        try {
+            const { error } = await supabase
+                .from('docs')
+                .update({ title: editTitle, content: editContent, date: 'Edited now' })
+                .eq('id', activeDocId);
+
+            if (error) throw error;
+
+            const updatedDocs = docs.map(d =>
+                d.id === activeDocId
+                    ? { ...d, title: editTitle, content: editContent, date: 'Edited now' }
+                    : d
+            );
+            setDocs(updatedDocs);
+            setIsEditing(false);
+            showToast('Changes saved successfully!');
+        } catch (error) {
+            console.error('Error saving doc:', error);
+            showToast('Lỗi khi lưu');
+        }
     };
 
     const cancelEdit = () => {
         setIsEditing(false);
     };
 
-    const handleDeleteDoc = () => {
+    const handleDeleteDoc = async () => {
         if (!isAuthenticated || !activeDoc) return;
         if (window.confirm(`Delete "${activeDoc.title}"?`)) {
-            const docTitle = activeDoc.title;
-            const newDocs = docs.filter(d => d.id !== activeDocId);
-            setDocs(newDocs);
-            setActiveDocId(null);
-            setIsEditing(false);
-            showToast(`Note "${docTitle}" deleted.`);
+            try {
+                const docTitle = activeDoc.title;
+                const { error } = await supabase.from('docs').delete().eq('id', activeDocId);
+                if (error) throw error;
+
+                const newDocs = docs.filter(d => d.id !== activeDocId);
+                setDocs(newDocs);
+                setActiveDocId(null);
+                setIsEditing(false);
+                showToast(`Note "${docTitle}" deleted.`);
+            } catch (error) {
+                console.error('Error deleting doc:', error);
+                showToast('Lỗi khi xóa');
+            }
         }
     };
 
-    const handleDeleteFolder = (folderId, e) => {
+    const handleDeleteFolder = async (folderId, e) => {
         e.stopPropagation();
         if (!isAuthenticated) return;
         const folderDocs = docs.filter(d => d.parentId === folderId);
@@ -614,24 +677,41 @@ const Docs = () => {
             return;
         }
         if (window.confirm("Delete this folder?")) {
-            const folder = folders.find(f => f.id === folderId);
-            const newFolders = folders.filter(f => f.id !== folderId);
-            setFolders(newFolders);
-            if (activeFolderId === folderId) {
-                setActiveFolderId(newFolders[0]?.id || null);
+            try {
+                const { error } = await supabase.from('folders').delete().eq('id', folderId);
+                if (error) throw error;
+
+                const folder = folders.find(f => f.id === folderId);
+                const newFolders = folders.filter(f => f.id !== folderId);
+                setFolders(newFolders);
+                if (activeFolderId === folderId) {
+                    setActiveFolderId(newFolders[0]?.id || null);
+                }
+                showToast(`Folder "${folder?.title}" deleted.`);
+            } catch (error) {
+                console.error('Error deleting folder:', error);
+                showToast('Lỗi khi xóa folder');
             }
-            showToast(`Folder "${folder?.title}" deleted.`);
         }
     };
 
-    const handleResetWorkspace = () => {
-        if (window.confirm('Cảnh báo: Hành động này sẽ xóa toàn bộ dữ liệu hiện tại và khôi phục về mặc định. Bạn có chắc chắn muốn tiếp tục?')) {
-            setFolders(SEED_FOLDERS);
-            setDocs(SEED_DOCS);
-            setExpandedFolders(['folder-favorites', 'folder-projects', 'folder-personal']);
-            setActiveFolderId('folder-favorites');
-            setActiveDocId(null);
-            showToast('Workspace has been reset to default.');
+    const handleResetWorkspace = async () => {
+        if (window.confirm('Cảnh báo: Hành động này sẽ xóa toàn bộ dữ liệu hiện tại và khôi phục về mặc thực tế trên Database. Bạn có chắc chắn muốn tiếp tục?')) {
+            try {
+                // Clear existing
+                await supabase.from('docs').delete().neq('id', 'dummy');
+                await supabase.from('folders').delete().neq('id', 'dummy');
+
+                // Seed
+                await supabase.from('folders').insert(SEED_FOLDERS);
+                await supabase.from('docs').insert(SEED_DOCS);
+
+                await fetchData();
+                showToast('Workspace has been reset to default.');
+            } catch (error) {
+                console.error('Error resetting:', error);
+                showToast('Lỗi khi reset');
+            }
         }
     };
 

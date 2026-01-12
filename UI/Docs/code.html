@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Docs - Unified Sync</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4ecdc4",
+                        "primary-dark": "#2cb3aa",
+                        "secondary": "#ffbe76",
+                        "secondary-dark": "#e09345",
+                        "background-light": "#fcfdfd",
+                        "background-dark": "#101614",
+                        "mint-soft": "#e0f7f5",
+                        "peach-soft": "#fff0e0",
+                    },
+                    fontFamily: {
+                        "display": ["Nunito", "Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(78, 205, 196, 0.2); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(78, 205, 196, 0.4); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined.filled {
+          font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .dock-gradient {
+            background: linear-gradient(135deg, #4ecdc4 0%, #ffbe76 100%);
+        }
+        .logo-gradient {
+            background: linear-gradient(135deg, #4ecdc4 0%, #ffbe76 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #docs-container {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .focus-mode-active #sidebar-folders,
+        .focus-mode-active #note-list {
+            display: none;
+        }
+        .focus-mode-active #docs-container {
+            max-width: 1200px !important;
+            height: calc(100vh - 8rem) !important;
+            margin-top: 0;
+        }
+        #floating-dock {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+        .dock-hidden {
+            transform: translate(-50%, 150%) !important;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#1d2624] dark:text-white font-display overflow-hidden h-screen w-screen relative selection:bg-primary/30">
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center opacity-40 dark:opacity-20 blur-3xl scale-110" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSurl_rJXeZMa1QBJEVjRe4iBvQEawiVc3X4LWn6cw84-iQOtGYyDXxRrAxAaFgj53y_sgcfy5J6NVI7Z-tKr443HyRXtp4zOzAfmfi1619vpkEFzMwDMDw_GCGBnnnpdiBVknE6DJnLLe2U_f1JHfa5qHWne-yt7SJnvxxSPzdrd3kqYMGI20nHyqwqrVfox_DizPKYupzh9ePzkexiW7zzmVVzNsVJo88XOv4bCSU146g4VbI-tPoSamJ697SlcfDTGghx42324A");'></div>
+<div class="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-[#4ecdc4]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal"></div>
+<div class="absolute -bottom-[20%] -right-[10%] w-[70vw] h-[70vw] bg-[#ffbe76]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal"></div>
+</div>
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:px-12 md:py-6">
+<div class="flex items-center gap-3">
+<div class="size-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/10 text-primary-dark dark:text-primary shadow-sm">
+<span class="material-symbols-outlined">spa</span>
+</div>
+<h2 class="text-xl font-extrabold tracking-tight logo-gradient hidden md:block">Khắc Nghĩa</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative group p-2 rounded-full hover:bg-white/20 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[#1d2624]/70 dark:text-white/80 text-[24px]">notifications</span>
+<span class="absolute top-2.5 right-2.5 size-2 bg-secondary rounded-full border border-[#fcfdfd] dark:border-[#101614]"></span>
+</button>
+<div class="h-6 w-px bg-[#1d2624]/10 dark:bg-white/10 mx-2"></div>
+<button class="flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 rounded-full bg-white/60 dark:bg-black/30 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-sm hover:bg-white/80 transition-all">
+<div class="size-8 rounded-full bg-[#72bdae] overflow-hidden flex items-center justify-center border border-white/50">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpKXDKChxqUovbkTSPfoSPbbFMA-n0w5_gdW5x-0yx3ZBWs0nD1JFWI-6HFeEuCGrgbGPkrt8NpTfFcSCzJwOLUQMN5nDZArcfIJoVgyeXh15nbQguX_E2wtn0vVm0Dc15OChBD_P4Scwa5OQ3alHmrE3wSPjPsCU36kDFQiPMvo6WtLm0Ltear1ksNwD4C1SWiRYt-8FHbc2PH8OB6X8PsNzyxM9s7CSAuh8yfHU2tnQ0gGY7BwRMyqn292UbmSB4hEY0N6xMtiwN"/>
+</div>
+<span class="text-sm font-bold text-[#1d2624] dark:text-white">Alex M.</span>
+</button>
+</div>
+</header>
+<main class="relative z-10 h-full w-full pt-20 md:pt-24 pb-12 px-4 flex items-center justify-center">
+<div class="w-full max-w-[1200px] h-[calc(100vh-10rem)] flex bg-white/30 dark:bg-[#101614]/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/40 dark:border-white/10 shadow-2xl overflow-hidden transition-all duration-500" id="docs-container">
+<aside class="w-64 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0" id="sidebar-folders">
+<div class="p-6">
+<h3 class="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2">Workspace</h3>
+<nav class="space-y-1">
+<button class="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-white/40 dark:bg-white/5 text-[#1d2624] dark:text-white font-semibold text-sm text-left">
+<span class="material-symbols-outlined text-primary text-[20px]">star</span>
+                            Favorites
+                        </button>
+<div class="pt-4 space-y-1">
+<div class="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/20 cursor-pointer">
+<span class="material-symbols-outlined text-[18px] text-[#1d2624]/40">keyboard_arrow_down</span>
+<span class="material-symbols-outlined text-[20px] text-secondary">folder</span>
+<span class="text-sm font-medium">Projects</span>
+</div>
+<div class="ml-8 space-y-1">
+<div class="flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-white/20 cursor-pointer text-sm text-[#1d2624]/70 dark:text-white/60 text-left">
+<span class="material-symbols-outlined text-[18px]">folder</span>
+<span>Brand Redesign</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-primary/10 text-primary-dark font-medium cursor-pointer text-sm text-left">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+<span>Zen Workspace</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/20 cursor-pointer">
+<span class="material-symbols-outlined text-[18px] text-[#1d2624]/40">keyboard_arrow_right</span>
+<span class="material-symbols-outlined text-[20px] text-gray-400">folder</span>
+<span class="text-sm font-medium">Personal</span>
+</div>
+</div>
+</nav>
+</div>
+<div class="mt-auto p-6 border-t border-white/10">
+<button class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#1d2624]/20 text-sm font-medium hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Folder
+                    </button>
+</div>
+</aside>
+<section class="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10" id="note-list">
+<div class="p-6 space-y-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-black/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search notes..." type="text"/>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+<span class="px-2.5 py-1 rounded-md bg-white/60 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">All</span>
+<span class="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40">Drafts</span>
+<span class="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40">Shared</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+<div class="p-4 rounded-2xl bg-white shadow-sm border border-primary/10 group cursor-pointer transition-all hover:shadow-md">
+<div class="flex justify-between items-start mb-1">
+<h4 class="font-bold text-sm text-[#1d2624]">Product Design Guidelines</h4>
+<span class="text-[10px] text-[#1d2624]/30">2m ago</span>
+</div>
+<p class="text-xs text-[#1d2624]/60 line-clamp-2 mb-3">Our core principles focus on simplicity, responsiveness, and aesthetic minimalism...</p>
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 bg-mint-soft text-[#2cb3aa] text-[9px] font-bold rounded uppercase">Design</span>
+<span class="px-1.5 py-0.5 bg-peach-soft text-[#e09345] text-[9px] font-bold rounded uppercase">Guide</span>
+</div>
+</div>
+<div class="p-4 rounded-2xl hover:bg-white/40 transition-all border border-transparent cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<h4 class="font-bold text-sm text-[#1d2624]">Sprint Retro Q3</h4>
+<span class="text-[10px] text-[#1d2624]/30">Oct 24</span>
+</div>
+<p class="text-xs text-[#1d2624]/60 line-clamp-1">Reviewing the major milestones achieved during the Zen launch...</p>
+</div>
+</div>
+</section>
+<section class="flex-1 flex flex-col bg-white/5 relative">
+<div class="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md">
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-white/20 transition-colors text-[#1d2624]/60 flex items-center justify-center group relative" onclick="document.body.classList.toggle('focus-mode-active')" title="Focus Mode Toggle">
+<span class="material-symbols-outlined text-[20px]">fullscreen</span>
+<span class="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Focus Mode</span>
+</button>
+<div class="h-4 w-px bg-white/20"></div>
+<span class="text-sm font-medium text-[#1d2624]/40">Last saved 5 minutes ago</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<button class="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar" onscroll="
+                    const dock = document.getElementById('floating-dock');
+                    if (this.oldScroll &gt; this.scrollTop) {
+                        dock.classList.remove('dock-hidden');
+                    } else if (this.scrollTop &gt; 50) {
+                        dock.classList.add('dock-hidden');
+                    }
+                    this.oldScroll = this.scrollTop;
+                ">
+<div class="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8">
+<h1 class="text-5xl font-extrabold tracking-tight text-[#1d2624] leading-[1.15]">Product Design Guidelines</h1>
+<div class="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5">
+<div class="flex -space-x-2">
+<img alt="Author" class="size-6 rounded-full ring-2 ring-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpKXDKChxqUovbkTSPfoSPbbFMA-n0w5_gdW5x-0yx3ZBWs0nD1JFWI-6HFeEuCGrgbGPkrt8NpTfFcSCzJwOLUQMN5nDZArcfIJoVgyeXh15nbQguX_E2wtn0vVm0Dc15OChBD_P4Scwa5OQ3alHmrE3wSPjPsCU36kDFQiPMvo6WtLm0Ltear1ksNwD4C1SWiRYt-8FHbc2PH8OB6X8PsNzyxM9s7CSAuh8yfHU2tnQ0gGY7BwRMyqn292UbmSB4hEY0N6xMtiwN"/>
+<div class="size-6 rounded-full bg-gray-200 ring-2 ring-white flex items-center justify-center text-[10px] font-bold">+3</div>
+</div>
+<span class="text-sm text-[#1d2624]/40 font-medium">Collaborating with the Product Team</span>
+</div>
+<div class="prose prose-slate prose-lg text-[#1d2624]/80 leading-[1.8] space-y-6">
+<p class="text-xl leading-relaxed font-light italic text-[#1d2624]/60">
+                                This document outlines the fundamental design language for Khắc Nghĩa workspace, ensuring consistent visual storytelling across all digital touchpoints.
+                            </p>
+<h2 class="text-2xl font-bold pt-4 text-[#1d2624]">1. Core Philosophy</h2>
+<p>
+                                Minimalism isn't about the absence of content, but the presence of focus. In a data-rich environment, we prioritize information hierarchy using generous whitespace and subtle elevation. Our goal is to reduce cognitive load while providing all necessary tools for complex document management.
+                            </p>
+<h2 class="text-2xl font-bold pt-4 text-[#1d2624]">2. The Zen Immersive Style</h2>
+<p>
+                                The immersive style uses frosted glass (glassmorphism) as a metaphor for clarity. Backgrounds should feel expansive, utilizing soft gradients that reflect a calming natural environment. Every interaction should feel tactile and weighted, yet fluid.
+                            </p>
+<div class="bg-mint-soft/30 border border-primary/10 p-8 rounded-[2rem] my-8 shadow-sm">
+<h4 class="font-bold text-primary-dark mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">tips_and_updates</span>
+                                    Key Takeaway
+                                </h4>
+<p class="text-base text-[#1d2624]/80">Functionality follows serenity. If a feature disrupts the visual calm, it must be reimagined or tucked away behind thoughtful progressive disclosure.</p>
+</div>
+<p>
+                                For large volume data handling, we utilize a tri-columnar layout that provides context (folders), selection (list), and focus (editor). This classic paradigm is updated with modern blurring and shadow techniques to maintain the "Zen" feeling even when managing thousands of documents.
+                            </p>
+<h2 class="text-2xl font-bold pt-4 text-[#1d2624]">3. Content Structuring</h2>
+<p>
+                                Document hierarchy should follow a logical flow:
+                            </p>
+<ul class="list-disc pl-6 space-y-3 marker:text-primary/40">
+<li><strong class="text-[#1d2624]">H1</strong> for primary topics only.</li>
+<li><strong class="text-[#1d2624]">H2-H3</strong> for sectional breakdowns.</li>
+<li><strong class="text-[#1d2624]">Callouts</strong> for mission-critical observations.</li>
+<li><strong class="text-[#1d2624]">Bullet points</strong> for technical specifications.</li>
+</ul>
+<h2 class="text-2xl font-bold pt-4 text-[#1d2624]">4. Typography &amp; Space</h2>
+<p>
+                                We employ Nunito for headlines to provide a friendly, accessible entry point to the content, while Inter handles body text for maximum legibility at smaller sizes. Leading (line height) is intentionally loose at 1.8 to allow the eye to glide across the document without strain.
+                            </p>
+<p>
+                                Margin and padding are our most effective design tools. By separating components by significant distances, we imply relationships without needing heavy borders or divider lines.
+                            </p>
+<p class="pb-32">
+                                Continual refinement is expected as our user base grows and their data management needs evolve. Documenting these changes ensures that our brand voice remains clear and loud through the visual noise of the digital age.
+                            </p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] flex items-center" id="floating-dock">
+<div class="bg-white/30 dark:bg-black/20 backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-full px-2 py-2 flex items-center gap-1 shadow-[0_15px_45px_-10px_rgba(0,0,0,0.15)] ring-1 ring-white/20">
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white transition-all">
+<span class="material-symbols-outlined text-[22px]">home</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full dock-gradient text-white shadow-lg shadow-primary/20 transition-all hover:scale-105">
+<span class="material-symbols-outlined text-[22px] filled">description</span>
+<span class="text-sm font-bold tracking-wide">Docs</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white transition-all">
+<span class="material-symbols-outlined text-[22px]">construction</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white transition-all">
+<span class="material-symbols-outlined text-[22px]">photo</span>
+</button>
+<div class="w-px h-6 bg-black/10 dark:bg-white/10 mx-2"></div>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white transition-all">
+<span class="material-symbols-outlined text-[22px]">admin_panel_settings</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black shadow-lg hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</button>
+</div>
+</div>
+</body></html>

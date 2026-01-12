@@ -1,0 +1,263 @@
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Images - Khắc Nghĩa Workspace</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4ecdc4",
+                        "primary-dark": "#2cb3aa",
+                        "secondary": "#ffbe76",
+                        "secondary-dark": "#e09345",
+                        "background-light": "#fcfdfd",
+                        "background-dark": "#101614",
+                        "mint-soft": "#e0f7f5",
+                        "peach-soft": "#fff0e0",
+                    },
+                    fontFamily: {
+                        "display": ["Nunito", "Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(78, 205, 196, 0.3); border-radius: 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(78, 205, 196, 0.6); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined.filled {
+          font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .dock-gradient {
+            background: linear-gradient(135deg, #4ecdc4 0%, #ffbe76 100%);
+        }
+        .text-gradient-logo {
+            background: linear-gradient(to right, #4ecdc4, #ffbe76);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dock-container {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+        }body:has(.gallery-viewer:focus-within) .dock-container,
+        body:has(.gallery-viewer:active) .dock-container {
+            transform: translate(-50%, 180%);
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#1d2624] dark:text-white font-display overflow-hidden h-screen w-screen relative selection:bg-primary/30">
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center opacity-40 dark:opacity-20 blur-3xl scale-110" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSurl_rJXeZMa1QBJEVjRe4iBvQEawiVc3X4LWn6cw84-iQOtGYyDXxRrAxAaFgj53y_sgcfy5J6NVI7Z-tKr443HyRXtp4zOzAfmfi1619vpkEFzMwDMDw_GCGBnnnpdiBVknE6DJnLLe2U_f1JHfa5qHWne-yt7SJnvxxSPzdrd3kqYMGI20nHyqwqrVfox_DizPKYupzh9ePzkexiW7zzmVVzNsVJo88XOv4bCSU146g4VbI-tPoSamJ697SlcfDTGghx42324A");'></div>
+<div class="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-[#4ecdc4]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal animate-pulse" style="animation-duration: 10s;"></div>
+<div class="absolute -bottom-[20%] -right-[10%] w-[70vw] h-[70vw] bg-[#ffbe76]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal animate-pulse" style="animation-duration: 12s;"></div>
+</div>
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-6 md:px-12 md:py-8 pointer-events-none">
+<div class="flex items-center gap-3 pointer-events-auto">
+<div class="size-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/10 text-primary-dark dark:text-primary shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">spa</span>
+</div>
+<h2 class="text-xl font-extrabold tracking-tight drop-shadow-sm hidden md:block text-gradient-logo cursor-default">Khắc Nghĩa</h2>
+</div>
+<div class="flex items-center gap-4 pointer-events-auto">
+<button class="relative group size-10 flex items-center justify-center rounded-full bg-white/40 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-sm hover:bg-white/60 dark:hover:bg-white/10 transition-all hover:scale-105">
+<span class="material-symbols-outlined text-[#1d2624]/70 dark:text-white/80 filled text-[22px]">notifications</span>
+<span class="absolute top-2.5 right-2.5 size-2 bg-secondary rounded-full border border-[#fcfdfd] dark:border-[#101614]"></span>
+</button>
+<div class="h-8 w-px bg-[#1d2624]/10 dark:bg-white/10"></div>
+<button class="flex items-center gap-3 pl-1.5 pr-5 py-1.5 rounded-full bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg hover:shadow-[0_0_20px_rgba(78,205,196,0.15)] hover:bg-white/60 dark:hover:bg-black/40 transition-all duration-300 hover:scale-[1.02]">
+<div class="size-9 rounded-full bg-[#72bdae] overflow-hidden flex items-center justify-center border-2 border-white/50">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpKXDKChxqUovbkTSPfoSPbbFMA-n0w5_gdW5x-0yx3ZBWs0nD1JFWI-6HFeEuCGrgbGPkrt8NpTfFcSCzJwOLUQMN5nDZArcfIJoVgyeXh15nbQguX_E2wtn0vVm0Dc15OChBD_P4Scwa5OQ3alHmrE3wSPjPsCU36kDFQiPMvo6WtLm0Ltear1ksNwD4C1SWiRYt-8FHbc2PH8OB6X8PsNzyxM9s7CSAuh8yfHU2tnQ0gGY7BwRMyqn292UbmSB4hEY0N6xMtiwN"/>
+</div>
+<span class="text-sm font-bold text-[#1d2624] dark:text-white">Alex M.</span>
+</button>
+</div>
+</header>
+<main class="relative z-10 flex items-center justify-center h-full w-full p-4 md:p-8 pt-24 md:pt-28">
+<div class="relative w-full max-w-[1400px] h-[85vh] md:h-[82vh] bg-white/30 dark:bg-[#101614]/40 backdrop-blur-2xl rounded-[2.5rem] md:rounded-[3.5rem] border border-white/40 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col transition-all duration-500">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 p-6 md:px-12 md:pt-10 md:pb-6 border-b border-white/10 z-20 bg-white/10 dark:bg-black/5 backdrop-blur-sm shrink-0">
+<div class="space-y-2">
+<h1 class="text-3xl md:text-4xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight">
+                    Visual <span class="bg-gradient-to-r from-[#4ecdc4] to-[#ffbe76] bg-clip-text text-transparent">Sanctuary</span>
+</h1>
+<p class="text-[#1d2624]/60 dark:text-white/60 text-sm md:text-base font-medium max-w-sm leading-relaxed">
+                    A curated collection of calm. Explore, collect, and find your focus.
+                </p>
+</div>
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-2 sm:pb-0">
+<button class="px-5 py-2.5 rounded-full bg-peach-soft text-secondary-dark text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-[#ffe0b2] transition-all transform hover:scale-105 whitespace-nowrap border border-secondary/20">All</button>
+<button class="px-5 py-2.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/20 text-[#1d2624]/70 dark:text-white/70 text-xs font-bold uppercase tracking-wider hover:bg-peach-soft hover:text-secondary-dark dark:hover:bg-peach-soft dark:hover:text-secondary-dark transition-all whitespace-nowrap">Nature</button>
+<button class="px-5 py-2.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/20 text-[#1d2624]/70 dark:text-white/70 text-xs font-bold uppercase tracking-wider hover:bg-peach-soft hover:text-secondary-dark dark:hover:bg-peach-soft dark:hover:text-secondary-dark transition-all whitespace-nowrap">Minimalism</button>
+<button class="px-5 py-2.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/20 text-[#1d2624]/70 dark:text-white/70 text-xs font-bold uppercase tracking-wider hover:bg-peach-soft hover:text-secondary-dark dark:hover:bg-peach-soft dark:hover:text-secondary-dark transition-all whitespace-nowrap">Abstract</button>
+</div>
+<div class="relative group/search w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 group-focus-within/search:text-primary transition-colors text-[20px]">search</span>
+<input class="w-full pl-12 pr-4 py-2.5 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white/60 dark:focus:bg-black/40 text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/30 transition-all shadow-sm" placeholder="Search inspiration..." type="text"/>
+</div>
+</div>
+</div>
+<div class="gallery-viewer flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 scroll-smooth relative outline-none z-10" tabindex="0">
+<div class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6 pb-24">
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(78,205,196,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<a class="block w-full h-full" href="#lightbox-demo">
+<img alt="Zen Workspace" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnfO7DrW0CN_06WuYOdw4b3e2LH37g7c0zp9Ml5Pk_kLMrQMr67aSHNAZhHhGRAc6vfYtug9tEMjd59q6oSq8weu9YL4X7pVz0xPdnJk6iKcRaG89QkkXRySQ2rfe0CX5VS8cuuZMFFmKl_ivRPIgkn_YuvOLfThHIHdy5zYeXU30RV_H2xI2Y7Yr1Q_cdrtFhAxcBQcn3BvuHIpaSy8X4SyKdeTxMV4isYItXMM5RCkX6ZhgQkhcAmyoKciAkystLbyfULWTCQvk7"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6 pointer-events-none backdrop-blur-[2px] group-hover:backdrop-blur-none">
+<span class="text-white font-bold text-sm tracking-wide transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">Morning Light</span>
+<span class="text-white/70 text-[10px] uppercase tracking-widest transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100">Architecture</span>
+</div>
+</a>
+</div>
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(255,190,118,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<img alt="Abstract" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBT6PhmLCdcVB7qzGKCOwi1D78AIPdh3ohMxvbRao0UigwnX7wAobawJ9t6h7PRXJkUqb1rBkRY1ZCrrkZPBhz_fCM_tAA2L31XgFiS7ynlrnKJmEQ4iEu_TxedcK_E1CSTqIuSfb7sC-_7PQLLCXm_Ki_GcJavojKjGm3XmnESqN93a9wm_GPXEK9wyIm3o-qVk9tiCuEUbovYPBQdI79XgYPkS1Qah-Vgbh6mmIz7_REURFcOU5qXMRjjiJuPlq-EzkfzGW9M11Jd"/>
+</div>
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(78,205,196,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<img alt="Minimalist Architecture" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR4tASLGop3a8rDIF-bv0yf0X8KJNN_Vy7RNyV2GS0DVm2D0OB0tU6QQAGKFHaIviKyP4mNOWrz3y17eFouSh8UvD21zJLW_I0dgfE0B2WwbCM13s7ec_fZ_4HLLF8xey0x_igXuHwCkWIpLx_b3K_sT3YcPzIVdakty46qM_KdvLQeSDmVRLboc22i1c6R9HJSxwPHoY0XmOXjoWcqmLHv6doNHZsHSQUJiPbw2J4ONxJ96UBXhDLxIzbAG94LjnsPCMmX-BPdFIP"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6 pointer-events-none backdrop-blur-[2px] group-hover:backdrop-blur-none">
+<span class="text-white font-bold text-sm tracking-wide transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">Clean Lines</span>
+</div>
+</div>
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(255,190,118,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<img alt="Plant" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOzf8tmMZk402qD6Y9P0iundYS6oaRQLtdZueqPRWSRfVnhQEda1AUjRDieo29C-wEsmJIT-FUMMJUjZcxGoV2gKPWFn-Adk9To0_jPl6rqS5XwfqVMz98dowIFclrahouPPbmd5b80q11DzphTCpdcLmX6nqD46lYigCNjpHz2z7aDk_TZWvR-06j9-m1JagegA-ZG5mlJDUR7qjOxOl-c7Cplh0vW4lZdnskZV3yZoeOOEQpHAZ8xH3qp3tY8GISAMlrPyONAk17"/>
+</div>
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(78,205,196,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<img alt="Desk setup" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrBbiFoNx9WbI5cY9Gzf41Xz6OE1rdp9Q9hkAuEe9_HPdcRW_JKfn2UNtqjj_mDBie7gW4JSeytjK_6nTAAfFNp3vh0bJV8K6C3cKa-a_vcUj6L-nlo3PHTbi_KA1rz5z_Q5mwNsP03UCYbZOR16d286QBWVA-lhAhWH3Rwgf5KSRUZGmZ8WeB36lJoUxp-uyMH4YXaZtokm6_lWDNVjuifLJ3b4jp0ay6-fKvPoTaIJWSqwNxWzeK8Jm4MBTuFFBMuc5GmxXesEI7"/>
+</div>
+<div class="break-inside-avoid relative group rounded-[2rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(255,190,118,0.2)] transition-all duration-700 hover:-translate-y-2 cursor-zoom-in">
+<div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all duration-500 hover:bg-white/40 hover:scale-110 z-30 cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px]">favorite</span>
+</div>
+<img alt="Texture" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 brightness-95 group-hover:brightness-105 transition-all duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1TXqAi-3lJ2thVuEGCILtkP3-SXcacXlrr319N0Vd6NOqGV2FY7B8wTW1fUVGZTI9Ms-Kxrh6v6oFpXZjnNVv97JbiMYTI6z8faMYlKKxCWwNThvGp4CkIUjbDtVvlE__v0weBUw4GW_veQGPq2s7HmQY2QGSHQGRRSUi3CQu0bcs0a7mvE-gt6x6fhznUO5H9Talz8yMlJ-Opn8pEXczKdcEX8HYyc4Glb2tBrmpzpBueIk9VJbt9rxM82Jc1bwMKTKeZmUpvafh"/>
+</div>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white/90 dark:from-[#101614]/90 to-transparent pointer-events-none z-10 transition-opacity duration-300"></div>
+</div>
+</main>
+<div class="dock-container fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] flex items-center group/dock">
+<div class="bg-white/40 dark:bg-black/40 backdrop-blur-3xl border border-white/50 dark:border-white/10 rounded-full px-2.5 py-2.5 flex items-center gap-2 shadow-[0_15px_45px_-10px_rgba(0,0,0,0.15)] ring-1 ring-white/20 hover:scale-105 transition-transform duration-500">
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-[22px]">home</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-[22px]">description</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-[22px]">construction</span>
+</button>
+<button class="flex items-center gap-2 px-6 py-3 rounded-full dock-gradient text-white shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40 ring-2 ring-white/20">
+<span class="material-symbols-outlined text-[22px] filled">photo</span>
+<span class="text-sm font-bold tracking-wide">Images</span>
+</button>
+<div class="w-px h-6 bg-black/10 dark:bg-white/10 mx-1"></div>
+<button class="size-11 flex items-center justify-center rounded-full text-[#1d2624]/60 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white hover:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-[22px]">admin_panel_settings</span>
+</button>
+<button class="size-11 flex items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black shadow-lg hover:scale-110 active:scale-95 transition-transform hover:shadow-xl">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</button>
+</div>
+</div>
+<div class="fixed inset-0 z-[100] hidden target:flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl bg-white/60 dark:bg-black/80 transition-all duration-500" id="lightbox-demo">
+<a class="absolute inset-0 w-full h-full cursor-default" href="#"></a>
+<div class="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-[#18181b] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/20 dark:border-white/10 z-10 animate-[fadeIn_0.3s_ease-out]">
+<a class="absolute top-6 left-6 z-20 size-10 flex items-center justify-center rounded-full bg-black/20 dark:bg-white/10 backdrop-blur-md text-white hover:bg-black/40 transition-colors" href="#">
+<span class="material-symbols-outlined">close</span>
+</a>
+<div class="flex-1 h-60 md:h-full bg-gray-100 dark:bg-black/50 relative group flex items-center justify-center overflow-hidden">
+<img alt="Morning Light Fullscreen" class="w-full h-full object-cover md:object-contain p-0 md:p-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnfO7DrW0CN_06WuYOdw4b3e2LH37g7c0zp9Ml5Pk_kLMrQMr67aSHNAZhHhGRAc6vfYtug9tEMjd59q6oSq8weu9YL4X7pVz0xPdnJk6iKcRaG89QkkXRySQ2rfe0CX5VS8cuuZMFFmKl_ivRPIgkn_YuvOLfThHIHdy5zYeXU30RV_H2xI2Y7Yr1Q_cdrtFhAxcBQcn3BvuHIpaSy8X4SyKdeTxMV4isYItXMM5RCkX6ZhgQkhcAmyoKciAkystLbyfULWTCQvk7"/>
+<button class="absolute left-4 top-1/2 -translate-y-1/2 size-12 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 hidden md:flex">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 size-12 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/20 hidden md:flex">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<div class="w-full md:w-[320px] lg:w-[380px] bg-white dark:bg-[#18181b] border-l border-gray-100 dark:border-white/5 flex flex-col overflow-y-auto custom-scrollbar">
+<div class="p-8 space-y-8">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-bold font-display text-gray-900 dark:text-white">Morning Light</h2>
+<button class="text-red-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined filled">favorite</span>
+</button>
+</div>
+<div class="flex items-center gap-3">
+<img alt="Creator" class="size-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBThB9nLl30afNI9uO7vGaSKDKxs748G2ec8VsJQbaNvw19UwIzATlYOJt-7RNYFb5TH9bub7mXKrwN6YQJIBXCQkSM8_vxEOuyYnntvTZWrwMM4VXcsAOG7PafWy2n4LVqOM9n4X4jWlqESy1AcCEOEarSVLsN5Y4zcl6BWr071DXnZlYISklWQEJwyupi7meOKSYSLUIW2b-jFeUobM2Xr7HvvAQ68s-lcuP7Yippg7QQaBHbWzDJj_9b1ewkCk42ORYsMpo1pca8"/>
+<span class="text-sm font-medium text-gray-500 dark:text-gray-400">by Alex M.</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 rounded-xl bg-gray-50 dark:bg-white/5 space-y-1">
+<span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Resolution</span>
+<p class="text-sm font-semibold text-gray-700 dark:text-gray-200">4096 x 2160</p>
+</div>
+<div class="p-3 rounded-xl bg-gray-50 dark:bg-white/5 space-y-1">
+<span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Size</span>
+<p class="text-sm font-semibold text-gray-700 dark:text-gray-200">4.2 MB</p>
+</div>
+<div class="p-3 rounded-xl bg-gray-50 dark:bg-white/5 space-y-1">
+<span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Format</span>
+<p class="text-sm font-semibold text-gray-700 dark:text-gray-200">JPG</p>
+</div>
+<div class="p-3 rounded-xl bg-gray-50 dark:bg-white/5 space-y-1">
+<span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">License</span>
+<p class="text-sm font-semibold text-gray-700 dark:text-gray-200">Personal</p>
+</div>
+</div>
+<div class="space-y-2">
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">About</h3>
+<p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Captured during the golden hour, this shot emphasizes the interplay between natural light and modern architectural lines. A moment of stillness in a chaotic world.
+                    </p>
+</div>
+<div class="space-y-3">
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Color Palette</h3>
+<div class="flex h-8 w-full rounded-lg overflow-hidden shadow-sm">
+<div class="h-full flex-1 bg-[#2c3e50]"></div>
+<div class="h-full flex-1 bg-[#e67e22]"></div>
+<div class="h-full flex-1 bg-[#ecf0f1]"></div>
+<div class="h-full flex-1 bg-[#95a5a6]"></div>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-2">
+<span class="px-3 py-1 rounded-full bg-peach-soft text-secondary-dark text-xs font-bold">#architecture</span>
+<span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 text-xs font-bold">#minimal</span>
+<span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 text-xs font-bold">#light</span>
+</div>
+</div>
+<div class="mt-auto p-8 border-t border-gray-100 dark:border-white/5">
+<button class="w-full py-3 rounded-xl bg-[#1d2624] dark:bg-white text-white dark:text-black font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Download Image
+                </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

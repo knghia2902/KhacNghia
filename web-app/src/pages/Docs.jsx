@@ -106,6 +106,83 @@ const SEED_DOCS = [
     }
 ];
 
+// --- Toast Component ---
+const Toast = ({ message, isVisible, onClose }) => {
+    useEffect(() => {
+        if (isVisible) {
+            const timer = setTimeout(onClose, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, onClose]);
+
+    if (!isVisible) return null;
+
+    return (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-[slideUp_0.3s_ease-out]">
+            <div className="flex items-center gap-3 px-5 py-3 bg-[#1d2624] text-white rounded-xl shadow-2xl">
+                <span className="material-symbols-outlined text-green-400">check_circle</span>
+                <span className="font-medium">{message}</span>
+            </div>
+        </div>
+    );
+};
+
+// --- Modal Component ---
+const InputModal = ({ isOpen, onClose, onSubmit, title, placeholder, icon }) => {
+    const [inputValue, setInputValue] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (inputValue.trim()) {
+            onSubmit(inputValue.trim());
+            setInputValue('');
+            onClose();
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-md bg-white/90 dark:bg-[#1d2624]/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 animate-[fadeIn_0.2s_ease-out]">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary text-2xl">{icon}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-[#1d2624] dark:text-white">{title}</h2>
+                </div>
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        placeholder={placeholder}
+                        className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                        autoFocus
+                    />
+                    <div className="flex gap-3 mt-6">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-3 rounded-xl border border-[#1d2624]/20 text-[#1d2624]/60 dark:text-white/60 font-semibold hover:bg-white/50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-1 py-3 rounded-xl bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] font-semibold shadow-lg hover:scale-[1.02] transition-all"
+                        >
+                            Create
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 const Docs = () => {
     const { isAuthenticated } = useAuth();
 
@@ -120,15 +197,27 @@ const Docs = () => {
         return saved ? JSON.parse(saved) : SEED_DOCS;
     });
 
-    const [activeFolderId, setActiveFolderId] = useState('folder-favorites'); // Default folder
-    const [activeDocId, setActiveDocId] = useState(null); // Initially no doc selected
-    const [filterMode, setFilterMode] = useState('folder'); // 'folder' | 'doc'
+    const [activeFolderId, setActiveFolderId] = useState('folder-favorites');
+    const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
+
+    // Modal State
+    const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+    const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+
+    // Toast State
+    const [toastMessage, setToastMessage] = useState('');
+    const [isToastVisible, setIsToastVisible] = useState(false);
+
+    const showToast = (message) => {
+        setToastMessage(message);
+        setIsToastVisible(true);
+    };
 
     // --- Effects ---
     useEffect(() => {
@@ -139,7 +228,6 @@ const Docs = () => {
         localStorage.setItem('zen_docs', JSON.stringify(docs));
     }, [docs]);
 
-    // Set initial active doc when folder changes or on load
     useEffect(() => {
         if (!activeDocId && docs.length > 0) {
             const firstDocInFolder = docs.find(d => d.parentId === activeFolderId);
@@ -168,51 +256,43 @@ const Docs = () => {
     // --- Handlers ---
     const handleFolderClick = (folderId) => {
         setActiveFolderId(folderId);
-        setFilterMode('folder');
         setSearchQuery('');
         setIsEditing(false);
     };
 
     const handleDocClick = (docId) => {
         setActiveDocId(docId);
-        setFilterMode('doc');
         setIsEditing(false);
     };
 
-    const handleCreateFolder = () => {
-        if (!isAuthenticated) return;
-        const name = prompt("Enter folder name:");
-        if (name) {
-            const newFolder = {
-                id: `folder-${Date.now()}`,
-                title: name,
-                icon: 'folder',
-                iconColor: 'text-gray-400'
-            };
-            setFolders([...folders, newFolder]);
-            setActiveFolderId(newFolder.id);
-        }
+    const handleCreateFolder = (name) => {
+        const newFolder = {
+            id: `folder-${Date.now()}`,
+            title: name,
+            icon: 'folder',
+            iconColor: 'text-gray-400'
+        };
+        setFolders([...folders, newFolder]);
+        setActiveFolderId(newFolder.id);
+        showToast(`Folder "${name}" created!`);
     };
 
-    const handleCreateDoc = () => {
-        if (!isAuthenticated) return;
-        const title = prompt("Enter note title:");
-        if (title) {
-            const newDoc = {
-                id: `doc-${Date.now()}`,
-                parentId: activeFolderId,
-                title: title,
-                date: 'Just now',
-                tags: ['New'],
-                bg: 'https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=2070',
-                content: '<p class="lead">Start writing your thoughts here...</p>'
-            };
-            setDocs([...docs, newDoc]);
-            setActiveDocId(newDoc.id);
-            setEditTitle(newDoc.title);
-            setEditContent(newDoc.content);
-            setIsEditing(true);
-        }
+    const handleCreateDoc = (title) => {
+        const newDoc = {
+            id: `doc-${Date.now()}`,
+            parentId: activeFolderId,
+            title: title,
+            date: 'Just now',
+            tags: ['New'],
+            bg: 'https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=2070',
+            content: '<p class="lead">Start writing your thoughts here...</p>'
+        };
+        setDocs([...docs, newDoc]);
+        setActiveDocId(newDoc.id);
+        setEditTitle(newDoc.title);
+        setEditContent(newDoc.content);
+        setIsEditing(true);
+        showToast(`Note "${title}" created!`);
     };
 
     const startEditing = () => {
@@ -231,6 +311,7 @@ const Docs = () => {
         );
         setDocs(updatedDocs);
         setIsEditing(false);
+        showToast('Changes saved successfully!');
     };
 
     const cancelEdit = () => {
@@ -240,10 +321,12 @@ const Docs = () => {
     const handleDeleteDoc = () => {
         if (!isAuthenticated || !activeDoc) return;
         if (window.confirm(`Delete "${activeDoc.title}"?`)) {
+            const docTitle = activeDoc.title;
             const newDocs = docs.filter(d => d.id !== activeDocId);
             setDocs(newDocs);
             setActiveDocId(null);
             setIsEditing(false);
+            showToast(`Note "${docTitle}" deleted.`);
         }
     };
 
@@ -256,16 +339,43 @@ const Docs = () => {
             return;
         }
         if (window.confirm("Delete this folder?")) {
+            const folder = folders.find(f => f.id === folderId);
             const newFolders = folders.filter(f => f.id !== folderId);
             setFolders(newFolders);
             if (activeFolderId === folderId) {
                 setActiveFolderId(newFolders[0]?.id || null);
             }
+            showToast(`Folder "${folder?.title}" deleted.`);
         }
     };
 
     return (
         <>
+            {/* Modals */}
+            <InputModal
+                isOpen={isFolderModalOpen}
+                onClose={() => setIsFolderModalOpen(false)}
+                onSubmit={handleCreateFolder}
+                title="New Folder"
+                placeholder="Enter folder name..."
+                icon="create_new_folder"
+            />
+            <InputModal
+                isOpen={isNoteModalOpen}
+                onClose={() => setIsNoteModalOpen(false)}
+                onSubmit={handleCreateDoc}
+                title="New Note"
+                placeholder="Enter note title..."
+                icon="note_add"
+            />
+
+            {/* Toast Notification */}
+            <Toast
+                message={toastMessage}
+                isVisible={isToastVisible}
+                onClose={() => setIsToastVisible(false)}
+            />
+
             <aside className="w-64 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 transition-width duration-300 md:w-64 hidden md:flex" id="sidebar-folders">
                 <div className="p-6">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2">Workspace</h3>
@@ -295,7 +405,7 @@ const Docs = () => {
                 <div className="mt-auto p-6 border-t border-white/10">
                     {isAuthenticated && (
                         <button
-                            onClick={handleCreateFolder}
+                            onClick={() => setIsFolderModalOpen(true)}
                             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#1d2624]/20 text-sm font-medium hover:bg-white/20 transition-colors"
                         >
                             <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
@@ -310,7 +420,7 @@ const Docs = () => {
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
                         {isAuthenticated && (
-                            <button onClick={handleCreateDoc} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
+                            <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
                                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
                             </button>
                         )}

@@ -738,10 +738,10 @@ const Docs = () => {
                                 </button>
                                 <button
                                     onClick={() => handleFolderClick(folder.id)}
-                                    className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium text-left transition-colors min-w-0 ${activeFolderId === folder.id ? 'bg-white/30 text-[#1d2624]' : 'hover:bg-white/15 text-[#1d2624]/70'}`}
+                                    className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium text-left transition-colors min-w-0 w-full ${activeFolderId === folder.id ? 'bg-white/30 text-[#1d2624]' : 'hover:bg-white/15 text-[#1d2624]/70'}`}
                                 >
                                     <span className={`material-symbols-outlined text-[18px] ${folder.iconColor} shrink-0`}>{folder.icon}</span>
-                                    <span className="flex-1 truncate">{folder.title}</span>
+                                    <span className="flex-1 truncate inline-block min-w-0">{folder.title}</span>
                                     {isAuthenticated && (
                                         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
                                             <span
@@ -771,10 +771,10 @@ const Docs = () => {
                         <div style={{ width: `${depth * 12 + 24}px` }} className="shrink-0" />
                         <button
                             onClick={() => { setActiveDocId(doc.id); }}
-                            className={`flex-1 flex items-center gap-2 px-2 py-1.2 rounded-lg text-sm text-left transition-colors min-w-0 ${activeDocId === doc.id ? 'bg-white/30 text-[#1d2624] font-medium' : 'hover:bg-white/15 text-[#1d2624]/60'}`}
+                            className={`flex-1 flex items-center gap-2 px-2 py-1.2 rounded-lg text-sm text-left transition-colors min-w-0 w-full ${activeDocId === doc.id ? 'bg-white/30 text-[#1d2624] font-medium' : 'hover:bg-white/15 text-[#1d2624]/60'}`}
                         >
                             <span className="material-symbols-outlined text-[16px] text-amber-600/70 shrink-0">{doc.icon || 'description'}</span>
-                            <span className="flex-1 truncate">{doc.title}</span>
+                            <span className="flex-1 truncate inline-block min-w-0">{doc.title}</span>
                             {isAuthenticated && (
                                 <span
                                     onClick={(e) => openContextMenu(e, doc.id, 'doc')}
@@ -909,11 +909,11 @@ const Docs = () => {
                                 onClick={() => handleDocClick(doc.id)}
                                 className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white shadow-sm border-primary/10' : 'hover:bg-white/40 border-transparent'}`}
                             >
-                                <div className="flex justify-between items-start mb-1">
-                                    <h4 className={`font-bold text-sm line-clamp-1 ${activeDocId === doc.id ? 'text-[#1d2624]' : 'text-[#1d2624]/80'}`}>{doc.title}</h4>
-                                    <span className="text-[10px] text-[#1d2624]/30 whitespace-nowrap ml-2">{doc.date}</span>
+                                <div className="flex justify-between items-start mb-1 min-w-0">
+                                    <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624]' : 'text-[#1d2624]/80'}`}>{doc.title}</h4>
+                                    <span className="text-[10px] text-[#1d2624]/30 whitespace-nowrap ml-2 shrink-0">{doc.date}</span>
                                 </div>
-                                <p className="text-xs text-[#1d2624]/60 line-clamp-2 mb-3">
+                                <p className="text-xs text-[#1d2624]/60 line-clamp-2 mb-3 break-words">
                                     {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
                                 </p>
                                 <div className="flex items-center gap-2">
@@ -982,8 +982,8 @@ const Docs = () => {
                                 <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                             </div>
                         ) : (
-                            <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out]">
-                                <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15]">{activeDoc.title}</h1>
+                            <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden">
+                                <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words">{activeDoc.title}</h1>
                                 <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
                                     <div className="flex -space-x-2">
                                         <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
@@ -992,7 +992,7 @@ const Docs = () => {
                                     <span className="text-sm text-[#1d2624]/40 dark:text-white/40 font-medium">Collaborating with the Team</span>
                                 </div>
                                 <div
-                                    className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
+                                    className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
                                     dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                 />
                             </div>

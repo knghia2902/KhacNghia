@@ -6,10 +6,12 @@ const Header = () => {
     const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
-    // Get display name from email (e.g. "alex" from "alex@example.com")
-    const displayName = user?.email ? user.email.split('@')[0] : 'Guest';
-    // Capitalize first letter
-    const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+    // Get display name from metadata or fallback to email
+    const displayName = user?.user_metadata?.display_name || (user?.email ? user.email.split('@')[0] : 'Guest');
+    // Capitalize first letter if it's from email/fallback (optional, but good for consistency)
+    const formattedName = user?.user_metadata?.display_name
+        ? displayName
+        : displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
     return (
         <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-6 md:px-12 md:py-8">

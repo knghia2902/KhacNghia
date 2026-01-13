@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -37,7 +38,43 @@ const INITIAL_TOOLS = [
     }
 ];
 
-const ToolCard = ({ tool, onLaunch, isAdd = false, onClick }) => {
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Delete', cancelText = 'Cancel' }) => {
+    if (!isOpen) return null;
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-sm bg-white dark:bg-[#1d2624] rounded-2xl shadow-2xl p-6 animate-[fadeIn_0.15s_ease-out]">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="size-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-red-500 text-xl">warning</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">{title}</h3>
+                </div>
+                <p className="text-sm text-[#1d2624]/70 dark:text-white/70 mb-6">{message}</p>
+                <div className="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-[#1d2624]/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors"
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
+const ToolCard = ({ tool, onLaunch, isAdd = false, onClick, onEdit, onDelete, enableActions }) => {
     if (isAdd) {
         return (
             <div onClick={onClick} className="group relative flex flex-col items-center justify-center p-6 h-64 bg-white/20 dark:bg-white/5 backdrop-blur-md border border-dashed border-white/40 dark:border-white/20 rounded-[2rem] hover:bg-white/40 dark:hover:bg-white/10 transition-all duration-300 cursor-pointer">
@@ -54,9 +91,21 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick }) => {
                 <div className={`size-12 rounded-2xl ${tool.icon_bg || tool.iconBg} flex items-center justify-center text-[#1d2624] dark:text-white border border-white/50 dark:border-white/5 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                     <span className="material-symbols-outlined !text-[28px] font-light">{tool.icon}</span>
                 </div>
-                <button className="text-[#1d2624]/40 dark:text-white/40 hover:text-secondary transition-colors" title="Quick Favorite">
-                    <span className="material-symbols-outlined !text-[20px]">star</span>
-                </button>
+                <div className="flex gap-2">
+                    {enableActions && (
+                        <>
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(tool); }} className="text-[#1d2624]/40 dark:text-white/40 hover:text-blue-500 transition-colors" title="Edit">
+                                <span className="material-symbols-outlined !text-[20px]">edit</span>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(tool); }} className="text-[#1d2624]/40 dark:text-white/40 hover:text-red-500 transition-colors" title="Delete">
+                                <span className="material-symbols-outlined !text-[20px]">delete</span>
+                            </button>
+                        </>
+                    )}
+                    <button className="text-[#1d2624]/40 dark:text-white/40 hover:text-secondary transition-colors" title="Quick Favorite">
+                        <span className="material-symbols-outlined !text-[20px]">star</span>
+                    </button>
+                </div>
             </div>
             <div>
                 <h3 className="text-xl font-bold text-[#1d2624] dark:text-white">{tool.title}</h3>
@@ -72,15 +121,27 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick }) => {
     );
 };
 
-const AddToolModal = ({ isOpen, onClose, onAdd }) => {
+const AddToolModal = ({ isOpen, onClose, onAdd, initialData = null }) => {
     const [formData, setFormData] = useState({ title: '', desc: '', icon: 'extension', link: '' });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                title: initialData.title,
+                desc: initialData.description || initialData.desc || '',
+                icon: initialData.icon,
+                link: initialData.link || ''
+            });
+        } else {
+            setFormData({ title: '', desc: '', icon: 'extension', link: '' });
+        }
+    }, [initialData, isOpen]);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
         onAdd(formData);
-        setFormData({ title: '', desc: '', icon: 'extension', link: '' });
         onClose();
     };
 
@@ -89,7 +150,7 @@ const AddToolModal = ({ isOpen, onClose, onAdd }) => {
             <div onClick={onClose} className="absolute inset-0"></div>
             <div className="relative w-full max-w-md bg-[#fcfdfd] dark:bg-[#18181b] rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 dark:border-white/10">
                 <div className="p-8">
-                    <h2 className="text-2xl font-bold font-display text-[#1d2624] dark:text-white mb-6">Add New Tool</h2>
+                    <h2 className="text-2xl font-bold font-display text-[#1d2624] dark:text-white mb-6">{initialData ? 'Edit Tool' : 'Add New Tool'}</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Tool Name</label>
@@ -137,7 +198,7 @@ const AddToolModal = ({ isOpen, onClose, onAdd }) => {
                         </div>
                         <div className="pt-4 flex gap-3">
                             <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-sm text-[#1d2624]/60 dark:text-white/60 hover:bg-[#1d2624]/5 dark:hover:bg-white/5 transition-colors">Cancel</button>
-                            <button type="submit" className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">Add Tool</button>
+                            <button type="submit" className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">{initialData ? 'Save Changes' : 'Add Tool'}</button>
                         </div>
                     </form>
                 </div>
@@ -150,6 +211,8 @@ const Tools = () => {
     const [tools, setTools] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTool, setEditingTool] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, toolId: null, title: '', message: '' });
     const { isAuthenticated } = useAuth(); // Destructure for cleaner access
 
     // Fetch tools from Supabase
@@ -205,23 +268,72 @@ const Tools = () => {
         else setTools(data);
     };
 
-    const handleAddTool = async (newTool) => {
+    const handleSaveTool = async (formData) => {
         if (!isAuthenticated) return;
 
-        const toolToInsert = {
-            title: newTool.title,
-            description: newTool.desc, // Map 'desc' from form to 'description' in DB
-            icon: newTool.icon,
-            icon_bg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent", // Default style
-            link: newTool.link
-        };
+        if (editingTool) {
+            // Update existing tool
+            const updates = {
+                title: formData.title,
+                description: formData.desc,
+                icon: formData.icon,
+                link: formData.link
+            };
 
-        const { error } = await supabase.from('tools').insert([toolToInsert]);
-        if (error) {
-            console.error('Error adding tool:', error);
-            alert('Failed to add tool');
+            const { error } = await supabase.from('tools').update(updates).eq('id', editingTool.id);
+            if (error) {
+                console.error('Error updating tool:', error);
+                alert('Failed to update tool: ' + error.message);
+            } else {
+                // Optimistic update
+                setTools(prev => prev.map(t => t.id === editingTool.id ? { ...t, ...updates } : t));
+            }
+        } else {
+            // Add new tool
+            const toolToInsert = {
+                title: formData.title,
+                description: formData.desc,
+                icon: formData.icon,
+                icon_bg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent",
+                link: formData.link
+            };
+
+            const { error } = await supabase.from('tools').insert([toolToInsert]);
+            if (error) {
+                console.error('Error adding tool:', error);
+                alert('Failed to add tool: ' + error.message);
+            }
         }
-        // State update handled by subscription
+        setIsModalOpen(false);
+        setEditingTool(null);
+    };
+
+    const confirmDelete = (tool) => {
+        setConfirmModal({
+            isOpen: true,
+            toolId: tool.id,
+            title: 'Delete Tool',
+            message: `Are you sure you want to delete "${tool.title}"? This action cannot be undone.`
+        });
+    };
+
+    const handleDeleteTool = async () => {
+        if (!confirmModal.toolId) return;
+
+        const { error } = await supabase.from('tools').delete().eq('id', confirmModal.toolId);
+        if (error) {
+            console.error('Error deleting tool:', error);
+            alert('Failed to delete tool: ' + error.message);
+        } else {
+            // Optimistic update
+            setTools(prev => prev.filter(t => t.id !== confirmModal.toolId));
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+    };
+
+    const openEditModal = (tool) => {
+        setEditingTool(tool);
+        setIsModalOpen(true);
     };
 
     const handleLaunch = (tool) => {
@@ -263,17 +375,33 @@ const Tools = () => {
             <div className="flex-1 overflow-y-auto px-8 pt-4 custom-scrollbar pb-32">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {filteredTools.map(tool => (
-                        <ToolCard key={tool.id} tool={tool} onLaunch={handleLaunch} />
+                        <ToolCard
+                            key={tool.id}
+                            tool={tool}
+                            onLaunch={handleLaunch}
+                            enableActions={isAuthenticated}
+                            onEdit={openEditModal}
+                            onDelete={confirmDelete}
+                        />
                     ))}
                     {/* Add Tool Card - Only for Admin */}
-                    {isAuthenticated && <ToolCard isAdd onClick={() => setIsModalOpen(true)} />}
+                    {isAuthenticated && <ToolCard isAdd onClick={() => { setEditingTool(null); setIsModalOpen(true); }} />}
                 </div>
             </div>
 
             <AddToolModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onAdd={handleAddTool}
+                onAdd={handleSaveTool}
+                initialData={editingTool}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={handleDeleteTool}
+                title={confirmModal.title}
+                message={confirmModal.message}
             />
         </div>
     );

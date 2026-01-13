@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
@@ -53,12 +54,174 @@ const INITIAL_IMAGES = [
     }
 ];
 
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Delete', cancelText = 'Cancel' }) => {
+    if (!isOpen) return null;
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-sm bg-white dark:bg-[#1d2624] rounded-2xl shadow-2xl p-6 animate-[fadeIn_0.15s_ease-out]">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="size-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-red-500 text-xl">warning</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">{title}</h3>
+                </div>
+                <p className="text-sm text-[#1d2624]/70 dark:text-white/70 mb-6">{message}</p>
+                <div className="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-[#1d2624]/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors"
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
+const ImageModal = ({ isOpen, onClose, onSave, initialData = null }) => {
+    const [formData, setFormData] = useState({
+        title: '',
+        category: '',
+        url: '',
+        description: '',
+        tags: '',
+        resolution: ''
+    });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                title: initialData.title,
+                category: initialData.category,
+                url: initialData.url,
+                description: initialData.description || initialData.desc || '',
+                tags: initialData.tags ? initialData.tags.join(', ') : '',
+                resolution: initialData.resolution || ''
+            });
+        } else {
+            setFormData({
+                title: '',
+                category: '',
+                url: '',
+                description: '',
+                tags: '',
+                resolution: ''
+            });
+        }
+    }, [initialData, isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({
+            ...formData,
+            tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+        });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div onClick={onClose} className="absolute inset-0"></div>
+            <div className="relative w-full max-w-md bg-[#fcfdfd] dark:bg-[#18181b] rounded-[2rem] shadow-2xl overflow-hidden border border-white/20 dark:border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div className="p-8">
+                    <h2 className="text-2xl font-bold font-display text-[#1d2624] dark:text-white mb-6">{initialData ? 'Edit Image' : 'Add New Image'}</h2>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Title</label>
+                            <input
+                                autoFocus
+                                type="text"
+                                required
+                                className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Image URL</label>
+                            <input
+                                type="url"
+                                required
+                                className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                value={formData.url}
+                                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Category</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    value={formData.category}
+                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Resolution</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. 1920x1080"
+                                    className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    value={formData.resolution}
+                                    onChange={(e) => setFormData({ ...formData, resolution: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Description</label>
+                            <textarea
+                                className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[80px]"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Tags (comma separated)</label>
+                            <input
+                                type="text"
+                                placeholder="#nature, #dark"
+                                className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                value={formData.tags}
+                                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                            />
+                        </div>
+                        <div className="pt-4 flex gap-3">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-bold text-sm text-[#1d2624]/60 dark:text-white/60 hover:bg-[#1d2624]/5 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                            <button type="submit" className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">{initialData ? 'Save Changes' : 'Add Image'}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Images = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [likedImages, setLikedImages] = useState(new Set());
     const [images, setImages] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingImage, setEditingImage] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, imageId: null, title: '', message: '' });
+    const { isAuthenticated } = useAuth();
 
     // Fetch images from Supabase
     useEffect(() => {
@@ -128,6 +291,68 @@ const Images = () => {
         window.open(url, '_blank');
     };
 
+    const handleSaveImage = async (formData) => {
+        if (!isAuthenticated) return;
+
+        if (editingImage) {
+            const updates = { ...formData };
+            const { error } = await supabase.from('gallery_images').update(updates).eq('id', editingImage.id);
+            if (error) {
+                console.error('Error updating image:', error);
+                alert('Failed to update image: ' + error.message);
+            } else {
+                setImages(prev => prev.map(img => img.id === editingImage.id ? { ...img, ...updates } : img));
+            }
+        } else {
+            const { error } = await supabase.from('gallery_images').insert([formData]);
+            if (error) {
+                console.error('Error adding image:', error);
+                alert('Failed to add image: ' + error.message);
+            } else {
+                // Subscription handles live update, but manual push is ok too. relying on subscription is better if configured.
+                // Re-fetch or let subscription handle it. 
+                // Images.jsx doesn't have subscription yet. Let's add subscription or just re-fetch.
+                // For simplicity, let's fetch.
+                const { data } = await supabase.from('gallery_images').select('*').order('created_at', { ascending: true });
+                if (data) setImages(data);
+            }
+        }
+        setIsModalOpen(false);
+        setEditingImage(null);
+    };
+
+    const confirmDelete = (e, image) => {
+        e.stopPropagation();
+        setConfirmModal({
+            isOpen: true,
+            imageId: image.id,
+            title: 'Delete Image',
+            message: `Are you sure you want to delete "${image.title}"?`
+        });
+    };
+
+    const handleDeleteImage = async () => {
+        if (!confirmModal.imageId) return;
+
+        const { error } = await supabase.from('gallery_images').delete().eq('id', confirmModal.imageId);
+        if (error) {
+            console.error('Error deleting image:', error);
+            alert('Failed to delete image: ' + error.message);
+        } else {
+            setImages(prev => prev.filter(img => img.id !== confirmModal.imageId));
+            if (selectedImage && selectedImage.id === confirmModal.imageId) {
+                setSelectedImage(null);
+            }
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+    };
+
+    const openEditModal = (e, image) => {
+        e.stopPropagation();
+        setEditingImage(image);
+        setIsModalOpen(true);
+    };
+
     return (
         <>
             <div className={`flex flex-col h-full transition-all duration-500 ${selectedImage ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
@@ -140,15 +365,26 @@ const Images = () => {
                             A curated collection of calm. Explore, collect, and find your focus.
                         </p>
                     </div>
-                    <div className="relative w-full md:w-64 group/search">
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 text-[20px]">search</span>
-                        <input
-                            className="w-full pl-11 pr-4 py-2 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-[#1d2624]/40"
-                            placeholder="Search inspiration..."
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                    <div className="relative w-full md:w-64 group/search flex gap-2">
+                        <div className="flex-1 relative">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 text-[20px]">search</span>
+                            <input
+                                className="w-full pl-11 pr-4 py-2 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-[#1d2624]/40"
+                                placeholder="Search inspiration..."
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        {isAuthenticated && (
+                            <button
+                                onClick={() => { setEditingImage(null); setIsModalOpen(true); }}
+                                className="size-10 flex items-center justify-center rounded-2xl bg-[#1d2624] dark:bg-white text-white dark:text-black shadow-lg hover:scale-105 transition-transform"
+                                title="Add Image"
+                            >
+                                <span className="material-symbols-outlined">add</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -178,17 +414,23 @@ const Images = () => {
                                 >
                                     <span className={`material-symbols-outlined text-[16px] transition-colors ${likedImages.has(img.id) ? 'text-secondary-dark fill-current font-variation-settings-fill' : 'text-white'}`}>favorite</span>
                                 </div>
-                                {useAuth().isAuthenticated && (
-                                    <button
-                                        className="absolute top-3 left-3 size-8 flex items-center justify-center bg-red-500/80 backdrop-blur-md rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 hover:bg-red-600 hover:scale-110 z-10 text-white"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Handle delete via Supabase if needed in future
-                                            alert('Delete functionality would require Supabase implementation');
-                                        }}
-                                    >
-                                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                                    </button>
+                                {isAuthenticated && (
+                                    <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <button
+                                            className="size-8 flex items-center justify-center bg-blue-500/80 backdrop-blur-md rounded-full text-white hover:bg-blue-600 hover:scale-110 transition-all"
+                                            onClick={(e) => openEditModal(e, img)}
+                                            title="Edit"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                                        </button>
+                                        <button
+                                            className="size-8 flex items-center justify-center bg-red-500/80 backdrop-blur-md rounded-full text-white hover:bg-red-600 hover:scale-110 transition-all"
+                                            onClick={(e) => confirmDelete(e, img)}
+                                            title="Delete"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                                        </button>
+                                    </div>
                                 )}
                                 <img src={img.url} alt={img.title} className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
@@ -264,6 +506,21 @@ const Images = () => {
                     </div>
                 </div>
             )}
+
+            <ImageModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveImage}
+                initialData={editingImage}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={handleDeleteImage}
+                title={confirmModal.title}
+                message={confirmModal.message}
+            />
         </>
     );
 };

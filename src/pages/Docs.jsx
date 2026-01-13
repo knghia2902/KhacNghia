@@ -1139,8 +1139,8 @@ const Docs = () => {
                     </div>
                 </div>
 
-                <section className="w-72 border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
-                    <div className="p-6 space-y-4">
+                <section className="w-72 min-w-[18rem] max-w-[18rem] border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col shrink-0 bg-white/10 hidden lg:flex" id="note-list">
+                    <div className="p-4 pt-8 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
                             {isAuthenticated && (
@@ -1276,8 +1276,8 @@ const Docs = () => {
                                     <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
-                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
-                                    <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
+                                <div className="w-full max-w-full py-4 pt-8 px-6 md:px-12 space-y-4 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
+                                    <h1 className="text-4xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-4 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
                                     <div
                                         className="prose prose-slate prose-lg max-w-none dark:prose-invert text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
                                         dangerouslySetInnerHTML={{ __html: activeDoc.content }}

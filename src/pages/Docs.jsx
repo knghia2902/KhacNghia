@@ -1203,7 +1203,7 @@ const Docs = () => {
                         <span className="material-symbols-outlined">menu</span>
                     </button>
                     {activeDoc && (
-                        <div className="h-10 px-6 md:px-8 flex items-center justify-between shrink-0 z-10">
+                        <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
                             <span className="text-sm font-medium text-[#1d2624]/40">
                                 {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
                             </span>

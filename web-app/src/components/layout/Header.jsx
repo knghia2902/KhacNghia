@@ -5,9 +5,9 @@ const Header = () => {
         <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-6 md:px-12 md:py-8">
             <div className="flex items-center gap-3">
                 <div className="size-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/10 text-primary-dark dark:text-primary shadow-sm">
-                    <span className="material-symbols-outlined">grid_view</span>
+                    <span className="material-symbols-outlined">spa</span>
                 </div>
-                <h2 className="text-2xl font-extrabold tracking-tight text-gradient-pastel hidden md:block">Khắc Nghĩa</h2>
+                <h2 className="text-xl font-extrabold tracking-tight hidden md:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Khắc Nghĩa</h2>
             </div>
             <div className="flex items-center gap-6">
                 <button className="relative p-2 rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group">

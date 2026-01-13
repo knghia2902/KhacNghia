@@ -1,108 +1,72 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
-    { id: 'folder-favorites', title: 'Favorites', icon: 'star', iconColor: 'text-primary', parentId: null },
-    { id: 'folder-projects', title: 'Projects', icon: 'folder', iconColor: 'text-secondary', parentId: null },
-    { id: 'folder-personal', title: 'Personal', icon: 'folder', iconColor: 'text-gray-400', parentId: null }
+    { id: 'folder-docs', title: 'Docs', icon: 'folder', iconColor: 'text-amber-500', parentId: null },
+    { id: 'folder-proxmox', title: 'Proxmox', icon: 'dns', iconColor: 'text-gray-500', parentId: 'folder-docs' },
+    { id: 'folder-nextcloud', title: 'Nextcloud', icon: 'cloud', iconColor: 'text-blue-500', parentId: 'folder-docs' },
+    { id: 'folder-test', title: 'Test Folder', icon: 'folder_open', iconColor: 'text-gray-400', parentId: null }
 ];
 
 const SEED_DOCS = [
     {
         id: 'doc-zen',
-        parentId: 'folder-favorites',
+        parentId: 'folder-docs',
         title: 'Zen Workspace Guide',
         date: '2m ago',
         tags: ['Guide', 'Zen'],
         bg: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBpKXDKChxqUovbkTSPfoSPbbFMA-n0w5_gdW5x-0yx3ZBWs0nD1JFWI-6HFeEuCGrgbGPkrt8NpTfFcSCzJwOLUQMN5nDZArcfIJoVgyeXh15nbQguX_E2wtn0vVm0Dc15OChBD_P4Scwa5OQ3alHmrE3wSPjPsCU36kDFQiPMvo6WtLm0Ltear1ksNwD4C1SWiRYt-8FHbc2PH8OB6X8PsNzyxM9s7CSAuh8yfHU2tnQ0gGY7BwRMyqn292UbmSB4hEY0N6xMtiwN',
         content: `
-            <p class="lead">This document outlines the fundamental design language for Khắc Nghĩa workspace, ensuring consistent visual storytelling across all digital touchpoints.</p>
+            <p class="lead">This document outlines the fundamental design language for Khắc Nghĩa workspace.</p>
             <h2>1. Core Philosophy</h2>
-            <p>Minimalism isn't about the absence of content, but the presence of focus. In a data-rich environment, we prioritize information hierarchy using generous whitespace and subtle elevation. Our goal is to reduce cognitive load while providing all necessary tools for complex document management.</p>
-            <h2>2. The Zen Immersive Style</h2>
-            <p>The immersive style uses frosted glass (glassmorphism) as a metaphor for clarity. Backgrounds should feel expansive, utilizing soft gradients that reflect a calming natural environment. Every interaction should feel tactile and weighted, yet fluid.</p>
-            <div class="callout">
-                <h4>Key Takeaway</h4>
-                <p>Functionality follows serenity. If a feature disrupts the visual calm, it must be reimagined or tucked away behind thoughtful progressive disclosure.</p>
-            </div>
-            <h2>3. Content Structuring</h2>
-            <p>Document hierarchy should follow a logical flow:</p>
-            <ul>
-                <li><strong>H1</strong> for primary topics only.</li>
-                <li><strong>H2-H3</strong> for sectional breakdowns.</li>
-                <li><strong>Callouts</strong> for mission-critical observations.</li>
-            </ul>
+            <p>Minimalism isn't about the absence of content, but the presence of focus.</p>
+        `
+    },
+    {
+        id: 'doc-proxmox-config',
+        parentId: 'folder-proxmox',
+        title: 'Cấu hình Proxmox với Ceph Storage',
+        date: '1d ago',
+        tags: ['SysAdmin', 'Storage'],
+        bg: 'https://images.unsplash.com/photo-1558494949-ef526b0042a0?auto=format&fit=crop&q=80&w=2070',
+        content: `
+            <p class="lead">Hướng dẫn chi tiết cấu hình Ceph trên Proxmox VE 8.1.</p>
+        `
+    },
+    {
+        id: 'doc-proxmox-ha',
+        parentId: 'folder-proxmox',
+        title: 'HA Proxmox Cluster',
+        date: '5h ago',
+        tags: ['HA', 'Cluster'],
+        bg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2070',
+        content: `
+            <p class="lead">Thiết lập High Availability cho Cluster 3 node.</p>
+        `
+    },
+    {
+        id: 'doc-nextcloud',
+        parentId: 'folder-nextcloud',
+        title: 'Cấu hình NextCloud',
+        date: '1w ago',
+        tags: ['Cloud', 'Self-hosted'],
+        bg: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=2070',
+        content: `
+            <p class="lead">Tối ưu hiệu năng Nextcloud với Redis và PHP-FPM.</p>
         `
     },
     {
         id: 'doc-brand',
-        parentId: 'folder-favorites',
+        parentId: 'folder-docs',
         title: 'Brand Guidelines',
-        date: '1d ago',
+        date: '2d ago',
         tags: ['Design', 'Brand'],
         bg: 'https://images.unsplash.com/photo-1626785774573-4b79931bfd95?auto=format&fit=crop&q=80&w=2070',
         content: `
-            <p class="lead">Our brand identity is rooted in simplicity and elegance. This guide ensures that our visual communication remains consistent across all channels.</p>
-            <h2>1. Logo Usage</h2>
-            <p>The logo should always be used with sufficient clear space. Do not distort, colorize, or rotate the logo in unauthorized ways.</p>
-            <h2>2. Color Palette</h2>
-            <p>Our primary palette consists of soothing pastels and deep, grounding neutrals. These colors work together to create a sense of balance and harmony.</p>
-            <ul>
-                <li><strong>Mint Soft</strong>: Represents growth and calm.</li>
-                <li><strong>Peach Soft</strong>: Adds warmth and humanity.</li>
-            </ul>
-        `
-    },
-    {
-        id: 'doc-roadmap',
-        parentId: 'folder-projects',
-        title: 'Q1 Roadmap 2026',
-        date: '5h ago',
-        tags: ['Planning'],
-        bg: 'https://images.unsplash.com/photo-1512418490979-92798cec1380?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Focus for Q1 is stabilization and performance optimization of the core platform.</p>
-            <h2>January: Foundation</h2>
-            <p>Complete the core architecture migration and ensure 99.9% uptime for the new API services.</p>
-            <h2>February: Features</h2>
-            <p>Roll out the new "Zen Mode" dashboard to beta testers. Collect feedback and iterate on visual density.</p>
-            <h2>March: Scale</h2>
-            <p>Open public registration and launch the marketing campaign "Find Your Focus".</p>
-        `
-    },
-    {
-        id: 'doc-meeting',
-        parentId: 'folder-projects',
-        title: 'Sprint Retro Q4',
-        date: 'Oct 24',
-        tags: ['Agile'],
-        bg: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Reviewing the major milestones achieved during the Zen launch phase.</p>
-            <h2>What went well</h2>
-            <ul>
-                <li>Team velocity increased by 15%.</li>
-                <li>Design system adoption reached 100%.</li>
-            </ul>
-            <h2>What can improve</h2>
-            <p>QA turnaround time was slower than expected due to device fragmentation.</p>
-        `
-    },
-    {
-        id: 'doc-ideas',
-        parentId: 'folder-personal',
-        title: 'App Ideas',
-        date: '1w ago',
-        tags: ['Draft'],
-        bg: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Rough sketches and sticky notes for future modules.</p>
-            <h2>1. Focus Timer</h2>
-            <p>A simple Pomodoro timer integrated directly into the sidebar.</p>
-            <h2>2. Ambient Sound</h2>
-            <p>Background noise generator (rain, cafe, forest) to boost concentration.</p>
+            <p class="lead">Brand identity guide.</p>
         `
     }
 ];
@@ -122,12 +86,25 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, itemType }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, itemType, isRootFolder }) => {
+    const menuRef = React.useRef(null);
+
     useEffect(() => {
         if (isOpen) {
-            const handleClickOutside = () => onClose();
-            setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
-            return () => document.removeEventListener('click', handleClickOutside);
+            const handleClickOutside = (e) => {
+                // Chỉ đóng nếu click BÊN NGOÀI menu
+                if (menuRef.current && !menuRef.current.contains(e.target)) {
+                    onClose();
+                }
+            };
+            // Delay để tránh trigger ngay lập tức
+            const timer = setTimeout(() => {
+                document.addEventListener('mousedown', handleClickOutside);
+            }, 10);
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
         }
     }, [isOpen, onClose]);
 
@@ -135,19 +112,35 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
 
     const menuItems = [
         { icon: 'edit', label: 'Đổi tên', action: onRename },
+        { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
         { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
     ];
 
-    if (itemType === 'folder' && onAddSubfolder) {
+    // Chỉ cho phép tạo subfolder trong ROOT folder (parentId === null)
+    // Không cho tạo trong subfolder (tối đa 2 cấp)
+    if (itemType === 'folder' && isRootFolder && onAddSubfolder) {
         menuItems.splice(1, 0, { icon: 'create_new_folder', label: 'Thêm folder con', action: onAddSubfolder });
     }
 
-    return (
+    // Smart positioning - đảm bảo menu không bị cắt ở cạnh màn hình
+    const menuWidth = 200;
+    const menuHeight = 250;
+    const adjustedX = Math.min(Math.max(10, position.x), window.innerWidth - menuWidth - 20);
+    const adjustedY = Math.min(Math.max(10, position.y), window.innerHeight - menuHeight - 20);
+
+    const handleItemClick = (action) => {
+        if (action) {
+            action();
+        }
+    };
+
+    // Render vào document.body bằng Portal để tránh vấn đề vị trí với parent container
+    return ReactDOM.createPortal(
         <div
+            ref={menuRef}
             className="fixed z-[100] min-w-48 py-2 bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-[#1d2624]/10 animate-[fadeIn_0.15s_ease-out]"
-            style={{ top: position.y, left: position.x }}
-            onClick={(e) => e.stopPropagation()}
+            style={{ top: adjustedY, left: adjustedX }}
         >
             <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 border-b border-[#1d2624]/5 mb-1">
                 {itemType === 'folder' ? 'Folder' : 'Trang'}
@@ -155,14 +148,15 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
             {menuItems.map((item, idx) => (
                 <button
                     key={idx}
-                    onClick={item.action}
+                    onClick={() => handleItemClick(item.action)}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${item.danger ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-[#1d2624]/5'}`}
                 >
                     <span className={`material-symbols-outlined text-[18px] ${item.danger ? 'text-red-400' : 'text-[#1d2624]/50'}`}>{item.icon}</span>
                     <span>{item.label}</span>
                 </button>
             ))}
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -274,6 +268,54 @@ const Toast = ({ message, isVisible, onClose }) => {
     );
 };
 
+// --- Confirm Modal Component ---
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Xóa', cancelText = 'Hủy' }) => {
+    if (!isOpen) return null;
+
+    const handleConfirm = () => {
+        console.log('[DEBUG] ConfirmModal - Confirm clicked');
+        onConfirm();
+        onClose();
+    };
+
+    const handleCancel = () => {
+        console.log('[DEBUG] ConfirmModal - Cancel clicked');
+        onClose();
+    };
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel}></div>
+            <div className="relative w-full max-w-sm bg-white dark:bg-[#1d2624] rounded-2xl shadow-2xl p-6 animate-[fadeIn_0.15s_ease-out]">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="size-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-red-500 text-xl">warning</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">{title}</h3>
+                </div>
+                <p className="text-sm text-[#1d2624]/70 dark:text-white/70 mb-6">{message}</p>
+                <div className="flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="px-4 py-2 rounded-lg text-sm font-medium text-[#1d2624]/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleConfirm}
+                        className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors"
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 // --- Modal Component ---
 const InputModal = ({ isOpen, onClose, onSubmit, title, placeholder, icon }) => {
     const [inputValue, setInputValue] = useState('');
@@ -329,6 +371,64 @@ const InputModal = ({ isOpen, onClose, onSubmit, title, placeholder, icon }) => 
     );
 };
 
+// --- Move Note Modal ---
+const MoveNoteModal = ({ isOpen, onClose, onSubmit, folders, currentParentId, itemType }) => {
+    const [selectedFolderId, setSelectedFolderId] = useState(null);
+
+    const handleSubmit = () => {
+        if (selectedFolderId) {
+            onSubmit(selectedFolderId);
+            onClose();
+        }
+    };
+
+    if (!isOpen) return null;
+
+    // Filter folders:
+    // - Nếu di chuyển FOLDER: chỉ hiển thị ROOT folders (parentId === null) để giữ giới hạn 2 cấp
+    // - Nếu di chuyển DOC: hiển thị tất cả folders
+    let availableFolders = folders.filter(f => f.id !== currentParentId);
+    if (itemType === 'folder') {
+        // Chỉ cho di chuyển folder vào root folders
+        availableFolders = availableFolders.filter(f => f.parentId === null);
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-md bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 animate-[fadeIn_0.2s_ease-out]">
+                <h2 className="text-lg font-bold text-[#1d2624] dark:text-white mb-4">Di chuyển tới...</h2>
+
+                <div className="max-h-60 overflow-y-auto mb-6 bg-[#1d2624]/5 rounded-xl p-2 min-h-[100px]">
+                    {availableFolders.length === 0 ? (
+                        <div className="text-center py-8 text-[#1d2624]/40 text-sm">Không có thư mục nào khác</div>
+                    ) : (
+                        <div className="space-y-1">
+                            {availableFolders.map(folder => (
+                                <button
+                                    key={folder.id}
+                                    onClick={() => setSelectedFolderId(folder.id)}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectedFolderId === folder.id ? 'bg-primary/10 text-primary font-bold ring-1 ring-primary/30' : 'hover:bg-black/5 dark:hover:bg-white/10 text-[#1d2624] dark:text-white'}`}
+                                >
+                                    <span className={`material-symbols-outlined text-[20px] ${folder.iconColor || 'opacity-70'}`}>{folder.icon || 'folder'}</span>
+                                    <span className="text-sm">{folder.title}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#1d2624]/20 text-[#1d2624]/60 font-semibold hover:bg-white/50 transition-colors">Hủy</button>
+                    <button onClick={handleSubmit} disabled={!selectedFolderId} className="flex-1 py-2.5 rounded-xl bg-[#1d2624] text-white font-semibold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        Di chuyển
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const Docs = () => {
     const { isAuthenticated } = useAuth();
@@ -364,7 +464,9 @@ const Docs = () => {
     // Context Menu State
     const [contextMenu, setContextMenu] = useState({ isOpen: false, position: { x: 0, y: 0 }, itemId: null, itemType: null, parentId: null });
     const [isSubfolderModalOpen, setIsSubfolderModalOpen] = useState(false);
+    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [renameModal, setRenameModal] = useState({ isOpen: false, itemId: null, itemType: null, name: '', icon: '' });
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
     const openContextMenu = (e, itemId, itemType, parentId = null) => {
         e.preventDefault();
@@ -446,38 +548,107 @@ const Docs = () => {
     };
 
     const handleContextDelete = async () => {
+        console.log('[DEBUG] handleContextDelete CALLED');
+        // Lưu giá trị vào biến local TRƯỚC KHI đóng menu
         const { itemId, itemType } = contextMenu;
-        try {
-            if (itemType === 'folder') {
-                const folderDocs = docs.filter(d => d.parentId === itemId);
-                if (folderDocs.length > 0) {
-                    alert("Vui lòng xóa hết tài liệu trong folder trước.");
-                    closeContextMenu();
-                    return;
-                }
-                const folder = folders.find(f => f.id === itemId);
-                if (window.confirm(`Xóa folder "${folder?.title}"?`)) {
-                    const { error } = await supabase.from('folders').delete().eq('id', itemId);
-                    if (error) throw error;
-                    setFolders(folders.filter(f => f.id !== itemId));
-                    if (activeFolderId === itemId) setActiveFolderId(folders[0]?.id || null);
+        console.log('[DEBUG] itemId:', itemId, 'itemType:', itemType);
+        closeContextMenu();
+
+        if (itemType === 'folder') {
+            const folderDocs = docs.filter(d => d.parentId === itemId);
+            const subFolders = folders.filter(f => f.parentId === itemId);
+            if (folderDocs.length > 0 || subFolders.length > 0) {
+                // Hiển warning modal thay vì alert
+                setConfirmModal({
+                    isOpen: true,
+                    title: 'Không thể xóa!',
+                    message: `Folder này chứa ${folderDocs.length} tài liệu và ${subFolders.length} thư mục con. Vui lòng xóa hết trước.`,
+                    confirmText: 'Đã hiểu',
+                    onConfirm: () => { } // Chỉ đóng modal
+                });
+                return;
+            }
+            const folder = folders.find(f => f.id === itemId);
+
+            setConfirmModal({
+                isOpen: true,
+                title: 'Xóa folder?',
+                message: `Bạn có chắc muốn xóa folder "${folder?.title}"?`,
+                onConfirm: async () => {
+                    console.log('[DEBUG] ConfirmModal confirmed - Deleting folder:', itemId);
+                    // Optimistic UI
+                    setFolders(prev => prev.filter(f => f.id !== itemId));
+                    if (activeFolderId === itemId) {
+                        const remaining = folders.filter(f => f.id !== itemId);
+                        setActiveFolderId(remaining[0]?.id || null);
+                    }
                     showToast(`Đã xóa folder "${folder?.title}"`);
+                    // Sync with DB
+                    const { error } = await supabase.from('folders').delete().eq('id', itemId);
+                    if (error) console.error('DB Error:', error);
                 }
-            } else {
-                const doc = docs.find(d => d.id === itemId);
-                if (window.confirm(`Xóa trang "${doc?.title}"?`)) {
-                    const { error } = await supabase.from('docs').delete().eq('id', itemId);
-                    if (error) throw error;
-                    setDocs(docs.filter(d => d.id !== itemId));
+            });
+        } else {
+            const doc = docs.find(d => d.id === itemId);
+
+            setConfirmModal({
+                isOpen: true,
+                title: 'Xóa trang?',
+                message: `Bạn có chắc muốn xóa "${doc?.title}"?`,
+                onConfirm: async () => {
+                    console.log('[DEBUG] ConfirmModal confirmed - Deleting doc:', itemId);
+                    // Optimistic UI
+                    setDocs(prev => prev.filter(d => d.id !== itemId));
                     if (activeDocId === itemId) setActiveDocId(null);
                     showToast(`Đã xóa "${doc?.title}"`);
+                    // Sync with DB
+                    const { error } = await supabase.from('docs').delete().eq('id', itemId);
+                    if (error) console.error('DB Error:', error);
+                }
+            });
+        }
+    };
+
+    const handleMoveItem = async (targetFolderId) => {
+        const { itemId, itemType } = contextMenu;
+        console.log('[DEBUG] handleMoveItem:', itemId, itemType, 'to', targetFolderId);
+
+        try {
+            if (itemType === 'folder') {
+                // Di chuyển folder (subfolder)
+                // Kiểm tra: không cho di chuyển vào chính nó hoặc con của nó
+                if (itemId === targetFolderId) {
+                    showToast('Không thể di chuyển folder vào chính nó');
+                    return;
+                }
+
+                // Optimistic Update
+                setFolders(prev => prev.map(f => f.id === itemId ? { ...f, parentId: targetFolderId } : f));
+                showToast('Đã di chuyển folder thành công');
+                setIsMoveModalOpen(false);
+
+                // Sync with DB
+                const { error } = await supabase.from('folders').update({ parentId: targetFolderId }).eq('id', itemId);
+                if (error) {
+                    console.error('Error moving folder:', error);
+                }
+            } else {
+                // Di chuyển doc
+                // Optimistic Update
+                setDocs(prev => prev.map(d => d.id === itemId ? { ...d, parentId: targetFolderId } : d));
+                showToast('Đã di chuyển thành công');
+                setIsMoveModalOpen(false);
+
+                // Sync with DB
+                const { error } = await supabase.from('docs').update({ parentId: targetFolderId }).eq('id', itemId);
+                if (error) {
+                    console.error('Error moving doc:', error);
                 }
             }
         } catch (error) {
-            console.error('Error deleting:', error);
-            showToast('Lỗi khi xóa');
+            console.error('Error moving:', error);
+            showToast('Lỗi khi di chuyển');
         }
-        closeContextMenu();
     };
 
     // --- Effects ---
@@ -623,49 +794,77 @@ const Docs = () => {
     const saveEdit = async () => {
         if (!activeDoc) return;
         try {
+            // Optimistic UI update
+            const updatedDocs = docs.map(d =>
+                d.id === activeDocId ? { ...d, title: editTitle, content: editContent, date: 'Edited now' } : d
+            );
+            setDocs(updatedDocs);
+            setIsEditing(false);
+            showToast('Changes saved successfully!');
+
+            // Optimistic Update Completed - Sync with DB in background
             const { error } = await supabase
                 .from('docs')
                 .update({ title: editTitle, content: editContent, date: 'Edited now' })
                 .eq('id', activeDocId);
 
-            if (error) throw error;
-
-            const updatedDocs = docs.map(d =>
-                d.id === activeDocId
-                    ? { ...d, title: editTitle, content: editContent, date: 'Edited now' }
-                    : d
-            );
-            setDocs(updatedDocs);
-            setIsEditing(false);
-            showToast('Changes saved successfully!');
+            if (error) {
+                console.error('Error saving doc in background:', error);
+                // Silent fail or subtle toast could be added here, but keeping it "optimistic"
+            }
         } catch (error) {
-            console.error('Error saving doc:', error);
+            console.error('Error in save flow:', error);
             showToast('Lỗi khi lưu');
         }
     };
 
     const cancelEdit = () => {
+        console.log('[DEBUG] cancelEdit called, isEditing:', isEditing);
         setIsEditing(false);
+        console.log('[DEBUG] cancelEdit completed, isEditing set to false');
     };
 
     const handleDeleteDoc = async () => {
-        if (!isAuthenticated || !activeDoc) return;
-        if (window.confirm(`Delete "${activeDoc.title}"?`)) {
-            try {
-                const docTitle = activeDoc.title;
-                const { error } = await supabase.from('docs').delete().eq('id', activeDocId);
-                if (error) throw error;
+        console.log('[DEBUG] handleDeleteDoc CALLED');
+        console.log('[DEBUG] isAuthenticated:', isAuthenticated);
+        console.log('[DEBUG] activeDoc:', activeDoc);
+        console.log('[DEBUG] activeDocId:', activeDocId);
 
-                const newDocs = docs.filter(d => d.id !== activeDocId);
-                setDocs(newDocs);
-                setActiveDocId(null);
-                setIsEditing(false);
-                showToast(`Note "${docTitle}" deleted.`);
-            } catch (error) {
-                console.error('Error deleting doc:', error);
-                showToast('Lỗi khi xóa');
-            }
+        if (!isAuthenticated || !activeDoc) {
+            console.log('[DEBUG] handleDeleteDoc RETURNED EARLY');
+            return;
         }
+
+        // Lưu vào biến local TRƯỚC khi thay đổi state
+        const docIdToDelete = activeDocId;
+        const docTitle = activeDoc.title;
+        console.log('[DEBUG] About to show ConfirmModal for:', docTitle);
+
+        // Sử dụng ConfirmModal thay vì window.confirm
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xóa trang?',
+            message: `Bạn có chắc muốn xóa "${docTitle}"? Hành động này không thể hoàn tác.`,
+            onConfirm: async () => {
+                console.log('[DEBUG] ConfirmModal confirmed - Deleting doc:', docIdToDelete);
+                try {
+                    // Optimistic UI - Remove immediately
+                    setDocs(prev => prev.filter(d => d.id !== docIdToDelete));
+                    setActiveDocId(null);
+                    setIsEditing(false);
+                    showToast(`Đã xóa "${docTitle}"`);
+
+                    // Sync with DB
+                    const { error } = await supabase.from('docs').delete().eq('id', docIdToDelete);
+                    if (error) {
+                        console.error('Error deleting doc:', error);
+                    }
+                } catch (error) {
+                    console.error('Error deleting doc:', error);
+                    showToast('Lỗi khi xóa');
+                }
+            }
+        });
     };
 
     const handleDeleteFolder = async (folderId, e) => {
@@ -718,7 +917,6 @@ const Docs = () => {
     // --- Recursive Sidebar Render ---
     const renderFolderTree = (parentId, depth = 0) => {
         const currentFolders = folders.filter(f => f.parentId === parentId);
-        const currentDocs = docs.filter(d => d.parentId === parentId);
 
         return (
             <div className="space-y-0.5" key={parentId || 'root'}>
@@ -731,38 +929,32 @@ const Docs = () => {
                                 <div
                                     className={`flex items-center w-full rounded-lg transition-colors group/row ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     data-active={isActive}
-                                    onMouseEnter={() => console.log(`[Debug] Hovered Folder: ${folder.title}`)}
+                                    onContextMenu={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
                                 >
                                     <div style={{ width: `${depth * 8}px` }} className="shrink-0" data-testid="spacer" />
                                     <button
-                                        onClick={(e) => {
-                                            console.log('[Sidebar] Toggling folder:', folder.id, 'Current state:', isExpanded ? 'Collapsing' : 'Expanding');
-                                            toggleFolderExpand(folder.id, e);
-                                        }}
+                                        onClick={(e) => toggleFolderExpand(folder.id, e)}
                                         className="size-5 flex items-center justify-center rounded-sm hover:bg-gray-300 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer ml-1"
                                         data-testid="toggle-btn"
                                     >
-                                        {/* State 1: Folder Icon (Default) - Visible when NOT hovered */}
+                                        {/* State 1: Folder Icon (Default) - Visible when NOT hovered OR if depth > 0 */}
                                         <span
-                                            className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover/row:!hidden`}
+                                            className={`material-symbols-outlined text-[18px] ${folder.iconColor} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
                                             data-testid="folder-icon"
                                         >
                                             {folder.icon}
                                         </span>
 
-                                        {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered */}
+                                        {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered AND depth == 0 */}
                                         <span
-                                            className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden group-hover/row:!block transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                            className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden ${depth === 0 ? 'group-hover/row:!block' : ''} transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
                                             data-testid="chevron-icon"
                                         >
                                             chevron_right
                                         </span>
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            console.log('[Sidebar] Folder clicked:', folder.id);
-                                            handleFolderClick(folder.id);
-                                        }}
+                                        onClick={() => handleFolderClick(folder.id)}
                                         className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624]' : 'text-[#1d2624]/70'}`}
                                     >
                                         <span className="flex-1 truncate block min-w-0">{folder.title}</span>
@@ -791,40 +983,10 @@ const Docs = () => {
                         </div>
                     );
                 })}
-                {currentDocs.map(doc => {
-                    const isActive = activeDocId === doc.id;
-                    return (
-                        <div
-                            key={doc.id}
-                            className={`group/doc relative flex items-center min-w-0 overflow-hidden rounded-lg transition-colors ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                            data-testid={`doc-${doc.id}`}
-                            data-depth={depth}
-                            onMouseEnter={() => console.log(`[Debug] Hovered Doc: ${doc.title}`)}
-                        >
-                            <div style={{ width: `${depth * 8 + 24}px` }} className="shrink-0" data-testid="spacer" />
-                            <button
-                                onClick={() => {
-                                    console.log('[Sidebar] Doc clicked:', doc.id);
-                                    setActiveDocId(doc.id);
-                                }}
-                                className={`flex-1 flex items-center gap-2 px-2 py-1.2 rounded-lg text-sm text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] font-medium' : 'text-[#1d2624]/60'}`}
-                            >
-                                <span className="material-symbols-outlined text-[16px] text-amber-600/70 shrink-0">{doc.icon || 'description'}</span>
-                                <span className="flex-1 truncate block min-w-0">{doc.title}</span>
-                                {isAuthenticated && (
-                                    <span
-                                        onClick={(e) => openContextMenu(e, doc.id, 'doc')}
-                                        className="material-symbols-outlined text-[14px] opacity-0 group-hover/doc:opacity-100 hover:text-[#1d2624] cursor-pointer"
-                                        title="Tùy chọn"
-                                    >more_horiz</span>
-                                )}
-                            </button>
-                        </div>
-                    );
-                })}
             </div>
         );
     };
+
 
     return (
         <>
@@ -846,6 +1008,16 @@ const Docs = () => {
                 icon="note_add"
             />
 
+            {/* Confirm Modal for Delete */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText || 'Xóa'}
+            />
+
             {/* Toast Notification */}
             <Toast
                 message={toastMessage}
@@ -862,6 +1034,17 @@ const Docs = () => {
                 onDelete={handleContextDelete}
                 onDuplicate={handleDuplicate}
                 onAddSubfolder={() => { setIsSubfolderModalOpen(true); closeContextMenu(); }}
+                onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
+                itemType={contextMenu.itemType}
+                isRootFolder={contextMenu.parentId === null}
+            />
+
+            <MoveNoteModal
+                isOpen={isMoveModalOpen}
+                onClose={() => setIsMoveModalOpen(false)}
+                onSubmit={handleMoveItem}
+                folders={folders}
+                currentParentId={contextMenu.parentId}
                 itemType={contextMenu.itemType}
             />
 
@@ -894,23 +1077,13 @@ const Docs = () => {
                 </div>
                 <div className="mt-auto p-4 space-y-2 border-t border-white/10">
                     {isAuthenticated && (
-                        <>
-                            <button
-                                onClick={() => setIsFolderModalOpen(true)}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-[#1d2624]/20 text-sm font-medium hover:bg-white/20 transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
-                                New Folder
-                            </button>
-                            <button
-                                onClick={handleResetWorkspace}
-                                className="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-bold uppercase tracking-wider text-[#1d2624]/30 hover:text-red-500 transition-colors"
-                                title="Reset to default data"
-                            >
-                                <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                                Reset Workspace
-                            </button>
-                        </>
+                        <button
+                            onClick={() => setIsFolderModalOpen(true)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
+                            <span>Thư mục mới</span>
+                        </button>
                     )}
                 </div>
             </aside>
@@ -944,6 +1117,7 @@ const Docs = () => {
                             <div
                                 key={doc.id}
                                 onClick={() => handleDocClick(doc.id)}
+                                onContextMenu={(e) => openContextMenu(e, doc.id, 'doc', doc.parentId)}
                                 className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white shadow-sm border-primary/10' : 'hover:bg-white/40 border-transparent'}`}
                             >
                                 <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
@@ -978,22 +1152,44 @@ const Docs = () => {
                             <>
                                 {isEditing ? (
                                     <>
-                                        <button onClick={cancelEdit} className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/60 hover:bg-white/20 transition-colors">Cancel</button>
-                                        <button onClick={saveEdit} className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all">Save Changes</button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
+                                            className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); saveEdit(); }}
+                                            className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
+                                        >
+                                            Save Changes
+                                        </button>
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={handleDeleteDoc} className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500" title="Delete">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
+                                            className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
+                                            title="Delete"
+                                        >
                                             <span className="material-symbols-outlined text-[20px]">delete</span>
                                         </button>
-                                        <button onClick={startEditing} className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark" title="Edit">
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); startEditing(); }}
+                                            className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
+                                            title="Edit"
+                                        >
                                             <span className="material-symbols-outlined text-[20px]">edit</span>
                                         </button>
                                     </>
                                 )}
                             </>
                         )}
-                        <button className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
+                        <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
                             <span className="material-symbols-outlined text-[20px]">share</span>
                         </button>
                     </div>

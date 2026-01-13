@@ -727,19 +727,22 @@ const Docs = () => {
                     return (
                         <div key={folder.id} className="select-none">
                             <div className="group relative flex items-center min-w-0 overflow-hidden">
-                                <div style={{ width: `${depth * 12}px` }} className="shrink-0" />
                                 <button
                                     onClick={(e) => toggleFolderExpand(folder.id, e)}
-                                    className="size-5 flex items-center justify-center rounded-sm hover:bg-[#37352f]/5 dark:hover:bg-white/5 transition-colors shrink-0 mr-1"
+                                    className="size-5 flex items-center justify-center rounded-sm hover:bg-[#37352f]/10 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer"
                                 >
-                                    {/* State 1: Folder Icon (Default) - Hidden on hover */}
-                                    <span className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover:!hidden`}>
+                                    {/* State 1: Folder Icon (Default) - Visible when NOT hovered */}
+                                    <span
+                                        className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover:!hidden`}
+                                    >
                                         {folder.icon}
                                     </span>
 
-                                    {/* State 2: Triangle Icon (Hover) - Shown on hover */}
-                                    <span className={`material-symbols-outlined text-[11px] text-[#1d2624]/60 !hidden group-hover:!block transition-transform ${isExpanded ? 'rotate-90' : 'rotate-0'}`}>
-                                        play_arrow
+                                    {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered */}
+                                    <span
+                                        className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden group-hover:!block transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                    >
+                                        chevron_right
                                     </span>
                                 </button>
                                 <button

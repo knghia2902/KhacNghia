@@ -1139,7 +1139,7 @@ const Docs = () => {
                     </div>
                 </div>
 
-                <section className="w-72 min-w-[18rem] max-w-[18rem] border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col shrink-0 bg-white/10 hidden lg:flex" id="note-list">
+                <section className="w-72 flex-none border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col bg-white/10 hidden lg:flex" id="note-list">
                     <div className="p-4 pt-8 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
@@ -1202,57 +1202,58 @@ const Docs = () => {
                     >
                         <span className="material-symbols-outlined">menu</span>
                     </button>
-
-                    <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
-                        <span className="text-sm font-medium text-[#1d2624]/40">
-                            {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
-                        </span>
-                        <div className="flex items-center gap-3">
-                            {isAuthenticated && activeDoc && (
-                                <>
-                                    {isEditing ? (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
-                                                className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                                                className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
-                                            >
-                                                Save Changes
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
-                                                className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
-                                                title="Delete"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">delete</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); startEditing(); }}
-                                                className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                        </>
-                                    )}
-                                </>
-                            )}
-                            <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
-                                <span className="material-symbols-outlined text-[20px]">share</span>
-                            </button>
+                    {activeDoc && (
+                        <div className="h-12 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
+                            <span className="text-sm font-medium text-[#1d2624]/40">
+                                {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
+                            </span>
+                            <div className="flex items-center gap-3">
+                                {isAuthenticated && activeDoc && (
+                                    <>
+                                        {isEditing ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
+                                                    className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); saveEdit(); }}
+                                                    className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
+                                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
+                                                    title="Delete"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); startEditing(); }}
+                                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                </button>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                                <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
+                                    <span className="material-symbols-outlined text-[20px]">share</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {activeDoc ? (
                         <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">

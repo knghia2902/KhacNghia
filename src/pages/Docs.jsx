@@ -1107,7 +1107,7 @@ const Docs = () => {
             <div className="flex h-full w-full relative">
                 {/* Sidebar */}
                 <div className={`
-                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-[#1d2624]/10 dark:border-white/10 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-white/20 dark:border-white/5 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}>
                     {/* Mobile Close Button */}
@@ -1119,17 +1119,17 @@ const Docs = () => {
                     </button>
 
                     <div className="flex flex-col h-full">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 pt-4 pl-6">
-                            <div className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/90 mb-2 px-2">Workspace</div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2 truncate">Workspace</h3>
                             <nav className="space-y-0.5">
                                 {renderFolderTree(null)}
                             </nav>
                         </div>
                         {isAuthenticated && (
-                            <div className="border-t border-[#1d2624]/10 dark:border-white/10 shrink-0">
+                            <div className="mt-auto p-4 space-y-2 border-t border-white/10">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full flex items-center justify-center gap-2 py-4 text-sm font-medium text-[#1d2624]/70 dark:text-white/90 hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
                                     <span>Thư mục mới</span>
@@ -1139,8 +1139,8 @@ const Docs = () => {
                     </div>
                 </div>
 
-                <section className="w-72 flex-none border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col bg-white/10 hidden lg:flex" id="note-list">
-                    <div className="p-4 pt-4 space-y-4">
+                <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
+                    <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
                             {isAuthenticated && (
@@ -1281,14 +1281,8 @@ const Docs = () => {
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
                                         <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
 
-                                        {/* Collaborating Section */}
-                                        {/* <div className="flex items-center gap-3 pb-4 border-b border-[#1d2624]/5 dark:border-white/5">
-                                            <div className="flex -space-x-2">
-                                                <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-[#18181b]" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
-                                                <div className="size-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#18181b] flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300">+1</div>
-                                            </div>
-                                            <span className="text-sm text-[#1d2624]/50 dark:text-white/50">Collaborating with the Team</span>
-                                        </div> */}
+                                        {/* Border Separator */}
+                                        <div className="flex items-center gap-3 pb-4 border-b border-[#1d2624]/5 dark:border-white/5"></div>
 
                                         <div
                                             className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"

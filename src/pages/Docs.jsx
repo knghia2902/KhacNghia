@@ -1145,7 +1145,7 @@ const Docs = () => {
                 <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
                     {/* Header Row - aligned with other columns */}
                     <div className="h-16 px-6 flex items-center justify-between shrink-0">
-                        <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Notes</h3>
                         {isAuthenticated && (
                             <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
                                 <span className="material-symbols-outlined text-[20px]">add_circle</span>

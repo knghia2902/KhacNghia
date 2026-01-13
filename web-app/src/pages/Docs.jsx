@@ -730,7 +730,7 @@ const Docs = () => {
                                 <div style={{ width: `${depth * 12}px` }} className="shrink-0" />
                                 <button
                                     onClick={(e) => toggleFolderExpand(folder.id, e)}
-                                    className="size-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors shrink-0"
+                                    className="size-6 flex items-center justify-center rounded hover:bg-white/20 transition-all shrink-0 opacity-0 group-hover:opacity-100"
                                 >
                                     <span className={`material-symbols-outlined text-[14px] text-[#1d2624]/40 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
                                         expand_more

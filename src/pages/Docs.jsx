@@ -1119,8 +1119,8 @@ const Docs = () => {
                     </button>
 
                     <div className="flex flex-col h-full">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
-                            <div className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/40 mb-2 px-2">Workspace</div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 pt-8 pl-6">
+                            <div className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/90 mb-2 px-2">Workspace</div>
                             <nav className="space-y-0.5">
                                 {renderFolderTree(null)}
                             </nav>
@@ -1129,7 +1129,7 @@ const Docs = () => {
                             <div className="border-t border-[#1d2624]/10 dark:border-white/10 shrink-0">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full flex items-center justify-center gap-2 py-4 text-sm font-medium text-[#1d2624]/70 dark:text-white/70 hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors"
+                                    className="w-full flex items-center justify-center gap-2 py-4 text-sm font-medium text-[#1d2624]/70 dark:text-white/90 hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
                                     <span>Thư mục mới</span>
@@ -1257,7 +1257,7 @@ const Docs = () => {
                     {activeDoc ? (
                         <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
                             {isEditing ? (
-                                <div className="w-full max-w-full py-8 px-6 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out]">
+                                <div className="w-full max-w-full py-8 px-6 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out] overflow-y-auto custom-scrollbar">
                                     <input
                                         type="text"
                                         value={editTitle}
@@ -1276,14 +1276,13 @@ const Docs = () => {
                                     <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
-                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
+                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
                                     <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
                                     <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
                                         <div className="flex -space-x-2">
                                             <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
                                             <div className="size-6 rounded-full bg-gray-200 ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-gray-600">+1</div>
                                         </div>
-                                        <span className="text-sm text-[#1d2624]/40 dark:text-white/40 font-medium">Collaborating with the Team</span>
                                     </div>
                                     <div
                                         className="prose prose-slate prose-lg max-w-none dark:prose-invert text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"

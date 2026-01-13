@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
@@ -22,23 +23,25 @@ const ProtectedRoute = () => {
 function App() {
   return (
     <AuthProvider>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
+      <ThemeProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/admin" element={<Admin />} />
-          </Route>
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/admin" element={<Admin />} />
+            </Route>
 
-          <Route path="/docs" element={<Docs />} />
-          <Route path="/tools" element={<Tools />} />
-          <Route path="/gallery" element={<Images />} />
-          <Route path="/login" element={<Login />} />
-          {/* Redirect unknown routes to Home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
+            <Route path="/docs" element={<Docs />} />
+            <Route path="/tools" element={<Tools />} />
+            <Route path="/gallery" element={<Images />} />
+            <Route path="/login" element={<Login />} />
+            {/* Redirect unknown routes to Home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

@@ -419,14 +419,14 @@ const Images = () => {
                                     <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                         <button
                                             className="size-8 flex items-center justify-center bg-blue-500/80 backdrop-blur-md rounded-full text-white hover:bg-blue-600 hover:scale-110 transition-all"
-                                            onClick={(e) => openEditModal(e, img)}
+                                            onClick={(e) => openEditModal(e, image)}
                                             title="Edit"
                                         >
                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                         </button>
                                         <button
                                             className="size-8 flex items-center justify-center bg-red-500/80 backdrop-blur-md rounded-full text-white hover:bg-red-600 hover:scale-110 transition-all"
-                                            onClick={(e) => confirmDelete(e, img)}
+                                            onClick={(e) => confirmDelete(e, image)}
                                             title="Delete"
                                         >
                                             <span className="material-symbols-outlined text-[16px]">delete</span>

@@ -15,7 +15,7 @@ const Layout = ({ children }) => {
             <Header />
 
             <main className="relative z-10 flex items-center justify-center h-full w-full pt-16 pb-24 md:pt-20 md:pb-[80px] px-4 md:px-0">
-                <div className="relative w-full max-w-[1400px] h-full frosted-glass rounded-2xl md:rounded-[3rem] border border-white/40 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col md:flex-row p-4 md:p-6 lg:p-8">
+                <div className="relative w-full max-w-[1400px] h-full frosted-glass rounded-2xl md:rounded-[3rem] border border-white/40 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col md:flex-row p-2 md:p-3 lg:p-4">
                     {children}
                 </div>
             </main>

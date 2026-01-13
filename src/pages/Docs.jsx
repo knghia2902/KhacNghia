@@ -139,10 +139,10 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
     return ReactDOM.createPortal(
         <div
             ref={menuRef}
-            className="fixed z-[100] min-w-48 py-2 bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-[#1d2624]/10 animate-[fadeIn_0.15s_ease-out]"
+            className="fixed z-[100] min-w-48 py-2 bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-[#1d2624]/20 dark:border-white/20 animate-[fadeIn_0.15s_ease-out]"
             style={{ top: adjustedY, left: adjustedX }}
         >
-            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 border-b border-[#1d2624]/5 mb-1">
+            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 dark:text-white/50 border-b border-[#1d2624]/10 dark:border-white/10 mb-1">
                 {itemType === 'folder' ? 'Folder' : 'Trang'}
             </div>
             {menuItems.map((item, idx) => (
@@ -208,7 +208,7 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, item
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Nhập tên..."
-                            className="flex-1 px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="flex-1 px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/20 dark:border-white/20 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
                             autoFocus
                         />
                     </div>
@@ -347,7 +347,7 @@ const InputModal = ({ isOpen, onClose, onSubmit, title, placeholder, icon }) => 
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder={placeholder}
-                        className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                        className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-[#1d2624]/20 dark:border-white/20 rounded-xl text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                         autoFocus
                     />
                     <div className="flex gap-3 mt-6">
@@ -1107,7 +1107,7 @@ const Docs = () => {
             <div className="flex h-full w-full relative">
                 {/* Sidebar */}
                 <div className={`
-                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-[#1d2624]/10 dark:border-white/10 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-[#1d2624]/20 dark:border-white/20 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}>
                     {/* Mobile Close Button */}
@@ -1118,28 +1118,28 @@ const Docs = () => {
                         <span className="material-symbols-outlined">close</span>
                     </button>
 
-                    <div className="p-4 md:p-6 pb-2">
-                        <div className="flex flex-col gap-1 mb-6">
+                    <div className="flex flex-col h-full">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
                             <div className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/40 mb-2 px-2">Workspace</div>
-                            <nav className="space-y-1 overflow-hidden">
+                            <nav className="space-y-0.5">
                                 {renderFolderTree(null)}
                             </nav>
                         </div>
-                        <div className="mt-auto p-4 space-y-2 border-t border-white/10">
-                            {isAuthenticated && (
+                        {isAuthenticated && (
+                            <div className="p-3 border-t border-[#1d2624]/20 dark:border-white/20 shrink-0">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 dark:text-white/70 hover:bg-[#1d2624]/5 dark:hover:bg-white/10 rounded-lg transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
                                     <span>Thư mục mới</span>
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
+                <section className="w-72 border-r border-[#1d2624]/20 dark:border-white/20 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
                     <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
@@ -1257,7 +1257,7 @@ const Docs = () => {
                     {activeDoc ? (
                         <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
                             {isEditing ? (
-                                <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out]">
+                                <div className="w-full max-w-full py-8 px-6 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out]">
                                     <input
                                         type="text"
                                         value={editTitle}
@@ -1276,7 +1276,7 @@ const Docs = () => {
                                     <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
-                                <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
+                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
                                     <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
                                     <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
                                         <div className="flex -space-x-2">
@@ -1286,7 +1286,7 @@ const Docs = () => {
                                         <span className="text-sm text-[#1d2624]/40 dark:text-white/40 font-medium">Collaborating with the Team</span>
                                     </div>
                                     <div
-                                        className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
+                                        className="prose prose-slate prose-lg max-w-none text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
                                         dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                     />
                                 </div>

@@ -983,7 +983,7 @@ const Docs = () => {
                                     </button>
                                     <button
                                         onClick={() => handleFolderClick(folder.id)}
-                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624]' : 'text-[#1d2624]/70'}`}
+                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/70 dark:text-white/80'}`}
                                     >
                                         <span className="flex-1 truncate block min-w-0">{folder.title}</span>
                                         {isAuthenticated && (
@@ -1276,14 +1276,8 @@ const Docs = () => {
                                     <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
-                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
+                                <div className="w-full max-w-full py-8 px-6 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
                                     <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
-                                    <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
-                                        <div className="flex -space-x-2">
-                                            <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
-                                            <div className="size-6 rounded-full bg-gray-200 ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-gray-600">+1</div>
-                                        </div>
-                                    </div>
                                     <div
                                         className="prose prose-slate prose-lg max-w-none dark:prose-invert text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
                                         dangerouslySetInnerHTML={{ __html: activeDoc.content }}

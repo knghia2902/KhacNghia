@@ -15,12 +15,14 @@ const Header = () => {
 
     return (
         <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:px-12 md:py-6">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-row items-center gap-3">
                 <div className="size-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/10 text-primary-dark dark:text-primary shadow-sm">
                     <span className="material-symbols-outlined">spa</span>
                 </div>
-                {/* Enhanced alignment with leading-none and slight negative margin if needed */}
-                <h2 className="text-xl font-extrabold tracking-tight hidden md:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-none">Khắc Nghĩa</h2>
+                {/* Enhanced alignment: h-10 to match icon, flex center, and small visual offset for font baseline */}
+                <div className="h-10 flex items-center">
+                    <h2 className="text-xl font-extrabold tracking-tight hidden md:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-none mt-[2px]">Khắc Nghĩa</h2>
+                </div>
             </div>
             <div className="flex items-center gap-3">
                 {/* Theme Toggle Button */}

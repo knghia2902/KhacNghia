@@ -439,7 +439,14 @@ const Docs = () => {
     const [loading, setLoading] = useState(true);
 
     const [activeFolderId, setActiveFolderId] = useState(null);
-    const [expandedFolders, setExpandedFolders] = useState(['folder-favorites', 'folder-projects', 'folder-personal']);
+    const [expandedFolders, setExpandedFolders] = useState(() => {
+        try {
+            const saved = localStorage.getItem('zen_expanded_folders');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
     const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -684,6 +691,16 @@ const Docs = () => {
         fetchData();
     }, []);
 
+    // Default Expansion: If no preference saved, expand all folders
+    useEffect(() => {
+        if (folders.length > 0) {
+            const saved = localStorage.getItem('zen_expanded_folders');
+            if (saved === null) {
+                setExpandedFolders(folders.map(f => f.id));
+            }
+        }
+    }, [folders]);
+
     useEffect(() => {
         localStorage.setItem('zen_expanded_folders', JSON.stringify(expandedFolders));
     }, [expandedFolders]);
@@ -707,11 +724,21 @@ const Docs = () => {
             );
         } else {
             if (activeFolderId) {
-                result = result.filter(doc => doc.parentId === activeFolderId);
+                // Logic hiển thị đệ quy cho Root Folder
+                const activeFolder = folders.find(f => f.id === activeFolderId);
+                if (activeFolder && activeFolder.parentId === null) {
+                    // Nếu là Root Folder: Hiển thị docs của chính nó + docs của các subfolders
+                    const subFolderIds = folders.filter(f => f.parentId === activeFolderId).map(f => f.id);
+                    const authorizedParentIds = [activeFolderId, ...subFolderIds];
+                    result = result.filter(doc => authorizedParentIds.includes(doc.parentId));
+                } else {
+                    // Nếu là Subfolder: Chỉ hiển thị docs của chính nó
+                    result = result.filter(doc => doc.parentId === activeFolderId);
+                }
             }
         }
         return result;
-    }, [docs, activeFolderId, searchQuery]);
+    }, [docs, activeFolderId, searchQuery, folders]);
 
     // --- Handlers ---
     const handleFolderClick = (folderId) => {

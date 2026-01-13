@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const StatsCard = ({ icon, iconBg, iconColor, value, label, trend, trendUp = true }) => {
     return (
@@ -39,6 +40,71 @@ const ProjectItem = ({ icon, iconBg, iconColor, name, progress, colorClass, shad
         </div>
     );
 };
+const SettingsForm = () => {
+    const { user, updateProfile } = useAuth();
+    const [displayName, setDisplayName] = React.useState(user?.user_metadata?.display_name || '');
+    const [loading, setLoading] = React.useState(false);
+    const [message, setMessage] = React.useState({ type: '', text: '' });
+
+    React.useEffect(() => {
+        if (user?.user_metadata?.display_name) {
+            setDisplayName(user.user_metadata.display_name);
+        }
+    }, [user]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setMessage({ type: '', text: '' });
+
+        const { success, error } = await updateProfile(displayName);
+
+        if (success) {
+            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            // Clear success message after 3 seconds
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        } else {
+            setMessage({ type: 'error', text: 'Failed to update profile.' });
+        }
+        setLoading(false);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Display Name</label>
+                <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium"
+                    placeholder="Enter your name"
+                />
+            </div>
+            <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Email</label>
+                <div className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/5 dark:border-white/5 rounded-xl text-[#1d2624]/50 dark:text-white/50 text-sm font-medium cursor-not-allowed">
+                    {user?.email}
+                </div>
+            </div>
+
+            {message.text && (
+                <div className={`text-sm font-bold ${message.type === 'success' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {message.text}
+                </div>
+            )}
+
+            <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 rounded-xl bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] font-bold text-sm shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+        </form>
+    );
+};
+
 const Overview = () => {
     return (
         <>
@@ -119,27 +185,36 @@ const Overview = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 p-6 md:p-8 rounded-[2rem] bg-white/50 dark:bg-white/5 border border-white/50 dark:border-white/10 backdrop-blur-sm">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Active Projects</h3>
-                            <button className="text-sm font-bold text-primary-dark dark:text-primary hover:text-secondary transition-colors">View All</button>
+                    <div className="lg:col-span-2 flex flex-col gap-6">
+                        {/* Profile Settings Card */}
+                        <div className="p-6 md:p-8 rounded-[2rem] bg-white/50 dark:bg-white/5 border border-white/50 dark:border-white/10 backdrop-blur-sm">
+                            <h3 className="text-lg font-bold text-[#1d2624] dark:text-white mb-6">Profile Settings</h3>
+                            <SettingsForm />
                         </div>
-                        <div className="space-y-6">
-                            <ProjectItem
-                                icon="spa" iconBg="bg-mint-soft dark:bg-white/10" iconColor="text-primary-dark dark:text-primary"
-                                name="Website Rebrand" progress={75}
-                                colorClass="bg-primary" shadowClass="shadow-[0_0_10px_rgba(78,205,196,0.3)]"
-                            />
-                            <ProjectItem
-                                icon="smartphone" iconBg="bg-peach-soft dark:bg-white/10" iconColor="text-secondary-dark dark:text-secondary"
-                                name="Mobile App Beta" progress={40}
-                                colorClass="bg-secondary" shadowClass="shadow-[0_0_10px_rgba(255,190,118,0.3)]"
-                            />
-                            <ProjectItem
-                                icon="cloud_queue" iconBg="bg-blue-50 dark:bg-white/10" iconColor="text-blue-500"
-                                name="Cloud Migration" progress={90}
-                                colorClass="bg-blue-400" shadowClass="shadow-[0_0_10px_rgba(96,165,250,0.3)]"
-                            />
+
+                        {/* Active Projects */}
+                        <div className="p-6 md:p-8 rounded-[2rem] bg-white/50 dark:bg-white/5 border border-white/50 dark:border-white/10 backdrop-blur-sm">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Active Projects</h3>
+                                <button className="text-sm font-bold text-primary-dark dark:text-primary hover:text-secondary transition-colors">View All</button>
+                            </div>
+                            <div className="space-y-6">
+                                <ProjectItem
+                                    icon="spa" iconBg="bg-mint-soft dark:bg-white/10" iconColor="text-primary-dark dark:text-primary"
+                                    name="Website Rebrand" progress={75}
+                                    colorClass="bg-primary" shadowClass="shadow-[0_0_10px_rgba(78,205,196,0.3)]"
+                                />
+                                <ProjectItem
+                                    icon="smartphone" iconBg="bg-peach-soft dark:bg-white/10" iconColor="text-secondary-dark dark:text-secondary"
+                                    name="Mobile App Beta" progress={40}
+                                    colorClass="bg-secondary" shadowClass="shadow-[0_0_10px_rgba(255,190,118,0.3)]"
+                                />
+                                <ProjectItem
+                                    icon="cloud_queue" iconBg="bg-blue-50 dark:bg-white/10" iconColor="text-blue-500"
+                                    name="Cloud Migration" progress={90}
+                                    colorClass="bg-blue-400" shadowClass="shadow-[0_0_10px_rgba(96,165,250,0.3)]"
+                                />
+                            </div>
                         </div>
                     </div>
 

@@ -50,11 +50,30 @@ export const AuthProvider = ({ children }) => {
         await supabase.auth.signOut();
     };
 
+    const updateProfile = async (displayName) => {
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                data: { display_name: displayName }
+            });
+
+            if (error) throw error;
+
+            if (data.user) {
+                setUser(data.user);
+                return { success: true };
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error.message);
+            return { success: false, error };
+        }
+    };
+
     const value = {
         isAuthenticated,
         user,
         login,
         logout,
+        updateProfile,
         loading
     };
 

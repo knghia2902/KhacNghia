@@ -730,17 +730,22 @@ const Docs = () => {
                                 <div style={{ width: `${depth * 12}px` }} className="shrink-0" />
                                 <button
                                     onClick={(e) => toggleFolderExpand(folder.id, e)}
-                                    className="size-6 flex items-center justify-center rounded hover:bg-white/20 transition-all shrink-0 opacity-0 group-hover:opacity-100"
+                                    className="size-5 flex items-center justify-center rounded-sm hover:bg-[#37352f]/5 dark:hover:bg-white/5 transition-colors shrink-0 mr-1"
                                 >
-                                    <span className={`material-symbols-outlined text-[14px] text-[#1d2624]/40 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
-                                        expand_more
+                                    {/* State 1: Folder Icon (Default) - Hidden on hover */}
+                                    <span className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover:!hidden`}>
+                                        {folder.icon}
+                                    </span>
+
+                                    {/* State 2: Triangle Icon (Hover) - Shown on hover */}
+                                    <span className={`material-symbols-outlined text-[11px] text-[#1d2624]/60 !hidden group-hover:!block transition-transform ${isExpanded ? 'rotate-90' : 'rotate-0'}`}>
+                                        play_arrow
                                     </span>
                                 </button>
                                 <button
                                     onClick={() => handleFolderClick(folder.id)}
                                     className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${activeFolderId === folder.id ? 'bg-white/30 text-[#1d2624]' : 'hover:bg-white/15 text-[#1d2624]/70'}`}
                                 >
-                                    <span className={`material-symbols-outlined text-[18px] ${folder.iconColor} shrink-0`}>{folder.icon}</span>
                                     <span className="flex-1 truncate block min-w-0">{folder.title}</span>
                                     {isAuthenticated && (
                                         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">

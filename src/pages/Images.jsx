@@ -433,10 +433,10 @@ const Images = () => {
                                         </button>
                                     </div>
                                 )}
-                                <img src={img.url} alt={img.title} className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                                <img src={image.url} alt={image.title} className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                                    <span className="text-white font-bold text-xs transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{img.title}</span>
-                                    <span className="text-white/70 text-[9px] uppercase tracking-widest transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{img.category}</span>
+                                    <span className="text-white font-bold text-xs transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{image.title}</span>
+                                    <span className="text-white/70 text-[9px] uppercase tracking-widest transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{image.category}</span>
                                 </div>
                             </div>
                         ))}

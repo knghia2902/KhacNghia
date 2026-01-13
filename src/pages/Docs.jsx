@@ -1140,7 +1140,7 @@ const Docs = () => {
                 </div>
 
                 <section className="w-72 flex-none border-r border-[#1d2624]/10 dark:border-white/10 flex flex-col bg-white/10 hidden lg:flex" id="note-list">
-                    <div className="p-4 pt-8 space-y-4">
+                    <div className="p-4 pt-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
                             {isAuthenticated && (
@@ -1203,7 +1203,7 @@ const Docs = () => {
                         <span className="material-symbols-outlined">menu</span>
                     </button>
                     {activeDoc && (
-                        <div className="h-12 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
+                        <div className="h-10 px-6 md:px-8 flex items-center justify-between shrink-0 z-10">
                             <span className="text-sm font-medium text-[#1d2624]/40">
                                 {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
                             </span>
@@ -1277,8 +1277,8 @@ const Docs = () => {
                                     <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
-                                <div className="w-full max-w-full py-4 pt-8 px-6 md:px-12 space-y-4 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
-                                    <h1 className="text-4xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-4 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
+                                <div className="w-full max-w-4xl py-4 px-6 md:px-12 space-y-4 animate-[fadeIn_0.3s_ease-out] overflow-y-auto custom-scrollbar min-w-0">
+                                    <h1 className="text-3xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-3 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
                                     <div
                                         className="prose prose-slate prose-lg max-w-none dark:prose-invert text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
                                         dangerouslySetInnerHTML={{ __html: activeDoc.content }}

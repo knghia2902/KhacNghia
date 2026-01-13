@@ -28,7 +28,7 @@ const Header = () => {
                 {/* Theme Toggle Button */}
                 <button
                     onClick={toggleTheme}
-                    className="p-2 rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group"
+                    className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group"
                     title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
                     <span className="material-symbols-outlined text-[#1d2624]/70 dark:text-white/70 !text-[24px]">
@@ -36,12 +36,12 @@ const Header = () => {
                     </span>
                 </button>
 
-                <button className="relative p-2 rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group">
-                    <span className="material-symbols-outlined text-[#1d2624]/70 dark:text-white/70 !text-[26px]">notifications</span>
+                <button className="h-10 w-10 flex items-center justify-center relative rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group">
+                    <span className="material-symbols-outlined text-[#1d2624]/70 dark:text-white/70 !text-[24px]">notifications</span>
                     <span className="absolute top-2.5 right-2.5 size-2 bg-secondary rounded-full border border-white dark:border-[#1d2624]"></span>
                 </button>
 
-                <div className="group relative flex items-center gap-2 pl-1 pr-4 py-1.5 rounded-full bg-white dark:bg-white/10 shadow-sm border border-transparent hover:shadow-md transition-all duration-300 ml-1">
+                <div className="h-10 flex items-center gap-2 pl-1 pr-4 rounded-full bg-white dark:bg-white/10 shadow-sm border border-transparent hover:shadow-md transition-all duration-300 ml-1">
                     <div className="size-8 rounded-full bg-cover bg-center bg-[url('https://lh3.googleusercontent.com/aida-public/AB6AXuB7MIfWuberaUaXXFS9ZIR4l7jNPGntBkLfEDhd9wENwskIcai7VW4YdsfZveHyFSPtobfgxcxjzDgdYh18AJS8nW6ttaRK3xlmwojv7lQmIhWglOE73TIbmoF2u38m5xSLb-2Semh66OxZkCKqHT9kC_E7S9VMFIKIynFISOg674-E00XY1Mlxsj3LpKufdVGXzS38DHVfq0nt6EBcNlei1rFRkHc5QpP10MU-9TLfPktz0SDoZWsv-iMOL2GRwvdVM5-IebgeGBL0')]"></div>
                     <span className="text-sm font-bold text-[#1d2624] dark:text-white hidden md:block max-w-[120px] truncate">{formattedName}</span>
                 </div>

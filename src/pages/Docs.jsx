@@ -1119,8 +1119,11 @@ const Docs = () => {
                     </button>
 
                     <div className="flex flex-col h-full">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2 truncate">Workspace</h3>
+                        {/* Header Row - aligned with other columns */}
+                        <div className="h-16 px-6 flex items-center shrink-0">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Workspace</h3>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
                             <nav className="space-y-0.5">
                                 {renderFolderTree(null)}
                             </nav>
@@ -1140,15 +1143,16 @@ const Docs = () => {
                 </div>
 
                 <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
-                            {isAuthenticated && (
-                                <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
-                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                                </button>
-                            )}
-                        </div>
+                    {/* Header Row - aligned with other columns */}
+                    <div className="h-16 px-6 flex items-center justify-between shrink-0">
+                        <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
+                        {isAuthenticated && (
+                            <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
+                                <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                            </button>
+                        )}
+                    </div>
+                    <div className="px-6 pb-4">
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
                             <input

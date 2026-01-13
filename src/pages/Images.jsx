@@ -1,68 +1,101 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+
+const INITIAL_IMAGES = [
+    {
+        title: "Morning Light",
+        category: "Architecture",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDnfO7DrW0CN_06WuYOdw4b3e2LH37g7c0zp9Ml5Pk_kLMrQMr67aSHNAZhHhGRAc6vfYtug9tEMjd59q6oSq8weu9YL4X7pVz0xPdnJk6iKcRaG89QkkXRySQ2rfe0CX5VS8cuuZMFFmKl_ivRPIgkn_YuvOLfThHIHdy5zYeXU30RV_H2xI2Y7Yr1Q_cdrtFhAxcBQcn3BvuHIpaSy8X4SyKdeTxMV4isYItXMM5RCkX6ZhgQkhcAmyoKciAkystLbyfULWTCQvk7",
+        desc: "Captured during the golden hour, showing modern lines.",
+        tags: ["#architecture", "#light"],
+        resolution: "4096 x 2160"
+    },
+    {
+        title: "Abstract Flow",
+        category: "Abstract",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBT6PhmLCdcVB7qzGKCOwi1D78AIPdh3ohMxvbRao0UigwnX7wAobawJ9t6h7PRXJkUqb1rBkRY1ZCrrkZPBhz_fCM_tAA2L31XgFiS7ynlrnKJmEQ4iEu_TxedcK_E1CSTqIuSfb7sC-_7PQLLCXm_Ki_GcJavojKjGm3XmnESqN93a9wm_GPXEK9wyIm3o-qVk9tiCuEUbovYPBQdI79XgYPkS1Qah-Vgbh6mmIz7_REURFcOU5qXMRjjiJuPlq-EzkfzGW9M11Jd",
+        desc: "Fluid shapes and calming colors.",
+        tags: ["#abstract", "#minimal"],
+        resolution: "3840 x 2160"
+    },
+    {
+        title: "Clean Lines",
+        category: "Minimalism",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDR4tASLGop3a8rDIF-bv0yf0X8KJNN_Vy7RNyV2GS0DVm2D0OB0tU6QQAGKFHaIviKyP4mNOWrz3y17eFouSh8UvD21zJLW_I0dgfE0B2WwbCM13s7ec_fZ_4HLLF8xey0x_igXuHwCkWIpLx_b3K_sT3YcPzIVdakty46qM_KdvLQeSDmVRLboc22i1c6R9HJSxwPHoY0XmOXjoWcqmLHv6doNHZsHSQUJiPbw2J4ONxJ96UBXhDLxIzbAG94LjnsPCMmX-BPdFIP",
+        desc: "Stark contrast and geometric perfection.",
+        tags: ["#minimal", "#structure"],
+        resolution: "5120 x 2880"
+    },
+    {
+        title: "Natural Form",
+        category: "Nature",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAOzf8tmMZk402qD6Y9P0iundYS6oaRQLtdZueqPRWSRfVnhQEda1AUjRDieo29C-wEsmJIT-FUMMJUjZcxGoV2gKPWFn-Adk9To0_jPl6rqS5XwfqVMz98dowIFclrahouPPbmd5b80q11DzphTCpdcLmX6nqD46lYigCNjpHz2z7aDk_TZWvR-06j9-m1JagegA-ZG5mlJDUR7qjOxOl-c7Cplh0vW4lZdnskZV3yZoeOOEQpHAZ8xH3qp3tY8GISAMlrPyONAk17",
+        desc: "Organic patterns found in nature.",
+        tags: ["#nature", "#green"],
+        resolution: "4000 x 6000"
+    },
+    {
+        title: "Workspace Zen",
+        category: "Interior",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDrBbiFoNx9WbI5cY9Gzf41Xz6OE1rdp9Q9hkAuEe9_HPdcRW_JKfn2UNtqjj_mDBie7gW4JSeytjK_6nTAAfFNp3vh0bJV8K6C3cKa-a_vcUj6L-nlo3PHTbi_KA1rz5z_Q5mwNsP03UCYbZOR16d286QBWVA-lhAhWH3Rwgf5KSRUZGmZ8WeB36lJoUxp-uyMH4YXaZtokm6_lWDNVjuifLJ3b4jp0ay6-fKvPoTaIJWSqwNxWzeK8Jm4MBTuFFBMuc5GmxXesEI7",
+        desc: "A perfect setup for productivity.",
+        tags: ["#workspace", "#desk"],
+        resolution: "3840 x 2160"
+    },
+    {
+        title: "Texture Study",
+        category: "Texture",
+        url: "https://lh3.googleusercontent.com/aida-public/AB6AXuA1TXqAi-3lJ2thVuEGCILtkP3-SXcacXlrr319N0Vd6NOqGV2FY7B8wTW1fUVGZTI9Ms-Kxrh6v6oFpXZjnNVv97JbiMYTI6z8faMYlKKxCWwNThvGp4CkIUjbDtVvlE__v0weBUw4GW_veQGPq2s7HmQY2QGSHQGRRSUi3CQu0bcs0a7mvE-gt6x6fhznUO5H9Talz8yMlJ-Opn8pEXczKdcEX8HYyc4Glb2tBrmpzpBueIk9VJbt9rxM82Jc1bwMKTKeZmUpvafh",
+        desc: "Detailed surface textures in macro.",
+        tags: ["#texture", "#detail"],
+        resolution: "4500 x 3000"
+    }
+];
 
 const Images = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const [likedImages, setLikedImages] = useState(new Set()); // Using Set for faster lookups
+    const [likedImages, setLikedImages] = useState(new Set());
+    const [images, setImages] = useState([]);
 
-    const images = [
-        {
-            id: 1,
-            title: "Morning Light",
-            category: "Architecture",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDnfO7DrW0CN_06WuYOdw4b3e2LH37g7c0zp9Ml5Pk_kLMrQMr67aSHNAZhHhGRAc6vfYtug9tEMjd59q6oSq8weu9YL4X7pVz0xPdnJk6iKcRaG89QkkXRySQ2rfe0CX5VS8cuuZMFFmKl_ivRPIgkn_YuvOLfThHIHdy5zYeXU30RV_H2xI2Y7Yr1Q_cdrtFhAxcBQcn3BvuHIpaSy8X4SyKdeTxMV4isYItXMM5RCkX6ZhgQkhcAmyoKciAkystLbyfULWTCQvk7",
-            desc: "Captured during the golden hour, showing modern lines.",
-            tags: ["#architecture", "#light"],
-            resolution: "4096 x 2160"
-        },
-        {
-            id: 2,
-            title: "Abstract Flow",
-            category: "Abstract",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBT6PhmLCdcVB7qzGKCOwi1D78AIPdh3ohMxvbRao0UigwnX7wAobawJ9t6h7PRXJkUqb1rBkRY1ZCrrkZPBhz_fCM_tAA2L31XgFiS7ynlrnKJmEQ4iEu_TxedcK_E1CSTqIuSfb7sC-_7PQLLCXm_Ki_GcJavojKjGm3XmnESqN93a9wm_GPXEK9wyIm3o-qVk9tiCuEUbovYPBQdI79XgYPkS1Qah-Vgbh6mmIz7_REURFcOU5qXMRjjiJuPlq-EzkfzGW9M11Jd",
-            desc: "Fluid shapes and calming colors.",
-            tags: ["#abstract", "#minimal"],
-            resolution: "3840 x 2160"
-        },
-        {
-            id: 3,
-            title: "Clean Lines",
-            category: "Minimalism",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDR4tASLGop3a8rDIF-bv0yf0X8KJNN_Vy7RNyV2GS0DVm2D0OB0tU6QQAGKFHaIviKyP4mNOWrz3y17eFouSh8UvD21zJLW_I0dgfE0B2WwbCM13s7ec_fZ_4HLLF8xey0x_igXuHwCkWIpLx_b3K_sT3YcPzIVdakty46qM_KdvLQeSDmVRLboc22i1c6R9HJSxwPHoY0XmOXjoWcqmLHv6doNHZsHSQUJiPbw2J4ONxJ96UBXhDLxIzbAG94LjnsPCMmX-BPdFIP",
-            desc: "Stark contrast and geometric perfection.",
-            tags: ["#minimal", "#structure"],
-            resolution: "5120 x 2880"
-        },
-        {
-            id: 4,
-            title: "Natural Form",
-            category: "Nature",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAOzf8tmMZk402qD6Y9P0iundYS6oaRQLtdZueqPRWSRfVnhQEda1AUjRDieo29C-wEsmJIT-FUMMJUjZcxGoV2gKPWFn-Adk9To0_jPl6rqS5XwfqVMz98dowIFclrahouPPbmd5b80q11DzphTCpdcLmX6nqD46lYigCNjpHz2z7aDk_TZWvR-06j9-m1JagegA-ZG5mlJDUR7qjOxOl-c7Cplh0vW4lZdnskZV3yZoeOOEQpHAZ8xH3qp3tY8GISAMlrPyONAk17",
-            desc: "Organic patterns found in nature.",
-            tags: ["#nature", "#green"],
-            resolution: "4000 x 6000"
-        },
-        {
-            id: 5,
-            title: "Workspace Zen",
-            category: "Interior",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuDrBbiFoNx9WbI5cY9Gzf41Xz6OE1rdp9Q9hkAuEe9_HPdcRW_JKfn2UNtqjj_mDBie7gW4JSeytjK_6nTAAfFNp3vh0bJV8K6C3cKa-a_vcUj6L-nlo3PHTbi_KA1rz5z_Q5mwNsP03UCYbZOR16d286QBWVA-lhAhWH3Rwgf5KSRUZGmZ8WeB36lJoUxp-uyMH4YXaZtokm6_lWDNVjuifLJ3b4jp0ay6-fKvPoTaIJWSqwNxWzeK8Jm4MBTuFFBMuc5GmxXesEI7",
-            desc: "A perfect setup for productivity.",
-            tags: ["#workspace", "#desk"],
-            resolution: "3840 x 2160"
-        },
-        {
-            id: 6,
-            title: "Texture Study",
-            category: "Texture",
-            url: "https://lh3.googleusercontent.com/aida-public/AB6AXuA1TXqAi-3lJ2thVuEGCILtkP3-SXcacXlrr319N0Vd6NOqGV2FY7B8wTW1fUVGZTI9Ms-Kxrh6v6oFpXZjnNVv97JbiMYTI6z8faMYlKKxCWwNThvGp4CkIUjbDtVvlE__v0weBUw4GW_veQGPq2s7HmQY2QGSHQGRRSUi3CQu0bcs0a7mvE-gt6x6fhznUO5H9Talz8yMlJ-Opn8pEXczKdcEX8HYyc4Glb2tBrmpzpBueIk9VJbt9rxM82Jc1bwMKTKeZmUpvafh",
-            desc: "Detailed surface textures in macro.",
-            tags: ["#texture", "#detail"],
-            resolution: "4500 x 3000"
-        }
-    ];
+    // Fetch images from Supabase
+    useEffect(() => {
+        const fetchImages = async () => {
+            const { data, error } = await supabase
+                .from('gallery_images')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching images:', error);
+            } else {
+                if (data.length === 0) {
+                    seedImages();
+                } else {
+                    setImages(data);
+                }
+            }
+        };
+
+        fetchImages();
+    }, []);
+
+    const seedImages = async () => {
+        const mappedImages = INITIAL_IMAGES.map(img => ({
+            title: img.title,
+            category: img.category,
+            url: img.url,
+            description: img.desc,
+            tags: img.tags,
+            resolution: img.resolution
+        }));
+
+        const { data, error } = await supabase.from('gallery_images').insert(mappedImages).select();
+        if (error) console.error('Error seeding images:', error);
+        else setImages(data);
+    };
 
     // Get unique categories
     const categories = useMemo(() => {
@@ -74,7 +107,7 @@ const Images = () => {
         return images.filter(img => {
             const matchesCategory = selectedCategory === 'All' || img.category === selectedCategory;
             const matchesSearch = img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                img.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                (img.tags && img.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))); // Added safety check for tags
             return matchesCategory && matchesSearch;
         });
     }, [images, selectedCategory, searchQuery]);
@@ -90,10 +123,8 @@ const Images = () => {
         setLikedImages(newLiked);
     };
 
-    const handleDownload = (e, url, filename) => {
+    const handleDownload = (e, url, title) => {
         e.stopPropagation();
-        // Since these are external URLs, we open them in a new tab for now to avoid CORS issues in this demo environment
-        // In a real app with same-origin images, we would fetch blob and create object URL
         window.open(url, '_blank');
     };
 
@@ -152,7 +183,8 @@ const Images = () => {
                                         className="absolute top-3 left-3 size-8 flex items-center justify-center bg-red-500/80 backdrop-blur-md rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 hover:bg-red-600 hover:scale-110 z-10 text-white"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            alert('Delete functionality would be here');
+                                            // Handle delete via Supabase if needed in future
+                                            alert('Delete functionality would require Supabase implementation');
                                         }}
                                     >
                                         <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -214,7 +246,7 @@ const Images = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">About</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{selectedImage.desc}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{selectedImage.description || selectedImage.desc}</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {selectedImage.tags.map(tag => (

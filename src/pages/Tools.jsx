@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 const INITIAL_TOOLS = [
     {
@@ -50,7 +51,7 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick }) => {
     return (
         <div className="group relative flex flex-col p-6 h-64 bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[2rem] hover:bg-white/60 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1 shadow-sm">
             <div className="flex justify-between items-start mb-4">
-                <div className={`size-12 rounded-2xl ${tool.iconBg} flex items-center justify-center text-[#1d2624] dark:text-white border border-white/50 dark:border-white/5 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`size-12 rounded-2xl ${tool.icon_bg || tool.iconBg} flex items-center justify-center text-[#1d2624] dark:text-white border border-white/50 dark:border-white/5 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                     <span className="material-symbols-outlined !text-[28px] font-light">{tool.icon}</span>
                 </div>
                 <button className="text-[#1d2624]/40 dark:text-white/40 hover:text-secondary transition-colors" title="Quick Favorite">
@@ -59,7 +60,7 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick }) => {
             </div>
             <div>
                 <h3 className="text-xl font-bold text-[#1d2624] dark:text-white">{tool.title}</h3>
-                <p className="text-sm font-medium text-[#1d2624]/50 dark:text-white/50 mt-1 line-clamp-2">{tool.desc}</p>
+                <p className="text-sm font-medium text-[#1d2624]/50 dark:text-white/50 mt-1 line-clamp-2">{tool.description || tool.desc}</p>
             </div>
             <div className="mt-auto">
                 <button onClick={() => onLaunch(tool)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1d2624]/5 dark:bg-white/5 text-[#1d2624] dark:text-white font-bold text-sm transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-secondary group-hover:text-white group-hover:shadow-md cursor-pointer">
@@ -149,31 +150,78 @@ const Tools = () => {
     const [tools, setTools] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { isAuthenticated } = useAuth(); // Destructure for cleaner access
 
-    // Initialize tools from local storage or defaults
+    // Fetch tools from Supabase
     useEffect(() => {
-        const savedTools = localStorage.getItem('my_workspace_tools');
-        if (savedTools) {
-            setTools(JSON.parse(savedTools));
-        } else {
-            setTools(INITIAL_TOOLS);
-        }
+        const fetchTools = async () => {
+            const { data, error } = await supabase
+                .from('tools')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching tools:', error);
+            } else {
+                // Auto-seed if empty
+                if (data.length === 0) {
+                    seedTools();
+                } else {
+                    setTools(data);
+                }
+            }
+        };
+
+        fetchTools();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel('tools_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setTools(prev => [...prev, payload.new]);
+                } else if (payload.eventType === 'DELETE') {
+                    setTools(prev => prev.filter(t => t.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
-    // Save tools to local storage whenever they change
-    useEffect(() => {
-        if (tools.length > 0) {
-            localStorage.setItem('my_workspace_tools', JSON.stringify(tools));
-        }
-    }, [tools]);
+    const seedTools = async () => {
+        const mappedTools = INITIAL_TOOLS.map(t => ({
+            title: t.title,
+            description: t.desc,
+            icon: t.icon,
+            icon_bg: t.iconBg,
+            link: t.link
+        }));
 
-    const handleAddTool = (newTool) => {
-        const toolToAdd = {
-            id: Date.now(),
-            ...newTool,
-            iconBg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent" // Default style
+        const { data, error } = await supabase.from('tools').insert(mappedTools).select();
+        if (error) console.error('Error seeding tools:', error);
+        else setTools(data);
+    };
+
+    const handleAddTool = async (newTool) => {
+        if (!isAuthenticated) return;
+
+        const toolToInsert = {
+            title: newTool.title,
+            description: newTool.desc, // Map 'desc' from form to 'description' in DB
+            icon: newTool.icon,
+            icon_bg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent", // Default style
+            link: newTool.link
         };
-        setTools([...tools, toolToAdd]);
+
+        const { error } = await supabase.from('tools').insert([toolToInsert]);
+        if (error) {
+            console.error('Error adding tool:', error);
+            alert('Failed to add tool');
+        }
+        // State update handled by subscription
     };
 
     const handleLaunch = (tool) => {
@@ -186,7 +234,7 @@ const Tools = () => {
 
     const filteredTools = tools.filter(tool =>
         tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.desc.toLowerCase().includes(searchQuery.toLowerCase())
+        (tool.description && tool.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
@@ -218,7 +266,7 @@ const Tools = () => {
                         <ToolCard key={tool.id} tool={tool} onLaunch={handleLaunch} />
                     ))}
                     {/* Add Tool Card - Only for Admin */}
-                    {useAuth().isAuthenticated && <ToolCard isAdd onClick={() => setIsModalOpen(true)} />}
+                    {isAuthenticated && <ToolCard isAdd onClick={() => setIsModalOpen(true)} />}
                 </div>
             </div>
 

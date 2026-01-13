@@ -462,6 +462,7 @@ const Docs = () => {
     // Toast State
     const [toastMessage, setToastMessage] = useState('');
     const [isToastVisible, setIsToastVisible] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const showToast = (message) => {
         setToastMessage(message);
@@ -1095,178 +1096,210 @@ const Docs = () => {
                 icon="create_new_folder"
             />
 
-            <aside className="w-64 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 transition-width duration-300 md:w-64 hidden md:flex" id="sidebar-folders">
-                <div className="p-6 overflow-hidden">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 mb-6 px-2 truncate">Workspace</h3>
-                    <nav className="space-y-1 overflow-hidden">
-                        {renderFolderTree(null)}
-                    </nav>
-                </div>
-                <div className="mt-auto p-4 space-y-2 border-t border-white/10">
-                    {isAuthenticated && (
-                        <button
-                            onClick={() => setIsFolderModalOpen(true)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
-                            <span>Thư mục mới</span>
-                        </button>
-                    )}
-                </div>
-            </aside>
+            {/* Mobile Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-[fadeIn_0.2s_ease-out]"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
 
-            <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
-                        {isAuthenticated && (
-                            <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
-                                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                            </button>
-                        )}
-                    </div>
-                    <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
-                        <input
-                            className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-black/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40"
-                            placeholder="Search in folder..."
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-                    {filteredDocs.length === 0 ? (
-                        <div className="text-center py-10 text-[#1d2624]/40 text-sm">No notes here</div>
-                    ) : (
-                        filteredDocs.map(doc => (
-                            <div
-                                key={doc.id}
-                                onClick={() => handleDocClick(doc.id)}
-                                onContextMenu={(e) => openContextMenu(e, doc.id, 'doc', doc.parentId)}
-                                className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white shadow-sm border-primary/10' : 'hover:bg-white/40 border-transparent'}`}
-                            >
-                                <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
-                                    <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624]' : 'text-[#1d2624]/80'}`}>
-                                        {doc.title}
-                                    </h4>
-                                    <span className="text-[10px] text-[#1d2624]/30 whitespace-nowrap shrink-0 mt-0.5">{doc.date}</span>
-                                </div>
-                                <p className="text-xs text-[#1d2624]/60 line-clamp-2 mb-3 break-words overflow-hidden">
-                                    {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    {doc.tags.map((tag, idx) => (
-                                        <span key={idx} className="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-white/50 text-[#1d2624]/60 border border-[#1d2624]/5">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </section>
+            <div className="flex h-full w-full relative">
+                {/* Sidebar */}
+                <div className={`
+                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-[#1d2624]/10 dark:border-white/10 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                `}>
+                    {/* Mobile Close Button */}
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="absolute top-4 right-4 p-2 text-[#1d2624]/40 dark:text-white/40 md:hidden"
+                    >
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
 
-            <section className="flex-1 flex flex-col bg-white/5 relative h-full overflow-hidden">
-                <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
-                    <span className="text-sm font-medium text-[#1d2624]/40">
-                        {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
-                    </span>
-                    <div className="flex items-center gap-3">
-                        {isAuthenticated && activeDoc && (
-                            <>
-                                {isEditing ? (
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
-                                            className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                                            className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
-                                        >
-                                            Save Changes
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
-                                            className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
-                                            title="Delete"
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); startEditing(); }}
-                                            className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
-                                            title="Edit"
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">edit</span>
-                                        </button>
-                                    </>
-                                )}
-                            </>
-                        )}
-                        <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
-                            <span className="material-symbols-outlined text-[20px]">share</span>
-                        </button>
+                    <div className="p-4 md:p-6 pb-2">
+                        <div className="flex flex-col gap-1 mb-6">
+                            <div className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/40 mb-2 px-2">Workspace</div>
+                            <nav className="space-y-1 overflow-hidden">
+                                {renderFolderTree(null)}
+                            </nav>
+                        </div>
+                        <div className="mt-auto p-4 space-y-2 border-t border-white/10">
+                            {isAuthenticated && (
+                                <button
+                                    onClick={() => setIsFolderModalOpen(true)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
+                                    <span>Thư mục mới</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {activeDoc ? (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                        {isEditing ? (
-                            <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out]">
-                                <input
-                                    type="text"
-                                    value={editTitle}
-                                    onChange={(e) => setEditTitle(e.target.value)}
-                                    className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white bg-transparent border-b border-transparent focus:border-[#1d2624]/20 focus:outline-none placeholder:text-[#1d2624]/20 w-full pb-2"
-                                    placeholder="Note Title"
-                                />
-                                <div className="flex-1 rounded-2xl bg-white/40 dark:bg-black/20 border border-white/40 p-1">
-                                    <textarea
-                                        value={editContent}
-                                        onChange={(e) => setEditContent(e.target.value)}
-                                        className="w-full h-full bg-transparent border-none p-6 resize-none focus:outline-none text-lg text-[#1d2624]/80 dark:text-white/80 font-serif leading-relaxed"
-                                        placeholder="Start typing your story..."
-                                    ></textarea>
-                                </div>
-                                <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
-                            </div>
+                <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">Notes</h3>
+                            {isAuthenticated && (
+                                <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
+                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                                </button>
+                            )}
+                        </div>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
+                            <input
+                                className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-black/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40"
+                                placeholder="Search in folder..."
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+                        {filteredDocs.length === 0 ? (
+                            <div className="text-center py-10 text-[#1d2624]/40 text-sm">No notes here</div>
                         ) : (
-                            <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
-                                <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
-                                <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
-                                    <div className="flex -space-x-2">
-                                        <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
-                                        <div className="size-6 rounded-full bg-gray-200 ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-gray-600">+1</div>
-                                    </div>
-                                    <span className="text-sm text-[#1d2624]/40 dark:text-white/40 font-medium">Collaborating with the Team</span>
-                                </div>
+                            filteredDocs.map(doc => (
                                 <div
-                                    className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
-                                    dangerouslySetInnerHTML={{ __html: activeDoc.content }}
-                                />
-                            </div>
+                                    key={doc.id}
+                                    onClick={() => handleDocClick(doc.id)}
+                                    onContextMenu={(e) => openContextMenu(e, doc.id, 'doc', doc.parentId)}
+                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white shadow-sm border-primary/10' : 'hover:bg-white/40 border-transparent'}`}
+                                >
+                                    <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
+                                        <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624]' : 'text-[#1d2624]/80'}`}>
+                                            {doc.title}
+                                        </h4>
+                                        <span className="text-[10px] text-[#1d2624]/30 whitespace-nowrap shrink-0 mt-0.5">{doc.date}</span>
+                                    </div>
+                                    <p className="text-xs text-[#1d2624]/60 line-clamp-2 mb-3 break-words overflow-hidden">
+                                        {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        {doc.tags.map((tag, idx) => (
+                                            <span key={idx} className="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-white/50 text-[#1d2624]/60 border border-[#1d2624]/5">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-[#1d2624]/40">
-                        <span className="material-symbols-outlined text-6xl mb-4 opacity-20">article</span>
-                        <p>Select a note to view or create a new one.</p>
+                </section>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col h-full bg-[#fcfdfd]/50 dark:bg-[#18181b]/50 backdrop-blur-sm relative transition-all duration-300">
+                    {/* Mobile Toggle Button */}
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="md:hidden absolute top-4 left-4 p-2 text-[#1d2624]/60 dark:text-white/60 hover:bg-[#1d2624]/5 dark:hover:bg-white/5 rounded-lg transition-colors z-30"
+                    >
+                        <span className="material-symbols-outlined">menu</span>
+                    </button>
+
+                    <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
+                        <span className="text-sm font-medium text-[#1d2624]/40">
+                            {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
+                        </span>
+                        <div className="flex items-center gap-3">
+                            {isAuthenticated && activeDoc && (
+                                <>
+                                    {isEditing ? (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
+                                                className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); saveEdit(); }}
+                                                className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
+                                            >
+                                                Save Changes
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
+                                                className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
+                                                title="Delete"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); startEditing(); }}
+                                                className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
+                                <span className="material-symbols-outlined text-[20px]">share</span>
+                            </button>
+                        </div>
                     </div>
-                )}
-            </section>
+
+                    {activeDoc ? (
+                        <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
+                            {isEditing ? (
+                                <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out]">
+                                    <input
+                                        type="text"
+                                        value={editTitle}
+                                        onChange={(e) => setEditTitle(e.target.value)}
+                                        className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white bg-transparent border-b border-transparent focus:border-[#1d2624]/20 focus:outline-none placeholder:text-[#1d2624]/20 w-full pb-2"
+                                        placeholder="Note Title"
+                                    />
+                                    <div className="flex-1 rounded-2xl bg-white/40 dark:bg-black/20 border border-white/40 p-1">
+                                        <textarea
+                                            value={editContent}
+                                            onChange={(e) => setEditContent(e.target.value)}
+                                            className="w-full h-full bg-transparent border-none p-6 resize-none focus:outline-none text-lg text-[#1d2624]/80 dark:text-white/80 font-serif leading-relaxed"
+                                            placeholder="Start typing your story..."
+                                        ></textarea>
+                                    </div>
+                                    <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
+                                </div>
+                            ) : (
+                                <div className="max-w-3xl mx-auto py-16 px-8 md:px-12 space-y-8 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
+                                    <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
+                                    <div className="flex items-center gap-3 pb-8 border-b border-[#1d2624]/5 dark:border-white/5">
+                                        <div className="flex -space-x-2">
+                                            <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
+                                            <div className="size-6 rounded-full bg-gray-200 ring-2 ring-white flex items-center justify-center text-[10px] font-bold text-gray-600">+1</div>
+                                        </div>
+                                        <span className="text-sm text-[#1d2624]/40 dark:text-white/40 font-medium">Collaborating with the Team</span>
+                                    </div>
+                                    <div
+                                        className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
+                                        dangerouslySetInnerHTML={{ __html: activeDoc.content }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-[#1d2624]/40">
+                            <span className="material-symbols-outlined text-6xl mb-4 opacity-20">article</span>
+                            <p>Select a note to view or create a new one.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </>
     );
 };

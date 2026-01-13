@@ -384,7 +384,7 @@ const Tools = () => {
                             onDelete={confirmDelete}
                         />
                     ))}
-                    {/* Add Tool Card - Only for Admin */}
+                    {/* Add Tool Card (Only for Admin) */}
                     {isAuthenticated && <ToolCard isAdd onClick={() => { setEditingTool(null); setIsModalOpen(true); }} />}
                 </div>
             </div>

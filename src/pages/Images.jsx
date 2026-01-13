@@ -405,14 +405,15 @@ const Images = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-4 pb-32">
-                    <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
-                        {filteredImages.map((img) => (
-                            <div key={img.id} className="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:translate-y-[-4px] transition-all duration-500 cursor-zoom-in" onClick={() => setSelectedImage(img)}>
+                    {/* Masonry Grid */}
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 pb-20">
+                        {filteredImages.map((image) => (
+                            <div key={image.id} className="break-inside-avoid relative group rounded-[1.5rem] overflow-hidden bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/5 shadow-sm hover:translate-y-[-4px] transition-all duration-500 cursor-zoom-in" onClick={() => setSelectedImage(image)}>
                                 <div
-                                    className={`absolute top-3 right-3 size-8 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-full transition-all duration-300 hover:bg-white/40 hover:scale-110 z-10 ${likedImages.has(img.id) ? 'opacity-100 bg-peach-soft' : 'opacity-0 group-hover:opacity-100'}`}
-                                    onClick={(e) => toggleLike(e, img.id)}
+                                    className={`absolute top-3 right-3 size-8 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-full transition-all duration-300 hover:bg-white/40 hover:scale-110 z-10 ${likedImages.has(image.id) ? 'opacity-100 bg-peach-soft' : 'opacity-0 group-hover:opacity-100'}`}
+                                    onClick={(e) => toggleLike(e, image.id)}
                                 >
-                                    <span className={`material-symbols-outlined text-[16px] transition-colors ${likedImages.has(img.id) ? 'text-secondary-dark fill-current font-variation-settings-fill' : 'text-white'}`}>favorite</span>
+                                    <span className={`material-symbols-outlined text-[16px] transition-colors ${likedImages.has(image.id) ? 'text-secondary-dark fill-current font-variation-settings-fill' : 'text-white'}`}>favorite</span>
                                 </div>
                                 {isAuthenticated && (
                                     <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">

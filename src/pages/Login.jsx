@@ -15,16 +15,13 @@ const Login = () => {
         setLoading(true);
         setError('');
 
-        // Simulate network delay for effect
-        setTimeout(() => {
-            const success = login(email, password);
-            if (success) {
-                navigate('/');
-            } else {
-                setError('Invalid email or password');
-                setLoading(false);
-            }
-        }, 800);
+        const success = await login(email, password);
+        if (success) {
+            navigate('/');
+        } else {
+            setError('Invalid email or password');
+            setLoading(false);
+        }
     };
 
     return (
@@ -49,12 +46,12 @@ const Login = () => {
                         <label className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/50 dark:text-white/40 ml-4">Email</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2624]/30 dark:text-white/30 text-[20px]">mail</span>
-                            <input 
+                            <input
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary/50 focus:bg-white/60 dark:focus:bg-black/40 text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/30 dark:placeholder:text-white/20 transition-all" 
-                                placeholder="admin@khacnghia.com" 
-                                type="email" 
+                                className="w-full pl-12 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary/50 focus:bg-white/60 dark:focus:bg-black/40 text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/30 dark:placeholder:text-white/20 transition-all"
+                                placeholder="admin@khacnghia.com"
+                                type="email"
                                 required
                             />
                         </div>
@@ -63,12 +60,12 @@ const Login = () => {
                         <label className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/50 dark:text-white/40 ml-4">Password</label>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#1d2624]/30 dark:text-white/30 text-[20px]">lock</span>
-                            <input 
+                            <input
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary/50 focus:bg-white/60 dark:focus:bg-black/40 text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/30 dark:placeholder:text-white/20 transition-all" 
-                                placeholder="••••••••" 
-                                type="password" 
+                                className="w-full pl-12 pr-4 py-3.5 bg-white/40 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary/50 focus:bg-white/60 dark:focus:bg-black/40 text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/30 dark:placeholder:text-white/20 transition-all"
+                                placeholder="••••••••"
+                                type="password"
                                 required
                             />
                         </div>
@@ -80,7 +77,7 @@ const Login = () => {
                 <div className="mt-8 flex flex-col items-center gap-2">
                     <a className="text-xs font-bold text-[#1d2624]/50 dark:text-white/40 hover:text-primary transition-colors cursor-pointer">Forgot Password?</a>
                     <p className="text-xs font-medium text-[#1d2624]/40 dark:text-white/30">
-                        Default: admin@khacnghia.com / admin123
+                        Use your Supabase account (e.g. khacnghia2902@gmail.com)
                     </p>
                 </div>
             </div>

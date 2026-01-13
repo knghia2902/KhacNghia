@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -12,30 +13,41 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check local storage for auth state on load
-        const storedAuth = localStorage.getItem('isAdminAuthenticated');
-        if (storedAuth === 'true') {
-            setIsAuthenticated(true);
-            setUser({ email: 'khacnghia2902@gmail.com', role: 'admin' });
-        }
-        setLoading(false);
+        // Check active session
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setIsAuthenticated(!!session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+        };
+
+        checkSession();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setIsAuthenticated(!!session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const login = (email, password) => {
-        // Demo authentication logic
-        if (email === 'khacnghia2902@gmail.com' && password === '123') {
-            setIsAuthenticated(true);
-            setUser({ email, role: 'admin' });
-            localStorage.setItem('isAdminAuthenticated', 'true');
-            return true;
+    const login = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            console.error('Login error:', error.message);
+            return false;
         }
-        return false;
+        return true;
     };
 
-    const logout = () => {
-        setIsAuthenticated(false);
-        setUser(null);
-        localStorage.removeItem('isAdminAuthenticated');
+    const logout = async () => {
+        await supabase.auth.signOut();
     };
 
     const value = {

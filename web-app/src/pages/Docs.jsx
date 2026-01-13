@@ -724,47 +724,64 @@ const Docs = () => {
             <div className="space-y-0.5" key={parentId || 'root'}>
                 {currentFolders.map(folder => {
                     const isExpanded = expandedFolders.includes(folder.id);
+                    const isActive = activeFolderId === folder.id;
                     return (
-                        <div key={folder.id} className="select-none">
+                        <div key={folder.id} className="select-none" data-testid={`folder-${folder.id}`} data-depth={depth}>
                             <div className="group relative flex items-center min-w-0 overflow-hidden">
-                                <button
-                                    onClick={(e) => toggleFolderExpand(folder.id, e)}
-                                    className="size-5 flex items-center justify-center rounded-sm hover:bg-[#37352f]/10 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer"
+                                <div
+                                    className={`flex items-center w-full rounded-lg transition-colors group/row ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                    data-active={isActive}
+                                    onMouseEnter={() => console.log(`[Debug] Hovered Folder: ${folder.title}`)}
                                 >
-                                    {/* State 1: Folder Icon (Default) - Visible when NOT hovered */}
-                                    <span
-                                        className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover:!hidden`}
+                                    <div style={{ width: `${depth * 8}px` }} className="shrink-0" data-testid="spacer" />
+                                    <button
+                                        onClick={(e) => {
+                                            console.log('[Sidebar] Toggling folder:', folder.id, 'Current state:', isExpanded ? 'Collapsing' : 'Expanding');
+                                            toggleFolderExpand(folder.id, e);
+                                        }}
+                                        className="size-5 flex items-center justify-center rounded-sm hover:bg-gray-300 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer ml-1"
+                                        data-testid="toggle-btn"
                                     >
-                                        {folder.icon}
-                                    </span>
+                                        {/* State 1: Folder Icon (Default) - Visible when NOT hovered */}
+                                        <span
+                                            className={`material-symbols-outlined text-[18px] ${folder.iconColor} group-hover/row:!hidden`}
+                                            data-testid="folder-icon"
+                                        >
+                                            {folder.icon}
+                                        </span>
 
-                                    {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered */}
-                                    <span
-                                        className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden group-hover:!block transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                        {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered */}
+                                        <span
+                                            className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden group-hover/row:!block transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                            data-testid="chevron-icon"
+                                        >
+                                            chevron_right
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            console.log('[Sidebar] Folder clicked:', folder.id);
+                                            handleFolderClick(folder.id);
+                                        }}
+                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624]' : 'text-[#1d2624]/70'}`}
                                     >
-                                        chevron_right
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={() => handleFolderClick(folder.id)}
-                                    className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${activeFolderId === folder.id ? 'bg-white/30 text-[#1d2624]' : 'hover:bg-white/15 text-[#1d2624]/70'}`}
-                                >
-                                    <span className="flex-1 truncate block min-w-0">{folder.title}</span>
-                                    {isAuthenticated && (
-                                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
-                                            <span
-                                                onClick={(e) => { e.stopPropagation(); setActiveFolderId(folder.id); setIsNoteModalOpen(true); }}
-                                                className="material-symbols-outlined text-[16px] hover:text-primary cursor-pointer p-0.5"
-                                                title="Thêm trang"
-                                            >add</span>
-                                            <span
-                                                onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
-                                                className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5"
-                                                title="Tùy chọn"
-                                            >more_horiz</span>
-                                        </div>
-                                    )}
-                                </button>
+                                        <span className="flex-1 truncate block min-w-0">{folder.title}</span>
+                                        {isAuthenticated && (
+                                            <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-0.5">
+                                                <span
+                                                    onClick={(e) => { e.stopPropagation(); setActiveFolderId(folder.id); setIsNoteModalOpen(true); }}
+                                                    className="material-symbols-outlined text-[16px] hover:text-primary cursor-pointer p-0.5"
+                                                    title="Thêm trang"
+                                                >add</span>
+                                                <span
+                                                    onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
+                                                    className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5"
+                                                    title="Tùy chọn"
+                                                >more_horiz</span>
+                                            </div>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                             {isExpanded && (
                                 <div className="mt-0.5">
@@ -774,25 +791,37 @@ const Docs = () => {
                         </div>
                     );
                 })}
-                {currentDocs.map(doc => (
-                    <div key={doc.id} className="group/doc relative flex items-center min-w-0 overflow-hidden">
-                        <div style={{ width: `${depth * 12 + 24}px` }} className="shrink-0" />
-                        <button
-                            onClick={() => { setActiveDocId(doc.id); }}
-                            className={`flex-1 flex items-center gap-2 px-2 py-1.2 rounded-lg text-sm text-left transition-colors min-w-0 w-full overflow-hidden ${activeDocId === doc.id ? 'bg-white/30 text-[#1d2624] font-medium' : 'hover:bg-white/15 text-[#1d2624]/60'}`}
+                {currentDocs.map(doc => {
+                    const isActive = activeDocId === doc.id;
+                    return (
+                        <div
+                            key={doc.id}
+                            className={`group/doc relative flex items-center min-w-0 overflow-hidden rounded-lg transition-colors ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            data-testid={`doc-${doc.id}`}
+                            data-depth={depth}
+                            onMouseEnter={() => console.log(`[Debug] Hovered Doc: ${doc.title}`)}
                         >
-                            <span className="material-symbols-outlined text-[16px] text-amber-600/70 shrink-0">{doc.icon || 'description'}</span>
-                            <span className="flex-1 truncate block min-w-0">{doc.title}</span>
-                            {isAuthenticated && (
-                                <span
-                                    onClick={(e) => openContextMenu(e, doc.id, 'doc')}
-                                    className="material-symbols-outlined text-[14px] opacity-0 group-hover/doc:opacity-100 hover:text-[#1d2624] cursor-pointer"
-                                    title="Tùy chọn"
-                                >more_horiz</span>
-                            )}
-                        </button>
-                    </div>
-                ))}
+                            <div style={{ width: `${depth * 8 + 24}px` }} className="shrink-0" data-testid="spacer" />
+                            <button
+                                onClick={() => {
+                                    console.log('[Sidebar] Doc clicked:', doc.id);
+                                    setActiveDocId(doc.id);
+                                }}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1.2 rounded-lg text-sm text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] font-medium' : 'text-[#1d2624]/60'}`}
+                            >
+                                <span className="material-symbols-outlined text-[16px] text-amber-600/70 shrink-0">{doc.icon || 'description'}</span>
+                                <span className="flex-1 truncate block min-w-0">{doc.title}</span>
+                                {isAuthenticated && (
+                                    <span
+                                        onClick={(e) => openContextMenu(e, doc.id, 'doc')}
+                                        className="material-symbols-outlined text-[14px] opacity-0 group-hover/doc:opacity-100 hover:text-[#1d2624] cursor-pointer"
+                                        title="Tùy chọn"
+                                    >more_horiz</span>
+                                )}
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
         );
     };

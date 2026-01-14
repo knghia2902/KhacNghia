@@ -489,6 +489,7 @@ const Docs = () => {
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
     const openContextMenu = (e, itemId, itemType, parentId = null) => {
+        if (!isAuthenticated) return;
         e.preventDefault();
         e.stopPropagation();
         setContextMenu({

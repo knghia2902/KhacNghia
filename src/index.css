@@ -57,7 +57,7 @@
 }
 
 @utility frosted-glass {
-    @apply bg-white/30 dark:bg-white/5 backdrop-blur-[40px];
+    @apply bg-white/20 dark:bg-white/5 backdrop-blur-[50px];
 }
 
 @utility text-gradient-pastel {

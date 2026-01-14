@@ -8,8 +8,8 @@ const Layout = ({ children }) => {
             {/* Background Layers */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                 <div className="absolute inset-0 bg-cover bg-center opacity-40 dark:opacity-20 blur-3xl scale-110" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSurl_rJXeZMa1QBJEVRe4iBvQEawiVc3X4LWn6cw84-iQOtGYyDXxRrAxAaFgj53y_sgcfy5J6NVI7Z-tKr443HyRXtp4zOzAfmfi1619vpkEFzMwDMDw_GCGBnnnpdiBVknE6DJnLLe2U_f1JHfa5qHWne-yt7SJnvxxSPzdrd3kqYMGI20nHyqwqrVfox_DizPKYupzh9ePzkexiW7zzmVVzNsVJo88XOv4bCSU146g4VbI-tPoSamJ697SlcfDTGghx42324A")' }}></div>
-                <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-[#4ecdc4]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal opacity-50"></div>
-                <div className="absolute -bottom-[20%] -right-[10%] w-[70vw] h-[70vw] bg-[#ffbe76]/20 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-normal opacity-50"></div>
+                <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-[#4ecdc4]/40 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-normal opacity-60"></div>
+                <div className="absolute -bottom-[20%] -right-[10%] w-[70vw] h-[70vw] bg-[#ffbe76]/40 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-normal opacity-60"></div>
             </div>
 
             <Header />

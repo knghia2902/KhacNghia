@@ -86,7 +86,7 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, itemType, isRootFolder }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, itemType, isRootFolder }) => {
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -111,7 +111,9 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
     if (!isOpen) return null;
 
     const menuItems = [
-        { icon: 'edit', label: 'Đổi tên', action: onRename },
+        ...(itemType === 'doc' && onEdit ? [{ icon: 'edit_note', label: 'Chỉnh sửa', action: onEdit }] : []),
+        ...(itemType === 'folder' ? [{ icon: 'edit', label: 'Đổi tên', action: onRename }] : []),
+        ...(itemType === 'folder' && onAddNote ? [{ icon: 'note_add', label: 'Thêm Note', action: onAddNote }] : []),
         { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
         { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
@@ -120,7 +122,7 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
     // Chỉ cho phép tạo subfolder trong ROOT folder (parentId === null)
     // Không cho tạo trong subfolder (tối đa 2 cấp)
     if (itemType === 'folder' && isRootFolder && onAddSubfolder) {
-        menuItems.splice(1, 0, { icon: 'create_new_folder', label: 'Thêm folder con', action: onAddSubfolder });
+        menuItems.splice(2, 0, { icon: 'create_new_folder', label: 'Thêm folder', action: onAddSubfolder });
     }
 
     // Smart positioning - đảm bảo menu không bị cắt ở cạnh màn hình
@@ -334,7 +336,7 @@ const InputModal = ({ isOpen, onClose, onSubmit, title, placeholder, icon }) => 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
-            <div className="relative w-full max-w-md bg-white/90 dark:bg-[#1d2624]/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 animate-[fadeIn_0.2s_ease-out]">
+            <div className="relative w-full max-w-md bg-white/90 dark:bg-[#1d2624]/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 animate-[fadeIn_0.2s_ease-out]">
                 <div className="flex items-center gap-4 mb-6">
                     <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                         <span className="material-symbols-outlined text-primary text-2xl">{icon}</span>
@@ -459,10 +461,20 @@ const Docs = () => {
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
-    // Toast State
     const [toastMessage, setToastMessage] = useState('');
     const [isToastVisible, setIsToastVisible] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isFocusMode, setIsFocusMode] = useState(false);
+
+    // Toggle body class for focus mode global styling
+    useEffect(() => {
+        if (isFocusMode) {
+            document.body.classList.add('focus-mode-active');
+        } else {
+            document.body.classList.remove('focus-mode-active');
+        }
+        return () => document.body.classList.remove('focus-mode-active');
+    }, [isFocusMode]);
 
     const showToast = (message) => {
         setToastMessage(message);
@@ -1063,6 +1075,8 @@ const Docs = () => {
                 onDuplicate={handleDuplicate}
                 onAddSubfolder={() => { setIsSubfolderModalOpen(true); closeContextMenu(); }}
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
+                onEdit={() => { startEditing(); closeContextMenu(); }}
+                onAddNote={() => { setSelectedFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
                 itemType={contextMenu.itemType}
                 isRootFolder={contextMenu.parentId === null}
             />
@@ -1107,7 +1121,8 @@ const Docs = () => {
             <div className="flex h-full w-full relative">
                 {/* Sidebar */}
                 <div className={`
-                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#18181b] md:bg-transparent border-r border-white/20 dark:border-white/5 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#2a3530]/30 md:bg-transparent border-r border-white/20 dark:border-white/5 transition-all duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    ${isFocusMode ? 'md:hidden' : ''}
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}>
                     {/* Mobile Close Button */}
@@ -1129,40 +1144,37 @@ const Docs = () => {
                             </nav>
                         </div>
                         {isAuthenticated && (
-                            <div className="mt-auto p-4 space-y-2 border-t border-white/10">
+                            <div className="mt-auto p-4 flex justify-center">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1d2624]/70 hover:bg-white/20 rounded-lg transition-colors"
+                                    className="px-12 py-2 text-xs font-medium text-[#1d2624]/50 dark:text-white/50 border border-dashed border-[#1d2624]/15 dark:border-white/15 rounded-xl hover:bg-white/30 dark:hover:bg-white/5 hover:border-[#1d2624]/30 dark:hover:border-white/30 transition-all"
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
-                                    <span>Thư mục mới</span>
+                                    New Folder
                                 </button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <section className="w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 hidden lg:flex min-w-0" id="note-list">
-                    {/* Header Row - aligned with other columns */}
-                    <div className="h-16 px-6 flex items-center justify-between shrink-0">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Notes</h3>
-                        {isAuthenticated && (
-                            <button onClick={() => setIsNoteModalOpen(true)} className="p-2 rounded-lg hover:bg-white/20 text-[#1d2624]/60 dark:text-white/60 transition-colors" title="New Note">
-                                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                            </button>
-                        )}
-                    </div>
-                    <div className="px-6 pb-4">
-                        <div className="relative">
+                <section className={`w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 min-w-0 ${isFocusMode ? 'hidden' : 'hidden lg:flex'}`} id="note-list">
+                    {/* Header Row - Search bar aligned with other columns */}
+                    <div className="h-16 px-4 flex items-center gap-2 shrink-0">
+                        <div className="flex-1 relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
                             <input
                                 className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-black/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40"
-                                placeholder="Search in folder..."
+                                placeholder="Search notes..."
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
+                    </div>
+                    {/* Filter tabs */}
+                    <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        <span className="px-2.5 py-1 rounded-md bg-white/60 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20 cursor-pointer">All</span>
+                        <span className="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 cursor-pointer hover:bg-white/60 transition-colors">Drafts</span>
+                        <span className="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 cursor-pointer hover:bg-white/60 transition-colors">Shared</span>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
                         {filteredDocs.length === 0 ? (
@@ -1173,20 +1185,20 @@ const Docs = () => {
                                     key={doc.id}
                                     onClick={() => handleDocClick(doc.id)}
                                     onContextMenu={(e) => openContextMenu(e, doc.id, 'doc', doc.parentId)}
-                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white shadow-sm border-primary/10' : 'hover:bg-white/40 border-transparent'}`}
+                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white dark:bg-white/10 shadow-sm border-primary/10' : 'hover:bg-white/40 dark:hover:bg-white/5 border-transparent'}`}
                                 >
                                     <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
-                                        <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624]' : 'text-[#1d2624]/80'}`}>
+                                        <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
                                             {doc.title}
                                         </h4>
-                                        <span className="text-[10px] text-[#1d2624]/30 whitespace-nowrap shrink-0 mt-0.5">{doc.date}</span>
+                                        <span className="text-[10px] text-[#1d2624]/30 dark:text-white/40 whitespace-nowrap shrink-0 mt-0.5">{doc.date}</span>
                                     </div>
-                                    <p className="text-xs text-[#1d2624]/60 line-clamp-2 mb-3 break-words overflow-hidden">
+                                    <p className="text-xs text-[#1d2624]/60 dark:text-white/70 line-clamp-2 mb-3 break-words overflow-hidden">
                                         {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {doc.tags.map((tag, idx) => (
-                                            <span key={idx} className="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-white/50 text-[#1d2624]/60 border border-[#1d2624]/5">
+                                            <span key={idx} className="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-white/50 dark:bg-white/10 text-[#1d2624]/60 dark:text-white/70 border border-[#1d2624]/5 dark:border-white/10">
                                                 {tag}
                                             </span>
                                         ))}
@@ -1198,7 +1210,7 @@ const Docs = () => {
                 </section>
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col h-full bg-[#fcfdfd]/50 dark:bg-[#18181b]/50 backdrop-blur-sm relative transition-all duration-300">
+                <section className={`flex-1 flex flex-col bg-white/5 relative h-full overflow-hidden transition-all duration-500 ${isFocusMode ? 'max-w-4xl mx-auto rounded-2xl' : ''}`}>
                     {/* Mobile Toggle Button */}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
@@ -1208,9 +1220,19 @@ const Docs = () => {
                     </button>
                     {activeDoc && (
                         <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
-                            <span className="text-sm font-medium text-[#1d2624]/40">
-                                {isEditing ? 'Editing Mode' : activeDoc ? `Last saved ${activeDoc.date}` : 'Select a note'}
-                            </span>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setIsFocusMode(!isFocusMode)}
+                                    className={`p-2 rounded-lg transition-colors flex items-center justify-center ${isFocusMode ? 'bg-primary/20 text-primary-dark' : 'hover:bg-white/20 text-[#1d2624]/60'}`}
+                                    title={isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">{isFocusMode ? 'fullscreen_exit' : 'fullscreen'}</span>
+                                </button>
+                                <div className="h-4 w-px bg-white/20"></div>
+                                <span className="text-sm font-medium text-[#1d2624]/40">
+                                    {isEditing ? 'Editing Mode' : `Last saved ${activeDoc.date}`}
+                                </span>
+                            </div>
                             <div className="flex items-center gap-3">
                                 {isAuthenticated && activeDoc && (
                                     <>
@@ -1228,32 +1250,22 @@ const Docs = () => {
                                                     onClick={(e) => { e.stopPropagation(); saveEdit(); }}
                                                     className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
                                                 >
-                                                    Save Changes
+                                                    Save
                                                 </button>
                                             </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteDoc(); }}
-                                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-red-500"
-                                                    title="Delete"
-                                                >
-                                                    <span className="material-symbols-outlined text-[20px]">delete</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); startEditing(); }}
-                                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/60 hover:text-primary-dark"
-                                                >
-                                                    <span className="material-symbols-outlined text-[20px]">edit</span>
-                                                </button>
-                                            </>
-                                        )}
+                                        ) : null}
                                     </>
                                 )}
                                 <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
                                     <span className="material-symbols-outlined text-[20px]">share</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all"
+                                    onClick={(e) => isAuthenticated && activeDoc && !isEditing && openContextMenu(e, activeDoc.id, 'doc', activeDoc.parentId)}
+                                    title="More options"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
                                 </button>
                             </div>
                         </div>
@@ -1283,16 +1295,7 @@ const Docs = () => {
                             ) : (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
-                                        <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere]">{activeDoc.title}</h1>
-
-                                        {/* Collaborating Section */}
-                                        <div className="flex items-center gap-3 pb-4 border-b border-[#1d2624]/5 dark:border-white/5">
-                                            <div className="flex -space-x-2">
-                                                <div className="size-6 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-[#18181b]" style={{ backgroundImage: `url("${activeDoc.bg}")` }}></div>
-                                                <div className="size-6 rounded-full bg-gray-200 dark:bg-gray-700 ring-2 ring-white dark:ring-[#18181b] flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300">+1</div>
-                                            </div>
-                                            <span className="text-sm text-[#1d2624]/50 dark:text-white/50">Collaborating with the Team</span>
-                                        </div>
+                                        <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-6 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
 
                                         <div
                                             className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
@@ -1308,7 +1311,7 @@ const Docs = () => {
                             <p>Select a note to view or create a new one.</p>
                         </div>
                     )}
-                </div>
+                </section>
             </div>
         </>
     );

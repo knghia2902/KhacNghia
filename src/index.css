@@ -57,7 +57,7 @@
 }
 
 @utility frosted-glass {
-    @apply bg-white/20 dark:bg-white/5 backdrop-blur-[50px];
+    @apply bg-white/35 dark:bg-[#475242]/20 backdrop-blur-2xl;
 }
 
 @utility text-gradient-pastel {
@@ -72,4 +72,34 @@
     transform: translate(-50%, 150%) !important;
     opacity: 0 !important;
     pointer-events: none;
+}
+
+/* Focus Mode Styles */
+.focus-mode-active main>div {
+    max-width: 900px !important;
+    margin: 0 auto;
+    transition: all 0.6s ease-out;
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.12);
+}
+
+.focus-mode-active main {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    transition: padding 0.5s ease-out;
+}
+
+@keyframes focusIn {
+    from {
+        opacity: 0;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.focus-mode-active main>div {
+    animation: focusIn 2s ease-out forwards;
 }

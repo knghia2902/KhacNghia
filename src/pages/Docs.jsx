@@ -197,6 +197,11 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
         menuItems.splice(2, 0, { icon: 'create_new_folder', label: 'Thêm folder', action: onAddSubfolder });
     }
 
+    // Add Note option cho folders
+    if (itemType === 'folder' && onAddNote) {
+        menuItems.splice(2, 0, { icon: 'note_add', label: 'Thêm trang', action: onAddNote });
+    }
+
     // Smart positioning - đảm bảo menu không bị cắt ở cạnh màn hình
     const menuWidth = 200;
     const menuHeight = 250;
@@ -1070,14 +1075,9 @@ const Docs = () => {
                                         onClick={() => handleFolderClick(folder.id)}
                                         className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/70 dark:text-white/80'}`}
                                     >
-                                        <span className="flex-1 truncate block min-w-0">{folder.title}</span>
+                                        <span className="flex-1 min-w-0 block truncate group-hover/row:max-w-[calc(100%-2rem)]">{folder.title}</span>
                                         {isAuthenticated && (
-                                            <div className="opacity-0 group-hover/row:opacity-100 flex items-center gap-0.5">
-                                                <span
-                                                    onClick={(e) => { e.stopPropagation(); setActiveFolderId(folder.id); setIsNoteModalOpen(true); }}
-                                                    className="material-symbols-outlined text-[16px] hover:text-primary cursor-pointer p-0.5"
-                                                    title="Thêm trang"
-                                                >add</span>
+                                            <div className="opacity-0 group-hover/row:opacity-100 flex items-center shrink-0">
                                                 <span
                                                     onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
                                                     className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5"
@@ -1149,7 +1149,7 @@ const Docs = () => {
                 onAddSubfolder={() => { setIsSubfolderModalOpen(true); closeContextMenu(); }}
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
                 onEdit={() => { startEditing(); closeContextMenu(); }}
-                onAddNote={() => { setSelectedFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
+                onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
                 itemType={contextMenu.itemType}
                 isRootFolder={contextMenu.parentId === null}
             />

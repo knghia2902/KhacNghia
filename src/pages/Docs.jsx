@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -566,6 +566,8 @@ const Docs = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
+    const [autoSaveStatus, setAutoSaveStatus] = useState(''); // '', 'saving', 'saved'
+    const autoSaveTimerRef = useRef(null);
 
     // Modal State
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -1027,9 +1029,69 @@ const Docs = () => {
 
     const cancelEdit = () => {
         console.log('[DEBUG] cancelEdit called, isEditing:', isEditing);
+        // Clear any pending auto-save
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+        setAutoSaveStatus('');
         setIsEditing(false);
         console.log('[DEBUG] cancelEdit completed, isEditing set to false');
     };
+
+    // Auto-save function (silent, no toast, stays in edit mode)
+    const autoSave = useCallback(async () => {
+        if (!activeDoc || !isEditing) return;
+
+        setAutoSaveStatus('saving');
+        try {
+            // Update local state
+            const updatedDocs = docs.map(d =>
+                d.id === activeDocId ? { ...d, title: editTitle, content: editContent, date: 'Edited now' } : d
+            );
+            setDocs(updatedDocs);
+
+            // Sync with DB
+            const { error } = await supabase
+                .from('docs')
+                .update({ title: editTitle, content: editContent, date: 'Edited now' })
+                .eq('id', activeDocId);
+
+            if (error) {
+                console.error('Auto-save error:', error);
+                setAutoSaveStatus('');
+            } else {
+                setAutoSaveStatus('saved');
+                // Clear "saved" status after 2 seconds
+                setTimeout(() => setAutoSaveStatus(''), 2000);
+            }
+        } catch (error) {
+            console.error('Auto-save error:', error);
+            setAutoSaveStatus('');
+        }
+    }, [activeDoc, activeDocId, isEditing, editTitle, editContent, docs]);
+
+    // Debounced auto-save effect - triggers 2 seconds after user stops typing
+    useEffect(() => {
+        if (!isEditing || !activeDoc) return;
+
+        // Clear previous timer
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+
+        // Set new timer for auto-save after 2 seconds of inactivity
+        autoSaveTimerRef.current = setTimeout(() => {
+            autoSave();
+        }, 2000);
+
+        // Cleanup on unmount or when deps change
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearTimeout(autoSaveTimerRef.current);
+            }
+        };
+    }, [editTitle, editContent, isEditing, activeDoc, autoSave]);
 
     const handleDeleteDoc = async () => {
         console.log('[DEBUG] handleDeleteDoc CALLED');
@@ -1427,8 +1489,24 @@ const Docs = () => {
                                     <span className="material-symbols-outlined text-[20px]">{isFocusMode ? 'fullscreen_exit' : 'fullscreen'}</span>
                                 </button>
                                 <div className="h-4 w-px bg-white/20"></div>
-                                <span className="text-sm font-medium text-[#1d2624]/40">
-                                    {isEditing ? 'Editing Mode' : `Last saved ${activeDoc.date}`}
+                                <span className="text-sm font-medium text-[#1d2624]/40 flex items-center gap-2">
+                                    {isEditing ? (
+                                        <>
+                                            {autoSaveStatus === 'saving' && (
+                                                <>
+                                                    <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                                                    <span>Đang lưu...</span>
+                                                </>
+                                            )}
+                                            {autoSaveStatus === 'saved' && (
+                                                <>
+                                                    <span className="material-symbols-outlined text-[14px] text-green-500">check_circle</span>
+                                                    <span className="text-green-600">Đã lưu</span>
+                                                </>
+                                            )}
+                                            {autoSaveStatus === '' && 'Editing Mode'}
+                                        </>
+                                    ) : `Last saved ${activeDoc.date}`}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">

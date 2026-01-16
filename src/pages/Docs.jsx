@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import RichTextEditor from '../components/editor/RichTextEditor';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -185,7 +188,6 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
     const menuItems = [
         ...(itemType === 'doc' && onEdit ? [{ icon: 'edit_note', label: 'Chỉnh sửa', action: onEdit }] : []),
         ...(itemType === 'folder' ? [{ icon: 'edit', label: 'Đổi tên', action: onRename }] : []),
-        ...(itemType === 'folder' && onAddNote ? [{ icon: 'note_add', label: 'Thêm Note', action: onAddNote }] : []),
         { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
         { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
@@ -509,6 +511,37 @@ const MoveNoteModal = ({ isOpen, onClose, onSubmit, folders, currentParentId, it
 };
 
 
+// --- Sortable Folder Item for Drag & Drop ---
+const SortableFolderItem = ({ folder, children, isAuthenticated }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: folder.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : 'auto',
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="relative touch-none"
+            {...(isAuthenticated ? { ...attributes, ...listeners } : {})}
+        >
+            {children}
+        </div>
+    );
+};
+
+
 const Docs = () => {
     const { isAuthenticated } = useAuth();
 
@@ -556,6 +589,62 @@ const Docs = () => {
     const showToast = (message) => {
         setToastMessage(message);
         setIsToastVisible(true);
+    };
+
+    // --- Drag & Drop Sensors ---
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    // Handle drag end - reorder folders and save to database
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+
+        if (active.id !== over?.id) {
+            const oldIndex = folders.findIndex(f => f.id === active.id);
+            const newIndex = folders.findIndex(f => f.id === over.id);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const reorderedFolders = arrayMove(folders, oldIndex, newIndex);
+
+                // Update sort_order for ALL folders to reflect new array position
+                // This ensures the .sort() in renderFolderTree respects the new order
+                const newFolders = reorderedFolders.map((f, index) => ({
+                    ...f,
+                    sort_order: index
+                }));
+
+                // Update local state immediately for smooth UX
+                setFolders(newFolders);
+
+                // Update order in database
+                try {
+                    const updates = newFolders.map(folder => ({
+                        id: folder.id,
+                        sort_order: folder.sort_order,
+                    }));
+
+                    for (const update of updates) {
+                        await supabase
+                            .from('folders')
+                            .update({ sort_order: update.sort_order })
+                            .eq('id', update.id);
+                    }
+
+                    showToast('Đã lưu thứ tự folder');
+                } catch (error) {
+                    console.error('Error saving order:', error);
+                    showToast('Lỗi khi lưu thứ tự');
+                }
+            }
+        }
     };
 
     // Context Menu State
@@ -1034,68 +1123,94 @@ const Docs = () => {
 
     // --- Recursive Sidebar Render ---
     const renderFolderTree = (parentId, depth = 0) => {
-        const currentFolders = folders.filter(f => f.parentId === parentId);
+        const currentFolders = folders
+            .filter(f => f.parentId === parentId)
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+        const folderItems = currentFolders.map(folder => {
+            const isExpanded = expandedFolders.includes(folder.id);
+            const isActive = activeFolderId === folder.id;
+
+            const folderContent = (
+                <div className="select-none" data-testid={`folder-${folder.id}`} data-depth={depth}>
+                    <div className="group relative flex items-center min-w-0 overflow-hidden">
+                        <div
+                            className={`flex items-center w-full rounded-lg transition-colors group/row ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            data-active={isActive}
+                            onContextMenu={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
+                        >
+                            <div style={{ width: `${depth * 8}px` }} className="shrink-0" data-testid="spacer" />
+                            <button
+                                onClick={(e) => toggleFolderExpand(folder.id, e)}
+                                className="size-5 flex items-center justify-center rounded-sm hover:bg-gray-300 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer ml-1"
+                                data-testid="toggle-btn"
+                            >
+                                {/* State 1: Folder Icon (Default) - Visible when NOT hovered OR if depth > 0 */}
+                                <span
+                                    className={`material-symbols-outlined text-[18px] ${folder.iconColor} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
+                                    data-testid="folder-icon"
+                                >
+                                    {folder.icon}
+                                </span>
+
+                                {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered AND depth == 0 */}
+                                <span
+                                    className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden ${depth === 0 ? 'group-hover/row:!block' : ''} transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                    data-testid="chevron-icon"
+                                >
+                                    chevron_right
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => handleFolderClick(folder.id)}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/70 dark:text-white/80'}`}
+                            >
+                                <span className="flex-1 min-w-0 block whitespace-nowrap overflow-hidden transition-all duration-200 group-hover/row:text-ellipsis">{folder.title}</span>
+                                {isAuthenticated && (
+                                    <div className="w-0 group-hover/row:w-6 overflow-hidden transition-all duration-200 flex items-center shrink-0">
+                                        <span
+                                            onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
+                                            className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity duration-200"
+                                            title="Tùy chọn"
+                                        >more_horiz</span>
+                                    </div>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                    {isExpanded && (
+                        <div className="mt-0.5">
+                            {renderFolderTree(folder.id, depth + 1)}
+                        </div>
+                    )}
+                </div>
+            );
+
+            if (isAuthenticated) {
+                return (
+                    <SortableFolderItem key={folder.id} folder={folder} isAuthenticated={isAuthenticated}>
+                        {folderContent}
+                    </SortableFolderItem>
+                );
+            }
+
+            return <div key={folder.id}>{folderContent}</div>;
+        });
+
+        // Wrap with SortableContext regardless of depth
+        if (isAuthenticated && currentFolders.length > 0) {
+            return (
+                <SortableContext items={currentFolders.map(f => f.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-0.5" key={parentId || 'root'}>
+                        {folderItems}
+                    </div>
+                </SortableContext>
+            );
+        }
 
         return (
             <div className="space-y-0.5" key={parentId || 'root'}>
-                {currentFolders.map(folder => {
-                    const isExpanded = expandedFolders.includes(folder.id);
-                    const isActive = activeFolderId === folder.id;
-                    return (
-                        <div key={folder.id} className="select-none" data-testid={`folder-${folder.id}`} data-depth={depth}>
-                            <div className="group relative flex items-center min-w-0 overflow-hidden">
-                                <div
-                                    className={`flex items-center w-full rounded-lg transition-colors group/row ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                    data-active={isActive}
-                                    onContextMenu={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
-                                >
-                                    <div style={{ width: `${depth * 8}px` }} className="shrink-0" data-testid="spacer" />
-                                    <button
-                                        onClick={(e) => toggleFolderExpand(folder.id, e)}
-                                        className="size-5 flex items-center justify-center rounded-sm hover:bg-gray-300 dark:hover:bg-white/10 transition-colors shrink-0 mr-0.5 cursor-pointer ml-1"
-                                        data-testid="toggle-btn"
-                                    >
-                                        {/* State 1: Folder Icon (Default) - Visible when NOT hovered OR if depth > 0 */}
-                                        <span
-                                            className={`material-symbols-outlined text-[18px] ${folder.iconColor} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
-                                            data-testid="folder-icon"
-                                        >
-                                            {folder.icon}
-                                        </span>
-
-                                        {/* State 2: Chevron Icon (Hover) - Visible ONLY when hovered AND depth == 0 */}
-                                        <span
-                                            className={`material-symbols-outlined text-[16px] text-[#9ca3af] !hidden ${depth === 0 ? 'group-hover/row:!block' : ''} transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
-                                            data-testid="chevron-icon"
-                                        >
-                                            chevron_right
-                                        </span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleFolderClick(folder.id)}
-                                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/70 dark:text-white/80'}`}
-                                    >
-                                        <span className="flex-1 min-w-0 block truncate group-hover/row:max-w-[calc(100%-2rem)]">{folder.title}</span>
-                                        {isAuthenticated && (
-                                            <div className="opacity-0 group-hover/row:opacity-100 flex items-center shrink-0">
-                                                <span
-                                                    onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
-                                                    className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5"
-                                                    title="Tùy chọn"
-                                                >more_horiz</span>
-                                            </div>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                            {isExpanded && (
-                                <div className="mt-0.5">
-                                    {renderFolderTree(folder.id, depth + 1)}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+                {folderItems}
             </div>
         );
     };
@@ -1213,7 +1328,17 @@ const Docs = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
                             <nav className="space-y-0.5">
-                                {renderFolderTree(null)}
+                                {isAuthenticated ? (
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        {renderFolderTree(null)}
+                                    </DndContext>
+                                ) : (
+                                    renderFolderTree(null)
+                                )}
                             </nav>
                         </div>
                         {isAuthenticated && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import RichTextEditor from '../components/editor/RichTextEditor';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -19,11 +20,26 @@ const SEED_DOCS = [
         date: '2m ago',
         tags: ['Guide', 'Zen'],
         bg: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBpKXDKChxqUovbkTSPfoSPbbFMA-n0w5_gdW5x-0yx3ZBWs0nD1JFWI-6HFeEuCGrgbGPkrt8NpTfFcSCzJwOLUQMN5nDZArcfIJoVgyeXh15nbQguX_E2wtn0vVm0Dc15OChBD_P4Scwa5OQ3alHmrE3wSPjPsCU36kDFQiPMvo6WtLm0Ltear1ksNwD4C1SWiRYt-8FHbc2PH8OB6X8PsNzyxM9s7CSAuh8yfHU2tnQ0gGY7BwRMyqn292UbmSB4hEY0N6xMtiwN',
-        content: `
-            <p class="lead">This document outlines the fundamental design language for Khắc Nghĩa workspace.</p>
-            <h2>1. Core Philosophy</h2>
-            <p>Minimalism isn't about the absence of content, but the presence of focus.</p>
-        `
+        content: `*This document outlines the fundamental design language for Khắc Nghĩa workspace.*
+
+## 1. Core Philosophy
+
+Minimalism isn't about the absence of content, but the presence of focus. In a data-rich environment, we prioritize information hierarchy using generous whitespace and subtle elevation.
+
+## 2. Design Principles
+
+- **Clarity**: Every element serves a purpose
+- **Consistency**: Unified visual language across all touchpoints
+- **Calm**: Reduce cognitive load with thoughtful spacing
+
+## 3. Color Palette
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Primary | #4ecdc4 | Actions, links |
+| Background | #f8f9fa | Main surfaces |
+| Text | #1d2624 | Body text |
+`
     },
     {
         id: 'doc-proxmox-config',
@@ -32,9 +48,26 @@ const SEED_DOCS = [
         date: '1d ago',
         tags: ['SysAdmin', 'Storage'],
         bg: 'https://images.unsplash.com/photo-1558494949-ef526b0042a0?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Hướng dẫn chi tiết cấu hình Ceph trên Proxmox VE 8.1.</p>
-        `
+        content: `*Hướng dẫn chi tiết cấu hình Ceph trên Proxmox VE 8.1.*
+
+## Yêu cầu hệ thống
+
+- Tối thiểu 3 node Proxmox
+- Mỗi node có ít nhất 1 OSD disk
+- Network 10Gbps recommended
+
+## Các bước cấu hình
+
+1. Cài đặt Ceph packages trên tất cả nodes
+2. Khởi tạo Ceph cluster từ node đầu tiên
+3. Thêm các node còn lại vào cluster
+4. Tạo OSDs trên mỗi disk
+
+\`\`\`bash
+pveceph install
+pveceph init --network 10.0.0.0/24
+\`\`\`
+`
     },
     {
         id: 'doc-proxmox-ha',
@@ -43,9 +76,20 @@ const SEED_DOCS = [
         date: '5h ago',
         tags: ['HA', 'Cluster'],
         bg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Thiết lập High Availability cho Cluster 3 node.</p>
-        `
+        content: `*Thiết lập High Availability cho Cluster 3 node.*
+
+## Tổng quan HA
+
+High Availability đảm bảo VMs tự động migrate khi node gặp sự cố.
+
+> **Lưu ý**: HA yêu cầu shared storage (Ceph, NFS, iSCSI)
+
+## Cấu hình HA Group
+
+1. Tạo HA Group trong Datacenter → HA
+2. Thêm VMs cần HA vào group
+3. Set priority và restrictions
+`
     },
     {
         id: 'doc-nextcloud',
@@ -54,9 +98,26 @@ const SEED_DOCS = [
         date: '1w ago',
         tags: ['Cloud', 'Self-hosted'],
         bg: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Tối ưu hiệu năng Nextcloud với Redis và PHP-FPM.</p>
-        `
+        content: `*Tối ưu hiệu năng Nextcloud với Redis và PHP-FPM.*
+
+## Stack khuyến nghị
+
+- **Web Server**: Nginx
+- **Database**: MariaDB 10.6+
+- **Cache**: Redis
+- **PHP**: 8.2 với OPcache
+
+## Cấu hình Redis
+
+\`\`\`php
+'memcache.local' => '\\OC\\Memcache\\APCu',
+'memcache.distributed' => '\\OC\\Memcache\\Redis',
+'redis' => [
+    'host' => 'localhost',
+    'port' => 6379,
+],
+\`\`\`
+`
     },
     {
         id: 'doc-brand',
@@ -65,9 +126,20 @@ const SEED_DOCS = [
         date: '2d ago',
         tags: ['Design', 'Brand'],
         bg: 'https://images.unsplash.com/photo-1626785774573-4b79931bfd95?auto=format&fit=crop&q=80&w=2070',
-        content: `
-            <p class="lead">Brand identity guide.</p>
-        `
+        content: `*Brand identity guide for Khắc Nghĩa.*
+
+## Logo Usage
+
+- Minimum size: 32px height
+- Clear space: 1x logo height around all sides
+- Never distort or rotate
+
+## Typography
+
+**Headings**: Inter Bold
+**Body**: Inter Regular
+**Code**: JetBrains Mono
+`
     }
 ];
 
@@ -1275,31 +1347,28 @@ const Docs = () => {
                     {activeDoc ? (
                         <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
                             {isEditing ? (
-                                <div className="w-full max-w-full py-8 px-6 md:px-12 h-full flex flex-col gap-6 animate-[fadeIn_0.2s_ease-out] overflow-y-auto custom-scrollbar">
-                                    <input
-                                        type="text"
-                                        value={editTitle}
-                                        onChange={(e) => setEditTitle(e.target.value)}
-                                        className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white bg-transparent border-b border-transparent focus:border-[#1d2624]/20 focus:outline-none placeholder:text-[#1d2624]/20 w-full pb-2"
-                                        placeholder="Note Title"
-                                    />
-                                    <div className="flex-1 rounded-2xl bg-white/40 dark:bg-black/20 border border-white/40 p-1">
-                                        <textarea
-                                            value={editContent}
-                                            onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full h-full bg-transparent border-none p-6 resize-none focus:outline-none text-lg text-[#1d2624]/80 dark:text-white/80 font-serif leading-relaxed"
-                                            placeholder="Start typing your story..."
-                                        ></textarea>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                                    <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-4 animate-[fadeIn_0.2s_ease-out] overflow-hidden min-w-0">
+                                        <input
+                                            type="text"
+                                            value={editTitle}
+                                            onChange={(e) => setEditTitle(e.target.value)}
+                                            className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white bg-transparent border-none focus:outline-none placeholder:text-[#1d2624]/20 w-full pb-6 border-b border-[#1d2624]/10 dark:border-white/10"
+                                            placeholder="Tiêu đề"
+                                        />
+                                        <RichTextEditor
+                                            content={editContent}
+                                            onChange={setEditContent}
+                                            placeholder="Viết nội dung ở đây..."
+                                        />
                                     </div>
-                                    <p className="text-xs text-center text-[#1d2624]/40">HTML tags are supported for formatting.</p>
                                 </div>
                             ) : (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
                                         <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-6 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
-
                                         <div
-                                            className="prose prose-slate prose-lg text-[#1d2624]/80 dark:text-white/80 leading-[1.8] space-y-6 break-words [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:pt-4 [&>h2]:text-[#1d2624] dark:[&>h2]:text-white [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>.callout]:bg-white/40 [&>.callout]:p-6 [&>.callout]:rounded-2xl [&>.callout]:border [&>.callout]:border-primary/10 [&>.lead]:text-xl [&>.lead]:font-light [&>.lead]:italic [&>.lead]:text-[#1d2624]/60"
+                                            className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&>blockquote]:border-l-4 [&>blockquote]:border-primary/50 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-primary/5 [&>blockquote]:py-2 [&>blockquote]:rounded-r-lg [&>pre]:bg-gray-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:text-gray-100 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm"
                                             dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                         />
                                     </div>

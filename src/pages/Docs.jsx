@@ -253,41 +253,41 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
 
 // --- Rename Modal with Icon Picker ---
 const ICON_COLORS = [
-    { name: 'Default', class: 'text-primary' },
-    { name: 'Gray', class: 'text-gray-500' },
-    { name: 'Red', class: 'text-red-500' },
-    { name: 'Orange', class: 'text-orange-500' },
-    { name: 'Amber', class: 'text-amber-500' },
-    { name: 'Yellow', class: 'text-yellow-500' },
-    { name: 'Lime', class: 'text-lime-500' },
-    { name: 'Green', class: 'text-green-500' },
-    { name: 'Emerald', class: 'text-emerald-500' },
-    { name: 'Teal', class: 'text-teal-500' },
-    { name: 'Cyan', class: 'text-cyan-500' },
-    { name: 'Sky', class: 'text-sky-500' },
-    { name: 'Blue', class: 'text-blue-500' },
-    { name: 'Indigo', class: 'text-indigo-500' },
-    { name: 'Violet', class: 'text-violet-500' },
-    { name: 'Purple', class: 'text-purple-500' },
-    { name: 'Fuchsia', class: 'text-fuchsia-500' },
-    { name: 'Pink', class: 'text-pink-500' },
-    { name: 'Rose', class: 'text-rose-500' },
+    { name: 'Mặc định', class: '', bgClass: 'bg-gray-200 dark:bg-gray-700' },
+    { name: 'Red', class: 'text-red-500', bgClass: 'bg-red-500' },
+    { name: 'Orange', class: 'text-orange-500', bgClass: 'bg-orange-500' },
+    { name: 'Amber', class: 'text-amber-500', bgClass: 'bg-amber-500' },
+    { name: 'Yellow', class: 'text-yellow-500', bgClass: 'bg-yellow-500' },
+    { name: 'Lime', class: 'text-lime-500', bgClass: 'bg-lime-500' },
+    { name: 'Green', class: 'text-green-500', bgClass: 'bg-green-500' },
+    { name: 'Emerald', class: 'text-emerald-500', bgClass: 'bg-emerald-500' },
+    { name: 'Teal', class: 'text-teal-500', bgClass: 'bg-teal-500' },
+    { name: 'Cyan', class: 'text-cyan-500', bgClass: 'bg-cyan-500' },
+    { name: 'Sky', class: 'text-sky-500', bgClass: 'bg-sky-500' },
+    { name: 'Blue', class: 'text-blue-500', bgClass: 'bg-blue-500' },
+    { name: 'Indigo', class: 'text-indigo-500', bgClass: 'bg-indigo-500' },
+    { name: 'Violet', class: 'text-violet-500', bgClass: 'bg-violet-500' },
+    { name: 'Purple', class: 'text-purple-500', bgClass: 'bg-purple-500' },
+    { name: 'Fuchsia', class: 'text-fuchsia-500', bgClass: 'bg-fuchsia-500' },
+    { name: 'Pink', class: 'text-pink-500', bgClass: 'bg-pink-500' },
+    { name: 'Rose', class: 'text-rose-500', bgClass: 'bg-rose-500' },
+    { name: 'Slate', class: 'text-slate-500', bgClass: 'bg-slate-500' },
 ];
 
 const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, initialColor, itemType }) => {
     const [name, setName] = useState(initialName || '');
     const [selectedIcon, setSelectedIcon] = useState(initialIcon || 'folder');
-    const [selectedColor, setSelectedColor] = useState(initialColor || 'text-primary');
+    const [selectedColor, setSelectedColor] = useState(initialColor || ''); // Default empty
     const [showIconPicker, setShowIconPicker] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setName(initialName || '');
             setSelectedIcon(initialIcon || 'folder');
-            setSelectedColor(initialColor || 'text-primary');
+            setSelectedColor(initialColor || '');
             setShowIconPicker(false);
         }
-    }, [isOpen, initialName, initialIcon]);
+    }, [isOpen, initialName, initialIcon, initialColor]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -313,9 +313,10 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                         <button
                             type="button"
                             onClick={() => setShowIconPicker(!showIconPicker)}
+                            className="size-12 shrink-0 rounded-xl bg-[#1d2624]/5 hover:bg-[#1d2624]/10 flex items-center justify-center transition-colors border border-[#1d2624]/10"
                             title="Chọn icon"
                         >
-                            <span className={`material-symbols-outlined text-2xl ${selectedColor}`}>{selectedIcon}</span>
+                            <span className={`material-symbols-outlined text-2xl ${selectedColor || 'text-[#1d2624]/70 dark:text-white/80'}`}>{selectedIcon}</span>
                         </button>
                         <input
                             type="text"
@@ -329,17 +330,21 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
 
                     {/* Icon & Color Picker */}
                     {showIconPicker && (
-                        <div className="mb-4 p-3 bg-[#1d2624]/5 rounded-xl max-h-60 overflow-y-auto custom-scrollbar">
+                        <div className="mb-4 p-3 bg-[#1d2624]/5 rounded-xl max-h-80 overflow-y-auto custom-scrollbar">
                             <div className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 mb-2">Chọn màu</div>
-                            <div className="flex flex-wrap gap-2 mb-4">
+
+                            {/* Color Grid */}
+                            <div className="grid grid-cols-10 gap-1.5 mb-4">
                                 {ICON_COLORS.map(color => (
                                     <button
                                         key={color.name}
                                         type="button"
                                         onClick={() => setSelectedColor(color.class)}
-                                        className={`size-6 rounded-full transition-all ${color.class.replace('text-', 'bg-')} ${selectedColor === color.class ? 'ring-2 ring-offset-2 ring-[#1d2624]/20 scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
+                                        className={`size-7 rounded-full transition-all flex items-center justify-center ${color.bgClass} ${selectedColor === color.class ? 'ring-2 ring-offset-2 ring-[#1d2624]/20 scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
                                         title={color.name}
-                                    />
+                                    >
+                                        {!color.class && <span className="material-symbols-outlined text-[10px] text-black/50">block</span>}
+                                    </button>
                                 ))}
                             </div>
 
@@ -352,7 +357,7 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                                         onClick={() => { setSelectedIcon(icon); }}
                                         className={`size-9 rounded-lg flex items-center justify-center transition-all ${selectedIcon === icon ? 'bg-black/5 dark:bg-white/10 ring-1 ring-inset ring-[#1d2624]/10 dark:ring-white/10' : 'hover:bg-white/50'}`}
                                     >
-                                        <span className={`material-symbols-outlined text-[20px] ${selectedIcon === icon ? selectedColor : 'text-[#1d2624]/60 dark:text-white/60'}`}>{icon}</span>
+                                        <span className={`material-symbols-outlined text-[20px] ${selectedIcon === icon ? (selectedColor || 'text-[#1d2624]/80 dark:text-white/80') : 'text-[#1d2624]/60 dark:text-white/60'}`}>{icon}</span>
                                     </button>
                                 ))}
                             </div>
@@ -364,7 +369,7 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#1d2624]/20 text-[#1d2624]/60 font-semibold hover:bg-white/50 transition-colors">
                             Hủy
                         </button>
-                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-[#1d2624] text-white font-semibold shadow-lg hover:scale-[1.02] transition-all">
+                        <button type="submit" className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-dark transition-colors">
                             Lưu
                         </button>
                     </div>
@@ -946,8 +951,13 @@ const Docs = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const { data: foldersData, error: fError } = await supabase.from('folders').select('*').order('created_at', { ascending: true });
-            const { data: docsData, error: dError } = await supabase.from('docs').select('*').order('created_at', { ascending: true });
+            const [
+                { data: foldersData, error: fError },
+                { data: docsData, error: dError }
+            ] = await Promise.all([
+                supabase.from('folders').select('*').order('sort_order', { ascending: true }),
+                supabase.from('docs').select('*').order('date', { ascending: false })
+            ]);
 
             if (fError || dError) throw fError || dError;
 
@@ -1261,7 +1271,7 @@ const Docs = () => {
                             >
                                 {/* State 1: Folder Icon (Default) - Visible when NOT hovered OR if depth > 0 */}
                                 <span
-                                    className={`material-symbols-outlined text-[18px] ${folder.color || 'text-primary'} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
+                                    className={`material-symbols-outlined text-[18px] ${folder.color || ''} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
                                     data-testid="folder-icon"
                                 >
                                     {folder.icon}
@@ -1447,7 +1457,13 @@ const Docs = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
                             <nav className="space-y-0.5">
-                                {isAuthenticated ? (
+                                {loading ? (
+                                    <div className="space-y-2 animate-pulse mt-2">
+                                        {[1, 2, 3, 4, 5].map(i => (
+                                            <div key={i} className="h-8 bg-[#1d2624]/5 dark:bg-white/5 rounded-lg w-full"></div>
+                                        ))}
+                                    </div>
+                                ) : isAuthenticated ? (
                                     <DndContext
                                         sensors={sensors}
                                         collisionDetection={closestCenter}
@@ -1494,7 +1510,13 @@ const Docs = () => {
                         <span className="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 cursor-pointer hover:bg-white/60 transition-colors">Shared</span>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-                        {filteredDocs.length === 0 ? (
+                        {loading ? (
+                            <div className="space-y-4 animate-pulse">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="h-24 bg-white/40 dark:bg-white/5 rounded-2xl border border-white/20"></div>
+                                ))}
+                            </div>
+                        ) : filteredDocs.length === 0 ? (
                             <div className="text-center py-10 text-[#1d2624]/40 text-sm">No notes here</div>
                         ) : (
                             filteredDocs.map(doc => (
@@ -1506,9 +1528,7 @@ const Docs = () => {
                                 >
                                     <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <span className={`material-symbols-outlined text-[18px] shrink-0 ${doc.color || 'text-primary'}`}>
-                                                {doc.icon || 'description'}
-                                            </span>
+                                            {/* Icon removed as per request */}
                                             <h4 className={`font-bold text-sm line-clamp-1 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
                                                 {doc.title}
                                             </h4>
@@ -1615,7 +1635,7 @@ const Docs = () => {
                                     </p>
                                     <button
                                         className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors"
-                                        onClick={() => window.location.href = '/'}
+                                        onClick={() => window.location.href = '/login'}
                                     >
                                         Đăng nhập
                                     </button>

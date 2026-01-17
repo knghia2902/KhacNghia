@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -567,8 +567,6 @@ const Docs = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
-    const [autoSaveStatus, setAutoSaveStatus] = useState(''); // '', 'saving', 'saved'
-    const autoSaveTimerRef = useRef(null);
 
     // Modal State
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -1029,94 +1027,8 @@ const Docs = () => {
     };
 
     const cancelEdit = () => {
-        console.log('[DEBUG] cancelEdit called, isEditing:', isEditing);
-        // Clear any pending auto-save
-        if (autoSaveTimerRef.current) {
-            clearTimeout(autoSaveTimerRef.current);
-            autoSaveTimerRef.current = null;
-        }
-        setAutoSaveStatus('');
         setIsEditing(false);
-        console.log('[DEBUG] cancelEdit completed, isEditing set to false');
     };
-
-    // Auto-save function (silent, no toast, stays in edit mode)
-    const autoSave = useCallback(async () => {
-        console.log('[AutoSave] Starting...', { activeDocId, isEditing, hasActiveDoc: !!activeDoc });
-        if (!activeDoc || !isEditing) {
-            console.log('[AutoSave] Skipped - no activeDoc or not editing');
-            return;
-        }
-
-        setAutoSaveStatus('saving');
-        try {
-            // Update local state
-            const updatedDocs = docs.map(d =>
-                d.id === activeDocId ? { ...d, title: editTitle, content: editContent, date: 'Edited now' } : d
-            );
-            setDocs(updatedDocs);
-
-            console.log('[AutoSave] Saving to DB...', {
-                docId: activeDocId,
-                titleLength: editTitle.length,
-                contentLength: editContent.length,
-                contentPreview: editContent.substring(0, 100)
-            });
-
-            // Sync with DB
-            const { error, data } = await supabase
-                .from('docs')
-                .update({ title: editTitle, content: editContent, date: 'Edited now' })
-                .eq('id', activeDocId)
-                .select();
-
-            console.log('[AutoSave] DB Response:', { error, data });
-
-            if (error) {
-                console.error('[AutoSave] DB Error:', error);
-                setAutoSaveStatus('');
-            } else {
-                console.log('[AutoSave] Success!');
-                setAutoSaveStatus('saved');
-                // Clear "saved" status after 2 seconds
-                setTimeout(() => setAutoSaveStatus(''), 2000);
-            }
-        } catch (error) {
-            console.error('[AutoSave] Exception:', error);
-            setAutoSaveStatus('');
-        }
-    }, [activeDoc, activeDocId, isEditing, editTitle, editContent, docs]);
-
-    // Debounced auto-save effect - triggers 2 seconds after user stops typing
-    useEffect(() => {
-        console.log('[AutoSave Effect] Running...', { isEditing, hasActiveDoc: !!activeDoc, editContentLength: editContent?.length });
-
-        if (!isEditing || !activeDoc) {
-            console.log('[AutoSave Effect] Skipped - not editing or no doc');
-            return;
-        }
-
-        // Clear previous timer
-        if (autoSaveTimerRef.current) {
-            clearTimeout(autoSaveTimerRef.current);
-            console.log('[AutoSave Effect] Cleared previous timer');
-        }
-
-        // Set new timer for auto-save after 2 seconds of inactivity
-        console.log('[AutoSave Effect] Setting 2s timer...');
-        autoSaveTimerRef.current = setTimeout(() => {
-            console.log('[AutoSave Effect] Timer fired! Calling autoSave...');
-            autoSave();
-        }, 2000);
-
-        // Cleanup on unmount or when deps change
-        return () => {
-            if (autoSaveTimerRef.current) {
-                clearTimeout(autoSaveTimerRef.current);
-                console.log('[AutoSave Effect] Cleanup - cleared timer');
-            }
-        };
-    }, [editTitle, editContent, isEditing, activeDoc, autoSave]);
 
     const handleDeleteDoc = async () => {
         console.log('[DEBUG] handleDeleteDoc CALLED');

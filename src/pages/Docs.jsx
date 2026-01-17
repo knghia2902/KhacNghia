@@ -292,7 +292,7 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
     const handleSubmit = (e) => {
         e.preventDefault();
         if (name.trim()) {
-            onSubmit(name.trim(), selectedIcon);
+            onSubmit(name.trim(), selectedIcon, selectedColor);
             onClose();
         }
     };
@@ -313,10 +313,9 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                         <button
                             type="button"
                             onClick={() => setShowIconPicker(!showIconPicker)}
-                            className="size-12 shrink-0 rounded-xl bg-[#1d2624]/5 hover:bg-[#1d2624]/10 flex items-center justify-center transition-colors border border-[#1d2624]/10"
                             title="Chọn icon"
                         >
-                            <span className="material-symbols-outlined text-2xl text-primary">{selectedIcon}</span>
+                            <span className={`material-symbols-outlined text-2xl ${selectedColor}`}>{selectedIcon}</span>
                         </button>
                         <input
                             type="text"
@@ -328,19 +327,32 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                         />
                     </div>
 
-                    {/* Icon Picker */}
+                    {/* Icon & Color Picker */}
                     {showIconPicker && (
-                        <div className="mb-4 p-3 bg-[#1d2624]/5 rounded-xl max-h-48 overflow-y-auto">
+                        <div className="mb-4 p-3 bg-[#1d2624]/5 rounded-xl max-h-60 overflow-y-auto custom-scrollbar">
+                            <div className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 mb-2">Chọn màu</div>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {ICON_COLORS.map(color => (
+                                    <button
+                                        key={color.name}
+                                        type="button"
+                                        onClick={() => setSelectedColor(color.class)}
+                                        className={`size-6 rounded-full transition-all ${color.class.replace('text-', 'bg-')} ${selectedColor === color.class ? 'ring-2 ring-offset-2 ring-[#1d2624]/20 scale-110' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}
+                                        title={color.name}
+                                    />
+                                ))}
+                            </div>
+
                             <div className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 mb-2">Chọn biểu tượng</div>
                             <div className="grid grid-cols-8 gap-1">
                                 {AVAILABLE_ICONS.map(icon => (
                                     <button
                                         key={icon}
                                         type="button"
-                                        onClick={() => { setSelectedIcon(icon); setShowIconPicker(false); }}
+                                        onClick={() => { setSelectedIcon(icon); }}
                                         className={`size-9 rounded-lg flex items-center justify-center transition-all ${selectedIcon === icon ? 'bg-primary text-white' : 'hover:bg-white/50'}`}
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                                        <span className={`material-symbols-outlined text-[20px] ${selectedIcon === icon ? 'text-white' : selectedColor}`}>{icon}</span>
                                     </button>
                                 ))}
                             </div>
@@ -709,30 +721,30 @@ const Docs = () => {
         const { itemId, itemType } = contextMenu;
         if (itemType === 'folder') {
             const folder = folders.find(f => f.id === itemId);
-            setRenameModal({ isOpen: true, itemId, itemType, name: folder?.title || '', icon: folder?.icon || 'folder' });
+            setRenameModal({ isOpen: true, itemId, itemType, name: folder?.title || '', icon: folder?.icon || 'folder', color: folder?.color || 'text-primary' });
         } else {
             const doc = docs.find(d => d.id === itemId);
-            setRenameModal({ isOpen: true, itemId, itemType, name: doc?.title || '', icon: doc?.icon || 'description' });
+            setRenameModal({ isOpen: true, itemId, itemType, name: doc?.title || '', icon: doc?.icon || 'description', color: doc?.color || 'text-primary' });
         }
         closeContextMenu();
     };
 
-    const handleRename = async (newName, newIcon) => {
+    const handleRename = async (newName, newIcon, newColor) => {
         const { itemId, itemType } = renameModal;
         const table = itemType === 'folder' ? 'folders' : 'docs';
 
         try {
             const { error } = await supabase
                 .from(table)
-                .update({ title: newName, icon: newIcon })
+                .update({ title: newName, icon: newIcon, color: newColor })
                 .eq('id', itemId);
 
             if (error) throw error;
 
             if (itemType === 'folder') {
-                setFolders(folders.map(f => f.id === itemId ? { ...f, title: newName, icon: newIcon } : f));
+                setFolders(folders.map(f => f.id === itemId ? { ...f, title: newName, icon: newIcon, color: newColor } : f));
             } else {
-                setDocs(docs.map(d => d.id === itemId ? { ...d, title: newName, icon: newIcon } : d));
+                setDocs(docs.map(d => d.id === itemId ? { ...d, title: newName, icon: newIcon, color: newColor } : d));
             }
             showToast(`Đã đổi tên thành "${newName}"`);
         } catch (error) {
@@ -1249,7 +1261,7 @@ const Docs = () => {
                             >
                                 {/* State 1: Folder Icon (Default) - Visible when NOT hovered OR if depth > 0 */}
                                 <span
-                                    className={`material-symbols-outlined text-[18px] ${folder.iconColor} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
+                                    className={`material-symbols-outlined text-[18px] ${folder.color || 'text-primary'} ${depth === 0 ? 'group-hover/row:!hidden' : ''}`}
                                     data-testid="folder-icon"
                                 >
                                     {folder.icon}
@@ -1391,6 +1403,7 @@ const Docs = () => {
                 onSubmit={handleRename}
                 initialName={renameModal.name}
                 initialIcon={renameModal.icon}
+                initialColor={renameModal.color}
                 itemType={renameModal.itemType}
             />
 
@@ -1492,9 +1505,14 @@ const Docs = () => {
                                     className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white dark:bg-white/10 shadow-sm border-primary/10' : 'hover:bg-white/40 dark:hover:bg-white/5 border-transparent'}`}
                                 >
                                     <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
-                                        <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
-                                            {doc.title}
-                                        </h4>
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <span className={`material-symbols-outlined text-[18px] shrink-0 ${doc.color || 'text-primary'}`}>
+                                                {doc.icon || 'description'}
+                                            </span>
+                                            <h4 className={`font-bold text-sm line-clamp-1 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
+                                                {doc.title}
+                                            </h4>
+                                        </div>
                                         <div className="flex items-center gap-1 shrink-0">
                                             {doc.isLocked && (
                                                 <span className="material-symbols-outlined text-[14px] text-amber-500" title="Khóa - Yêu cầu đăng nhập">lock</span>

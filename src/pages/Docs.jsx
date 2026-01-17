@@ -252,15 +252,39 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
 };
 
 // --- Rename Modal with Icon Picker ---
-const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, itemType }) => {
+const ICON_COLORS = [
+    { name: 'Default', class: 'text-primary' },
+    { name: 'Gray', class: 'text-gray-500' },
+    { name: 'Red', class: 'text-red-500' },
+    { name: 'Orange', class: 'text-orange-500' },
+    { name: 'Amber', class: 'text-amber-500' },
+    { name: 'Yellow', class: 'text-yellow-500' },
+    { name: 'Lime', class: 'text-lime-500' },
+    { name: 'Green', class: 'text-green-500' },
+    { name: 'Emerald', class: 'text-emerald-500' },
+    { name: 'Teal', class: 'text-teal-500' },
+    { name: 'Cyan', class: 'text-cyan-500' },
+    { name: 'Sky', class: 'text-sky-500' },
+    { name: 'Blue', class: 'text-blue-500' },
+    { name: 'Indigo', class: 'text-indigo-500' },
+    { name: 'Violet', class: 'text-violet-500' },
+    { name: 'Purple', class: 'text-purple-500' },
+    { name: 'Fuchsia', class: 'text-fuchsia-500' },
+    { name: 'Pink', class: 'text-pink-500' },
+    { name: 'Rose', class: 'text-rose-500' },
+];
+
+const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, initialColor, itemType }) => {
     const [name, setName] = useState(initialName || '');
     const [selectedIcon, setSelectedIcon] = useState(initialIcon || 'folder');
+    const [selectedColor, setSelectedColor] = useState(initialColor || 'text-primary');
     const [showIconPicker, setShowIconPicker] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setName(initialName || '');
             setSelectedIcon(initialIcon || 'folder');
+            setSelectedColor(initialColor || 'text-primary');
             setShowIconPicker(false);
         }
     }, [isOpen, initialName, initialIcon]);
@@ -870,7 +894,7 @@ const Docs = () => {
         // Sync with DB
         const { error } = await supabase
             .from('docs')
-            .update({ isLocked: newLockedState })
+            .update({ is_locked: newLockedState })
             .eq('id', contextMenu.itemId);
 
         if (error) {
@@ -898,7 +922,7 @@ const Docs = () => {
         // Sync with DB
         const { error } = await supabase
             .from('docs')
-            .update({ isHidden: newHiddenState })
+            .update({ is_hidden: newHiddenState })
             .eq('id', contextMenu.itemId);
 
         if (error) {
@@ -923,7 +947,13 @@ const Docs = () => {
                 setDocs(SEED_DOCS);
             } else {
                 setFolders(foldersData);
-                setDocs(docsData);
+                // Map snake_case DB columns to camelCase for frontend
+                const mappedDocs = docsData.map(doc => ({
+                    ...doc,
+                    isLocked: doc.is_locked || false,
+                    isHidden: doc.is_hidden || false,
+                }));
+                setDocs(mappedDocs);
             }
             if (foldersData.length > 0 && !activeFolderId) {
                 setActiveFolderId(foldersData[0].id);

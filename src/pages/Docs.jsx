@@ -350,9 +350,9 @@ const RenameModal = ({ isOpen, onClose, onSubmit, initialName, initialIcon, init
                                         key={icon}
                                         type="button"
                                         onClick={() => { setSelectedIcon(icon); }}
-                                        className={`size-9 rounded-lg flex items-center justify-center transition-all ${selectedIcon === icon ? 'bg-primary text-white' : 'hover:bg-white/50'}`}
+                                        className={`size-9 rounded-lg flex items-center justify-center transition-all ${selectedIcon === icon ? 'bg-black/5 dark:bg-white/10 ring-1 ring-inset ring-[#1d2624]/10 dark:ring-white/10' : 'hover:bg-white/50'}`}
                                     >
-                                        <span className={`material-symbols-outlined text-[20px] ${selectedIcon === icon ? 'text-white' : selectedColor}`}>{icon}</span>
+                                        <span className={`material-symbols-outlined text-[20px] ${selectedIcon === icon ? selectedColor : 'text-[#1d2624]/60 dark:text-white/60'}`}>{icon}</span>
                                     </button>
                                 ))}
                             </div>

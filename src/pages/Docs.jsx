@@ -1465,7 +1465,15 @@ const Docs = () => {
                                         <h4 className={`font-bold text-sm line-clamp-1 flex-1 min-w-0 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
                                             {doc.title}
                                         </h4>
-                                        <span className="text-[10px] text-[#1d2624]/30 dark:text-white/40 whitespace-nowrap shrink-0 mt-0.5">{doc.date}</span>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            {doc.isLocked && (
+                                                <span className="material-symbols-outlined text-[14px] text-amber-500" title="Khóa - Yêu cầu đăng nhập">lock</span>
+                                            )}
+                                            {doc.isHidden && (
+                                                <span className="material-symbols-outlined text-[14px] text-gray-400" title="Ẩn - Chỉ Admin">visibility_off</span>
+                                            )}
+                                            <span className="text-[10px] text-[#1d2624]/30 dark:text-white/40 whitespace-nowrap mt-0.5">{doc.date}</span>
+                                        </div>
                                     </div>
                                     <p className="text-xs text-[#1d2624]/60 dark:text-white/70 line-clamp-2 mb-3 break-words overflow-hidden">
                                         {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
@@ -1547,7 +1555,24 @@ const Docs = () => {
 
                     {activeDoc ? (
                         <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
-                            {isEditing ? (
+                            {/* Lock Screen - Show when doc is locked and user not logged in */}
+                            {activeDoc.isLocked && !isAuthenticated ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                    <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mb-6">
+                                        <span className="material-symbols-outlined text-4xl text-amber-500">lock</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-[#1d2624] dark:text-white mb-2">Tài liệu được bảo vệ</h2>
+                                    <p className="text-[#1d2624]/60 dark:text-white/60 mb-6 max-w-md">
+                                        Tài liệu này yêu cầu đăng nhập để xem nội dung. Vui lòng đăng nhập để truy cập.
+                                    </p>
+                                    <button
+                                        className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors"
+                                        onClick={() => window.location.href = '/'}
+                                    >
+                                        Đăng nhập
+                                    </button>
+                                </div>
+                            ) : isEditing ? (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-4 animate-[fadeIn_0.2s_ease-out] overflow-hidden min-w-0">
                                         <input

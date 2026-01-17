@@ -161,7 +161,7 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, itemType, isRootFolder }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -190,6 +190,16 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
         ...(itemType === 'folder' ? [{ icon: 'edit', label: 'Đổi tên', action: onRename }] : []),
         { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
+        ...(itemType === 'doc' && onToggleLock ? [{
+            icon: isLocked ? 'lock_open' : 'lock',
+            label: isLocked ? 'Mở khóa' : 'Khóa (yêu cầu đăng nhập)',
+            action: onToggleLock
+        }] : []),
+        ...(itemType === 'doc' && onToggleHide ? [{
+            icon: isHidden ? 'visibility' : 'visibility_off',
+            label: isHidden ? 'Hiện' : 'Ẩn (chỉ Admin)',
+            action: onToggleHide
+        }] : []),
         { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
     ];
 
@@ -840,6 +850,62 @@ const Docs = () => {
         }
     };
 
+    // Toggle Lock - requires login to view
+    const handleToggleLock = async () => {
+        if (!contextMenu.itemId || contextMenu.itemType !== 'doc') return;
+
+        const doc = docs.find(d => d.id === contextMenu.itemId);
+        if (!doc) return;
+
+        const newLockedState = !doc.isLocked;
+
+        // Optimistic update
+        const updatedDocs = docs.map(d =>
+            d.id === contextMenu.itemId ? { ...d, isLocked: newLockedState } : d
+        );
+        setDocs(updatedDocs);
+        closeContextMenu();
+        showToast(newLockedState ? 'Đã khóa tài liệu' : 'Đã mở khóa tài liệu');
+
+        // Sync with DB
+        const { error } = await supabase
+            .from('docs')
+            .update({ isLocked: newLockedState })
+            .eq('id', contextMenu.itemId);
+
+        if (error) {
+            console.error('Error toggling lock:', error);
+        }
+    };
+
+    // Toggle Hide - only visible to admin
+    const handleToggleHide = async () => {
+        if (!contextMenu.itemId || contextMenu.itemType !== 'doc') return;
+
+        const doc = docs.find(d => d.id === contextMenu.itemId);
+        if (!doc) return;
+
+        const newHiddenState = !doc.isHidden;
+
+        // Optimistic update
+        const updatedDocs = docs.map(d =>
+            d.id === contextMenu.itemId ? { ...d, isHidden: newHiddenState } : d
+        );
+        setDocs(updatedDocs);
+        closeContextMenu();
+        showToast(newHiddenState ? 'Đã ẩn tài liệu' : 'Đã hiện tài liệu');
+
+        // Sync with DB
+        const { error } = await supabase
+            .from('docs')
+            .update({ isHidden: newHiddenState })
+            .eq('id', contextMenu.itemId);
+
+        if (error) {
+            console.error('Error toggling hide:', error);
+        }
+    };
+
     // --- Effects ---
     const fetchData = async () => {
         setLoading(true);
@@ -899,10 +965,16 @@ const Docs = () => {
 
     const filteredDocs = useMemo(() => {
         let result = docs;
+
+        // Filter out hidden docs for non-authenticated users
+        if (!isAuthenticated) {
+            result = result.filter(doc => !doc.isHidden);
+        }
+
         if (searchQuery) {
             result = result.filter(doc =>
                 doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                doc.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+                doc.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
             );
         } else {
             if (activeFolderId) {
@@ -920,7 +992,7 @@ const Docs = () => {
             }
         }
         return result;
-    }, [docs, activeFolderId, searchQuery, folders]);
+    }, [docs, activeFolderId, searchQuery, folders, isAuthenticated]);
 
     // --- Handlers ---
     const handleFolderClick = (folderId) => {
@@ -1265,6 +1337,10 @@ const Docs = () => {
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
                 onEdit={() => { startEditing(); closeContextMenu(); }}
                 onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
+                onToggleLock={isAuthenticated ? handleToggleLock : null}
+                onToggleHide={isAuthenticated ? handleToggleHide : null}
+                isLocked={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isLocked : false}
+                isHidden={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isHidden : false}
                 itemType={contextMenu.itemType}
                 isRootFolder={contextMenu.parentId === null}
             />

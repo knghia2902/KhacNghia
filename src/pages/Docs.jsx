@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -597,10 +598,26 @@ const Docs = () => {
     const { isAuthenticated } = useAuth();
     console.log('[Docs] Component rendering - AUTO SAVE VERSION 2.0');
 
+    const navigate = useNavigate();
+
     // --- State ---
-    const [folders, setFolders] = useState([]);
-    const [docs, setDocs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [folders, setFolders] = useState(() => {
+        try {
+            const saved = localStorage.getItem('zen_folders');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [docs, setDocs] = useState(() => {
+        try {
+            const saved = localStorage.getItem('zen_docs');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [loading, setLoading] = useState(() => {
+        // If we have cached data, don't show initial loading screen
+        const hasData = localStorage.getItem('zen_folders') || localStorage.getItem('zen_docs');
+        return !hasData;
+    });
 
     const [activeFolderId, setActiveFolderId] = useState(null);
     const [expandedFolders, setExpandedFolders] = useState(() => {
@@ -961,6 +978,15 @@ const Docs = () => {
 
             if (fError || dError) throw fError || dError;
 
+            // Map snake_case DB columns to camelCase for frontend
+            const mappedDocs = docsData.map(doc => ({
+                ...doc,
+                isLocked: doc.is_locked || false,
+                isHidden: doc.is_hidden || false,
+                icon: doc.icon || 'description', // Ensure default icon
+                color: doc.color || ''
+            }));
+
             if (foldersData.length === 0 && docsData.length === 0) {
                 // Seed if empty
                 await supabase.from('folders').insert(SEED_FOLDERS);
@@ -969,14 +995,17 @@ const Docs = () => {
                 setDocs(SEED_DOCS);
             } else {
                 setFolders(foldersData);
-                // Map snake_case DB columns to camelCase for frontend
-                const mappedDocs = docsData.map(doc => ({
-                    ...doc,
-                    isLocked: doc.is_locked || false,
-                    isHidden: doc.is_hidden || false,
-                }));
                 setDocs(mappedDocs);
+
+                // Cache data for instant load on next visit
+                try {
+                    localStorage.setItem('zen_folders', JSON.stringify(foldersData));
+                    localStorage.setItem('zen_docs', JSON.stringify(mappedDocs));
+                } catch (e) {
+                    console.warn('LocalStorage quota exceeded or error:', e);
+                }
             }
+
             if (foldersData.length > 0 && !activeFolderId) {
                 setActiveFolderId(foldersData[0].id);
             }
@@ -1634,8 +1663,8 @@ const Docs = () => {
                                         Tài liệu này yêu cầu đăng nhập để xem nội dung. Vui lòng đăng nhập để truy cập.
                                     </p>
                                     <button
-                                        className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors"
-                                        onClick={() => window.location.href = '/login'}
+                                        className="px-6 py-2.5 bg-[#1d2624] dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-[#1d2624] font-bold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                                        onClick={() => navigate('/login')}
                                     >
                                         Đăng nhập
                                     </button>

@@ -567,6 +567,7 @@ const Docs = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
+    const [editAttachments, setEditAttachments] = useState([]);
 
     // Modal State
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -996,6 +997,7 @@ const Docs = () => {
         if (!activeDoc) return;
         setEditTitle(activeDoc.title);
         setEditContent(activeDoc.content);
+        setEditAttachments(activeDoc.attachments || []);
         setIsEditing(true);
     };
 
@@ -1004,7 +1006,7 @@ const Docs = () => {
         try {
             // Optimistic UI update
             const updatedDocs = docs.map(d =>
-                d.id === activeDocId ? { ...d, title: editTitle, content: editContent, date: 'Edited now' } : d
+                d.id === activeDocId ? { ...d, title: editTitle, content: editContent, attachments: editAttachments, date: 'Edited now' } : d
             );
             setDocs(updatedDocs);
             setIsEditing(false);
@@ -1013,12 +1015,11 @@ const Docs = () => {
             // Optimistic Update Completed - Sync with DB in background
             const { error } = await supabase
                 .from('docs')
-                .update({ title: editTitle, content: editContent, date: 'Edited now' })
+                .update({ title: editTitle, content: editContent, attachments: editAttachments, date: 'Edited now' })
                 .eq('id', activeDocId);
 
             if (error) {
                 console.error('Error saving doc in background:', error);
-                // Silent fail or subtle toast could be added here, but keeping it "optimistic"
             }
         } catch (error) {
             console.error('Error in save flow:', error);
@@ -1484,6 +1485,9 @@ const Docs = () => {
                                             content={editContent}
                                             onChange={setEditContent}
                                             placeholder="Viết nội dung ở đây..."
+                                            attachments={editAttachments}
+                                            onAttachmentAdd={(attachment) => setEditAttachments(prev => [...prev, attachment])}
+                                            onAttachmentRemove={(id) => setEditAttachments(prev => prev.filter(a => a.id !== id))}
                                         />
                                     </div>
                                 </div>
@@ -1495,6 +1499,45 @@ const Docs = () => {
                                             className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-primary/5 [&_blockquote]:py-2 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6 [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-gray-100 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-all [&_pre]:my-6 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:border [&_img]:border-black/10 dark:[&_img]:border-white/10 [&_img]:my-4 [&_u]:underline-offset-[6px] [&_u]:decoration-1 [&_u]:decoration-primary/50 [&_hr]:my-8 [&_hr]:border-t [&_hr]:border-black/10 dark:[&_hr]:border-white/10"
                                             dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                         />
+
+                                        {/* Attachments in View Mode */}
+                                        {activeDoc.attachments && activeDoc.attachments.length > 0 && (
+                                            <div className="mt-8 p-4 bg-white/20 dark:bg-black/10 rounded-xl border border-[#1d2624]/10 dark:border-white/10">
+                                                <h4 className="text-sm font-semibold text-[#1d2624]/70 dark:text-white/70 mb-3 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                                                    Đính kèm ({activeDoc.attachments.length})
+                                                </h4>
+                                                <div className="grid gap-2">
+                                                    {activeDoc.attachments.map((attachment) => (
+                                                        <a
+                                                            key={attachment.id}
+                                                            href={attachment.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-3 p-3 bg-white/30 dark:bg-white/5 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors group"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[20px] text-primary shrink-0">
+                                                                {attachment.type?.includes('pdf') ? 'picture_as_pdf' :
+                                                                    attachment.type?.includes('word') || attachment.name?.endsWith('.doc') || attachment.name?.endsWith('.docx') ? 'description' :
+                                                                        attachment.type?.includes('excel') || attachment.type?.includes('spreadsheet') || attachment.name?.endsWith('.xls') || attachment.name?.endsWith('.xlsx') ? 'table_chart' :
+                                                                            attachment.type?.includes('powerpoint') || attachment.type?.includes('presentation') || attachment.name?.endsWith('.ppt') || attachment.name?.endsWith('.pptx') ? 'slideshow' :
+                                                                                attachment.type?.includes('zip') || attachment.type?.includes('rar') ? 'folder_zip' :
+                                                                                    'draft'}
+                                                            </span>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-medium text-[#1d2624] dark:text-white truncate">
+                                                                    {attachment.name}
+                                                                </p>
+                                                                <p className="text-xs text-[#1d2624]/50 dark:text-white/50">
+                                                                    {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                                </p>
+                                                            </div>
+                                                            <span className="material-symbols-outlined text-[18px] opacity-0 group-hover:opacity-100 text-primary transition-opacity">download</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

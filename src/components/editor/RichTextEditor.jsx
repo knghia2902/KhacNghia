@@ -13,7 +13,14 @@ import { supabase } from '../../lib/supabaseClient';
  * RichTextEditor - WYSIWYG editor giống Word
  * Hiển thị format ngay khi gõ (không thấy Markdown syntax)
  */
-const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung ở đây...' }) => {
+const RichTextEditor = ({
+    content,
+    onChange,
+    placeholder = 'Viết nội dung ở đây...',
+    attachments = [],
+    onAttachmentAdd,
+    onAttachmentRemove
+}) => {
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -82,6 +89,80 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
             return null;
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const [isAttaching, setIsAttaching] = useState(false);
+
+    // Allowed file types for attachments
+    const ALLOWED_TYPES = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/zip',
+        'application/x-rar-compressed',
+        'text/plain'
+    ];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+    // Upload attachment to Supabase Storage
+    const uploadAttachment = async (file) => {
+        if (!onAttachmentAdd) return;
+
+        // Validate file type
+        if (!ALLOWED_TYPES.includes(file.type) && !file.name.endsWith('.rar')) {
+            alert('Loại file không được hỗ trợ. Chỉ cho phép: PDF, DOC, XLS, PPT, ZIP, RAR, TXT');
+            return;
+        }
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            alert('File quá lớn. Giới hạn: 10MB');
+            return;
+        }
+
+        setIsAttaching(true);
+        try {
+            const fileName = `attachments/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+            const { data, error } = await supabase.storage
+                .from('docs-media')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) {
+                console.error('Attachment upload error:', error);
+                alert('Lỗi upload: ' + error.message);
+                return;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('docs-media')
+                .getPublicUrl(fileName);
+
+            // Create attachment object
+            const attachment = {
+                id: Date.now().toString(),
+                name: file.name,
+                url: publicUrl,
+                size: file.size,
+                type: file.type,
+                uploadedAt: new Date().toISOString()
+            };
+
+            onAttachmentAdd(attachment);
+        } catch (err) {
+            console.error('Attachment upload failed:', err);
+            alert('Upload thất bại');
+        } finally {
+            setIsAttaching(false);
         }
     };
 
@@ -268,6 +349,34 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     )}
                 </ToolbarButton>
 
+                {/* Attach File */}
+                {onAttachmentAdd && (
+                    <>
+                        <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
+                        <ToolbarButton
+                            onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt';
+                                input.onchange = (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        uploadAttachment(file);
+                                    }
+                                };
+                                input.click();
+                            }}
+                            title={isAttaching ? "Đang upload..." : "Đính kèm file"}
+                        >
+                            {isAttaching ? (
+                                <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                            ) : (
+                                <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                            )}
+                        </ToolbarButton>
+                    </>
+                )}
+
                 <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Undo/Redo */}
@@ -290,6 +399,62 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                 <EditorContent editor={editor} />
             </div>
 
+            {/* Attachments List */}
+            {attachments.length > 0 && (
+                <div className="mt-4 p-4 bg-white/10 dark:bg-black/10 rounded-xl border border-[#1d2624]/10 dark:border-white/10">
+                    <h4 className="text-sm font-semibold text-[#1d2624]/70 dark:text-white/70 mb-3 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px]">attach_file</span>
+                        Đính kèm ({attachments.length})
+                    </h4>
+                    <div className="space-y-2">
+                        {attachments.map((attachment) => (
+                            <div
+                                key={attachment.id}
+                                className="flex items-center justify-between p-3 bg-white/30 dark:bg-white/5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors group"
+                            >
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <span className="material-symbols-outlined text-[20px] text-primary shrink-0">
+                                        {attachment.type?.includes('pdf') ? 'picture_as_pdf' :
+                                            attachment.type?.includes('word') || attachment.name?.endsWith('.doc') || attachment.name?.endsWith('.docx') ? 'description' :
+                                                attachment.type?.includes('excel') || attachment.type?.includes('spreadsheet') || attachment.name?.endsWith('.xls') || attachment.name?.endsWith('.xlsx') ? 'table_chart' :
+                                                    attachment.type?.includes('powerpoint') || attachment.type?.includes('presentation') || attachment.name?.endsWith('.ppt') || attachment.name?.endsWith('.pptx') ? 'slideshow' :
+                                                        attachment.type?.includes('zip') || attachment.type?.includes('rar') ? 'folder_zip' :
+                                                            'draft'}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-[#1d2624] dark:text-white truncate">
+                                            {attachment.name}
+                                        </p>
+                                        <p className="text-xs text-[#1d2624]/50 dark:text-white/50">
+                                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <a
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 text-[#1d2624]/60 dark:text-white/60 hover:text-primary transition-colors"
+                                        title="Tải xuống"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">download</span>
+                                    </a>
+                                    {onAttachmentRemove && (
+                                        <button
+                                            onClick={() => onAttachmentRemove(attachment.id)}
+                                            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-[#1d2624]/60 dark:text-white/60 hover:text-red-500 transition-colors"
+                                            title="Xóa"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             <style>{`
                 .ProseMirror {
                     outline: none;

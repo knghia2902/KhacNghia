@@ -39,7 +39,8 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
         ],
         content: content || '',
         onUpdate: ({ editor }) => {
-            onChange(editor.getHTML());
+            const html = editor.getHTML();
+            onChange(html);
         },
         editorProps: {
             attributes: {
@@ -64,7 +65,6 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                 });
 
             if (error) {
-                // Nếu bucket không tồn tại, thử tạo hoặc báo lỗi
                 console.error('Upload error:', error);
                 alert('Lỗi upload: ' + error.message);
                 return null;
@@ -106,7 +106,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
     return (
         <div className="rich-text-editor">
             {/* Toolbar */}
-            <div className="flex flex-wrap gap-1 p-2 bg-white/30 dark:bg-white/5 rounded-t-xl border border-[#1d2624]/10 dark:border-white/10 border-b-0">
+            <div className="flex flex-wrap gap-2 p-3 bg-white/30 dark:bg-white/5 rounded-t-xl border border-[#1d2624]/10 dark:border-white/10 border-b-0">
                 {/* Text Style */}
                 <ToolbarButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
@@ -137,7 +137,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     <span className="material-symbols-outlined text-[16px]">highlight</span>
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Headings */}
                 <ToolbarButton
@@ -162,7 +162,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     <span className="font-bold text-sm">H3</span>
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Lists */}
                 <ToolbarButton
@@ -180,7 +180,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     <span className="material-symbols-outlined text-[16px]">format_list_numbered</span>
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Block Elements */}
                 <ToolbarButton
@@ -204,7 +204,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     <span className="material-symbols-outlined text-[16px]">horizontal_rule</span>
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Text Align */}
                 <ToolbarButton
@@ -229,7 +229,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     <span className="material-symbols-outlined text-[16px]">format_align_right</span>
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Image */}
                 <ToolbarButton
@@ -268,7 +268,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     )}
                 </ToolbarButton>
 
-                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-1 self-center" />
+                <div className="w-px h-6 bg-[#1d2624]/10 dark:bg-white/10 mx-3 self-center" />
 
                 {/* Undo/Redo */}
                 <ToolbarButton
@@ -336,7 +336,7 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                 .ProseMirror blockquote {
                     border-left: 4px solid rgba(78, 205, 196, 0.5);
                     padding-left: 1rem;
-                    margin: 1rem 0;
+                    margin: 1.5rem 0;
                     font-style: italic;
                     background: rgba(78, 205, 196, 0.05);
                     padding: 0.5rem 1rem;
@@ -347,10 +347,13 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     color: #e0e0e0;
                     padding: 1rem;
                     border-radius: 0.75rem;
-                    margin: 0.75rem 0;
+                    margin: 1.5rem 0;
                     overflow-x: auto;
                     font-family: 'JetBrains Mono', monospace;
                     font-size: 0.875rem;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    word-break: break-all;
                 }
                 .ProseMirror code {
                     background: rgba(0, 0, 0, 0.1);
@@ -367,10 +370,15 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                     padding: 0.125rem 0.25rem;
                     border-radius: 0.125rem;
                 }
+                .ProseMirror u {
+                    text-underline-offset: 6px;
+                    text-decoration-thickness: 1px;
+                    text-decoration-color: rgba(78, 205, 196, 0.5);
+                }
                 .ProseMirror hr {
                     border: none;
-                    border-top: 2px solid rgba(0, 0, 0, 0.1);
-                    margin: 1.5rem 0;
+                    border-top: 1px solid rgba(0, 0, 0, 0.1);
+                    margin: 2rem 0;
                 }
                 .dark .ProseMirror hr {
                     border-top-color: rgba(255, 255, 255, 0.1);
@@ -378,9 +386,14 @@ const RichTextEditor = ({ content, onChange, placeholder = 'Viết nội dung �
                 .ProseMirror img {
                     max-width: 100%;
                     height: auto;
-                    border-radius: 0.75rem;
+                    border-radius: 1rem;
                     margin: 1rem 0;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    border: 1px solid rgba(0, 0, 0, 0.08);
+                }
+                .dark .ProseMirror img {
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                 }
                 .ProseMirror img.ProseMirror-selectednode {
                     outline: 3px solid #4ecdc4;

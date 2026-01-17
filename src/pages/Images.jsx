@@ -332,13 +332,21 @@ const Images = () => {
     };
 
     const handleDeleteImage = async () => {
-        if (!confirmModal.imageId) return;
+        console.log('[Images] handleDeleteImage called', { imageId: confirmModal.imageId });
+        if (!confirmModal.imageId) {
+            console.log('[Images] No imageId, aborting');
+            return;
+        }
 
-        const { error } = await supabase.from('gallery_images').delete().eq('id', confirmModal.imageId);
+        console.log('[Images] Deleting from Supabase...');
+        const { error, data } = await supabase.from('gallery_images').delete().eq('id', confirmModal.imageId).select();
+        console.log('[Images] Supabase response:', { error, data });
+
         if (error) {
-            console.error('Error deleting image:', error);
+            console.error('[Images] Error deleting image:', error);
             alert('Failed to delete image: ' + error.message);
         } else {
+            console.log('[Images] Delete successful, updating local state');
             setImages(prev => prev.filter(img => img.id !== confirmModal.imageId));
             if (selectedImage && selectedImage.id === confirmModal.imageId) {
                 setSelectedImage(null);

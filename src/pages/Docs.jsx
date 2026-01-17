@@ -544,6 +544,7 @@ const SortableFolderItem = ({ folder, children, isAuthenticated }) => {
 
 const Docs = () => {
     const { isAuthenticated } = useAuth();
+    console.log('[Docs] Component rendering - AUTO SAVE VERSION 2.0');
 
     // --- State ---
     const [folders, setFolders] = useState([]);
@@ -1041,7 +1042,11 @@ const Docs = () => {
 
     // Auto-save function (silent, no toast, stays in edit mode)
     const autoSave = useCallback(async () => {
-        if (!activeDoc || !isEditing) return;
+        console.log('[AutoSave] Starting...', { activeDocId, isEditing, hasActiveDoc: !!activeDoc });
+        if (!activeDoc || !isEditing) {
+            console.log('[AutoSave] Skipped - no activeDoc or not editing');
+            return;
+        }
 
         setAutoSaveStatus('saving');
         try {
@@ -1051,37 +1056,56 @@ const Docs = () => {
             );
             setDocs(updatedDocs);
 
+            console.log('[AutoSave] Saving to DB...', {
+                docId: activeDocId,
+                titleLength: editTitle.length,
+                contentLength: editContent.length,
+                contentPreview: editContent.substring(0, 100)
+            });
+
             // Sync with DB
-            const { error } = await supabase
+            const { error, data } = await supabase
                 .from('docs')
                 .update({ title: editTitle, content: editContent, date: 'Edited now' })
-                .eq('id', activeDocId);
+                .eq('id', activeDocId)
+                .select();
+
+            console.log('[AutoSave] DB Response:', { error, data });
 
             if (error) {
-                console.error('Auto-save error:', error);
+                console.error('[AutoSave] DB Error:', error);
                 setAutoSaveStatus('');
             } else {
+                console.log('[AutoSave] Success!');
                 setAutoSaveStatus('saved');
                 // Clear "saved" status after 2 seconds
                 setTimeout(() => setAutoSaveStatus(''), 2000);
             }
         } catch (error) {
-            console.error('Auto-save error:', error);
+            console.error('[AutoSave] Exception:', error);
             setAutoSaveStatus('');
         }
     }, [activeDoc, activeDocId, isEditing, editTitle, editContent, docs]);
 
     // Debounced auto-save effect - triggers 2 seconds after user stops typing
     useEffect(() => {
-        if (!isEditing || !activeDoc) return;
+        console.log('[AutoSave Effect] Running...', { isEditing, hasActiveDoc: !!activeDoc, editContentLength: editContent?.length });
+
+        if (!isEditing || !activeDoc) {
+            console.log('[AutoSave Effect] Skipped - not editing or no doc');
+            return;
+        }
 
         // Clear previous timer
         if (autoSaveTimerRef.current) {
             clearTimeout(autoSaveTimerRef.current);
+            console.log('[AutoSave Effect] Cleared previous timer');
         }
 
         // Set new timer for auto-save after 2 seconds of inactivity
+        console.log('[AutoSave Effect] Setting 2s timer...');
         autoSaveTimerRef.current = setTimeout(() => {
+            console.log('[AutoSave Effect] Timer fired! Calling autoSave...');
             autoSave();
         }, 2000);
 
@@ -1089,6 +1113,7 @@ const Docs = () => {
         return () => {
             if (autoSaveTimerRef.current) {
                 clearTimeout(autoSaveTimerRef.current);
+                console.log('[AutoSave Effect] Cleanup - cleared timer');
             }
         };
     }, [editTitle, editContent, isEditing, activeDoc, autoSave]);
@@ -1470,7 +1495,7 @@ const Docs = () => {
                 </section>
 
                 {/* Main Content */}
-                <section className={`flex-1 flex flex-col bg-white/5 relative h-full overflow-hidden transition-all duration-500 ${isFocusMode ? 'max-w-4xl mx-auto rounded-2xl' : ''}`}>
+                <section className={`flex-1 flex flex-col bg-white/5 relative h-full overflow-hidden transition-all duration-500 ${isFocusMode ? 'max-w-4xl mx-auto rounded-2xl shadow-2xl' : ''}`}>
                     {/* Mobile Toggle Button */}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
@@ -1571,7 +1596,7 @@ const Docs = () => {
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
                                         <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-6 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
                                         <div
-                                            className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&>blockquote]:border-l-4 [&>blockquote]:border-primary/50 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:bg-primary/5 [&>blockquote]:py-2 [&>blockquote]:rounded-r-lg [&>pre]:bg-gray-900 [&>pre]:p-4 [&>pre]:rounded-xl [&>pre]:text-gray-100 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm"
+                                            className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-primary/5 [&_blockquote]:py-2 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6 [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-gray-100 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-all [&_pre]:my-6 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:border [&_img]:border-black/10 dark:[&_img]:border-white/10 [&_img]:my-4 [&_u]:underline-offset-[6px] [&_u]:decoration-1 [&_u]:decoration-primary/50 [&_hr]:my-8 [&_hr]:border-t [&_hr]:border-black/10 dark:[&_hr]:border-white/10"
                                             dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                         />
                                     </div>

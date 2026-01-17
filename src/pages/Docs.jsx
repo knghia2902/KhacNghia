@@ -1427,23 +1427,7 @@ const Docs = () => {
                                 </button>
                                 <div className="h-4 w-px bg-white/20"></div>
                                 <span className="text-sm font-medium text-[#1d2624]/40 flex items-center gap-2">
-                                    {isEditing ? (
-                                        <>
-                                            {autoSaveStatus === 'saving' && (
-                                                <>
-                                                    <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
-                                                    <span>Đang lưu...</span>
-                                                </>
-                                            )}
-                                            {autoSaveStatus === 'saved' && (
-                                                <>
-                                                    <span className="material-symbols-outlined text-[14px] text-green-500">check_circle</span>
-                                                    <span className="text-green-600">Đã lưu</span>
-                                                </>
-                                            )}
-                                            {autoSaveStatus === '' && 'Editing Mode'}
-                                        </>
-                                    ) : `Last saved ${activeDoc.date}`}
+                                    {isEditing ? 'Editing Mode' : `Last saved ${activeDoc.date}`}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">

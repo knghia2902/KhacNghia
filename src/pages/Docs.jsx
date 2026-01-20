@@ -165,7 +165,7 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onImportWord, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onImportWord, onExportHtml, onExportWord, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -194,6 +194,8 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
         ...(itemType === 'folder' ? [{ icon: 'edit', label: 'Đổi tên', action: onRename }] : []),
         { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
+        ...(itemType === 'doc' && onExportHtml ? [{ icon: 'html', label: 'Export HTML', action: onExportHtml }] : []),
+        ...(itemType === 'doc' && onExportWord ? [{ icon: 'description', label: 'Export Word', action: onExportWord }] : []),
         ...(itemType === 'doc' && onToggleLock ? [{
             icon: isLocked ? 'lock_open' : 'lock',
             label: isLocked ? 'Mở khóa' : 'Khóa (yêu cầu đăng nhập)',
@@ -1488,14 +1490,15 @@ const Docs = () => {
     };
 
     // --- Export Logic ---
-    const handleExport = async (format) => {
-        if (!activeDoc) return;
+    const handleExport = async (format, docId = null) => {
+        const targetDoc = docId ? docs.find(d => d.id === docId) : activeDoc;
+        if (!targetDoc) return;
         showToast(`Đang chuẩn bị xuất file ${format.toUpperCase()}...`);
 
         try {
             // 1. Prepare Content (Convert images to base64)
             const wrapper = document.createElement('div');
-            wrapper.innerHTML = activeDoc.content;
+            wrapper.innerHTML = targetDoc.content;
 
             const images = wrapper.getElementsByTagName('img');
             for (let img of images) {
@@ -1518,7 +1521,7 @@ const Docs = () => {
             }
 
             const processedContent = wrapper.innerHTML;
-            const fileName = (activeDoc.title || 'document').replace(/[^a-z0-9\u00C0-\u024F]/gi, '_');
+            const fileName = (targetDoc.title || 'document').replace(/[^a-z0-9\u00C0-\u024F]/gi, '_');
 
             if (format === 'html') {
                 const htmlStruct = `
@@ -1526,16 +1529,17 @@ const Docs = () => {
 <html>
 <head>
     <meta charset="utf-8">
-    <title>${activeDoc.title}</title>
+    <title>${targetDoc.title}</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 20px; }
         img { max-width: 100%; height: auto; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
         td, th { border: 1px solid #ddd; padding: 8px; }
     </style>
+    </style>
 </head>
 <body>
-    <h1>${activeDoc.title}</h1>
+    <h1>${targetDoc.title}</h1>
     ${processedContent}
 </body>
 </html>`;
@@ -1548,10 +1552,10 @@ const Docs = () => {
 <html>
 <head>
     <meta charset="utf-8">
-    <title>${activeDoc.title}</title>
+    <title>${targetDoc.title}</title>
 </head>
 <body>
-    <h1>${activeDoc.title}</h1>
+    <h1>${targetDoc.title}</h1>
     ${processedContent}
 </body>
 </html>`;
@@ -1741,7 +1745,10 @@ const Docs = () => {
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
                 onEdit={() => { startEditing(); closeContextMenu(); }}
                 onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
+
                 onImportWord={() => { setImportTargetId(contextMenu.itemId || (contextMenu.parentId === null ? null : contextMenu.parentId)); setIsImportModalOpen(true); closeContextMenu(); }}
+                onExportHtml={() => { handleExport('html', contextMenu.itemId); closeContextMenu(); }}
+                onExportWord={() => { handleExport('word', contextMenu.itemId); closeContextMenu(); }}
                 onToggleLock={isAuthenticated ? handleToggleLock : null}
                 onToggleHide={isAuthenticated ? handleToggleHide : null}
                 isLocked={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isLocked : false}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import mammoth from 'mammoth';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -1368,6 +1369,42 @@ const Docs = () => {
         );
     };
 
+    const handleImportWord = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showToast('Đang import tài liệu...');
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            const html = result.value;
+            const title = file.name.replace(/\.docx?$/, '');
+
+            const newDoc = {
+                title,
+                content: html,
+                parentId: activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
+                date: new Date().toISOString(),
+                is_locked: false,
+                is_hidden: false
+            };
+
+            const { error } = await supabase.from('docs').insert(newDoc);
+
+            if (error) throw error;
+
+            showToast(`Đã import "${title}"`);
+            fetchData();
+
+        } catch (err) {
+            console.error('Import failed:', err);
+            showToast('Lỗi: ' + err.message);
+        } finally {
+            e.target.value = '';
+        }
+    };
+
 
     return (
         <>
@@ -1481,8 +1518,24 @@ const Docs = () => {
 
                     <div className="flex flex-col h-full">
                         {/* Header Row - aligned with other columns */}
-                        <div className="h-16 px-6 flex items-center shrink-0">
+                        <div className="h-16 px-6 flex items-center justify-between shrink-0">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Workspace</h3>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => document.getElementById('import-word-input').click()}
+                                    className="p-1.5 text-[#1d2624]/40 dark:text-white/40 hover:text-primary dark:hover:text-primary hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+                                    title="Nhập từ Word"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                                </button>
+                                <input
+                                    type="file"
+                                    id="import-word-input"
+                                    hidden
+                                    accept=".docx"
+                                    onChange={handleImportWord}
+                                />
+                            </div>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
                             <nav className="space-y-0.5">

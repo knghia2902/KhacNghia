@@ -218,7 +218,7 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
 
     // Import Word option cho folders
     if ((itemType === 'folder' || isRootFolder) && onImportWord) {
-        menuItems.splice(3, 0, { icon: 'upload_file', label: 'Nhập từ Word', action: onImportWord });
+        menuItems.splice(3, 0, { icon: 'system_update_alt', label: 'Import', action: onImportWord });
     }
 
     // Smart positioning - đảm bảo menu không bị cắt ở cạnh màn hình
@@ -569,6 +569,91 @@ const MoveNoteModal = ({ isOpen, onClose, onSubmit, folders, currentParentId, it
 };
 
 
+// --- Import Modal ---
+const ImportModal = ({ isOpen, onClose, onImportWord, onImportHtmlFile, onImportHtmlCode }) => {
+    const [mode, setMode] = useState('menu'); // menu, code
+    const [htmlCode, setHtmlCode] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setMode('menu');
+            setHtmlCode('');
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/20 dark:bg-black/40 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div className="bg-white/90 dark:bg-[#1d2624]/90 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-white/20 dark:border-white/10 p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-[#1d2624] dark:text-white">
+                        {mode === 'menu' ? 'Import' : 'Nhập HTML Code'}
+                    </h3>
+                    <button onClick={onClose} className="p-2 text-[#1d2624]/50 hover:bg-[#1d2624]/5 dark:text-white/50 dark:hover:bg-white/10 rounded-full transition-colors">
+                        <span className="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+
+                {mode === 'menu' ? (
+                    <div className="space-y-3">
+                        <button onClick={onImportWord} className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/5 border border-[#1d2624]/5 dark:border-white/5 transition-all text-left group">
+                            <div className="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined">description</span>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-[#1d2624] dark:text-white">Word Document</h4>
+                                <p className="text-xs text-[#1d2624]/60 dark:text-white/60">Import từ file .docx</p>
+                            </div>
+                        </button>
+                        <button onClick={onImportHtmlFile} className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/5 border border-[#1d2624]/5 dark:border-white/5 transition-all text-left group">
+                            <div className="size-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined">html</span>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-[#1d2624] dark:text-white">HTML File</h4>
+                                <p className="text-xs text-[#1d2624]/60 dark:text-white/60">Import từ file .html</p>
+                            </div>
+                        </button>
+                        <button onClick={() => setMode('code')} className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/5 border border-[#1d2624]/5 dark:border-white/5 transition-all text-left group">
+                            <div className="size-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined">code</span>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-[#1d2624] dark:text-white">HTML Code</h4>
+                                <p className="text-xs text-[#1d2624]/60 dark:text-white/60">Dán trực tiếp mã HTML</p>
+                            </div>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <textarea
+                            value={htmlCode}
+                            onChange={(e) => setHtmlCode(e.target.value)}
+                            placeholder="<div>Nội dung...</div>"
+                            className="w-full h-48 bg-[#1d2624]/5 dark:bg-black/20 border border-[#1d2624]/10 dark:border-white/10 rounded-xl p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <button onClick={() => setMode('menu')} className="flex-1 py-2.5 rounded-xl border border-[#1d2624]/10 dark:border-white/10 hover:bg-[#1d2624]/5 dark:hover:bg-white/5 font-medium text-sm">
+                                Quay lại
+                            </button>
+                            <button
+                                onClick={() => onImportHtmlCode(htmlCode)}
+                                disabled={!htmlCode.trim()}
+                                className="flex-1 py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:brightness-110 disabled:opacity-50 disabled:hover:brightness-100"
+                            >
+                                Import
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 // --- Sortable Folder Item for Drag & Drop ---
 const SortableFolderItem = ({ folder, children, isAuthenticated }) => {
     const {
@@ -636,7 +721,8 @@ const Docs = () => {
     });
     const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [importTargetId, setImportTargetId] = useState(null); // For Context Menu Import
+    const [importTargetId, setImportTargetId] = useState(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false); // Modal Import
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
@@ -1375,16 +1461,40 @@ const Docs = () => {
         );
     };
 
+    // --- Generic Import Logic ---
+    const createImportedDoc = async (title, content) => {
+        try {
+            const newDoc = {
+                id: crypto.randomUUID(),
+                title,
+                content,
+                parentId: importTargetId || activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
+                date: new Date().toISOString(),
+                is_locked: false,
+                is_hidden: false
+            };
+
+            const { error } = await supabase.from('docs').insert(newDoc);
+            if (error) throw error;
+
+            showToast(`Đã import "${title}"`);
+            fetchData();
+        } catch (err) {
+            console.error('Import Error:', err);
+            showToast('Lỗi: ' + err.message);
+        } finally {
+            setImportTargetId(null);
+            setIsImportModalOpen(false);
+        }
+    };
+
     const handleImportWord = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
-        showToast('Đang import tài liệu...');
+        showToast('Đang xử lý Word...');
 
         try {
             const arrayBuffer = await file.arrayBuffer();
-
-            // Convert images to base64 to avoid local resource error
             const options = {
                 convertImage: mammoth.images.imgElement(function (image) {
                     return image.read("base64").then(function (imageBuffer) {
@@ -1394,35 +1504,33 @@ const Docs = () => {
                     });
                 })
             };
-
             const result = await mammoth.convertToHtml({ arrayBuffer }, options);
-            const html = result.value;
-            const title = file.name.replace(/\.docx?$/, '');
-
-            const newDoc = {
-                id: crypto.randomUUID(),
-                title,
-                content: html,
-                parentId: importTargetId || activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
-                date: new Date().toISOString(),
-                is_locked: false,
-                is_hidden: false
-            };
-
-            const { error } = await supabase.from('docs').insert(newDoc);
-
-            if (error) throw error;
-
-            showToast(`Đã import "${title}"`);
-            fetchData();
-
+            await createImportedDoc(file.name.replace(/\.docx?$/, ''), result.value);
         } catch (err) {
-            console.error('Import failed:', err);
-            showToast('Lỗi: ' + err.message);
+            showToast('Lỗi đọc file: ' + err.message);
         } finally {
             e.target.value = '';
-            setImportTargetId(null); // Reset target
         }
+    };
+
+    const handleImportHtmlFile = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        showToast('Đang xử lý HTML...');
+
+        try {
+            const text = await file.text();
+            await createImportedDoc(file.name.replace(/\.html?$/, ''), text);
+        } catch (err) {
+            showToast('Lỗi đọc file: ' + err.message);
+        } finally {
+            e.target.value = '';
+        }
+    };
+
+    const handleImportHtmlCode = async (code) => {
+        if (!code) return;
+        await createImportedDoc('Imported HTML Code', code);
     };
 
 
@@ -1475,13 +1583,21 @@ const Docs = () => {
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
                 onEdit={() => { startEditing(); closeContextMenu(); }}
                 onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
-                onImportWord={() => { setImportTargetId(contextMenu.itemId || (contextMenu.parentId === null ? null : contextMenu.parentId)); document.getElementById('import-word-input').click(); closeContextMenu(); }}
+                onImportWord={() => { setImportTargetId(contextMenu.itemId || (contextMenu.parentId === null ? null : contextMenu.parentId)); setIsImportModalOpen(true); closeContextMenu(); }}
                 onToggleLock={isAuthenticated ? handleToggleLock : null}
                 onToggleHide={isAuthenticated ? handleToggleHide : null}
                 isLocked={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isLocked : false}
                 isHidden={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isHidden : false}
                 itemType={contextMenu.itemType}
                 isRootFolder={contextMenu.parentId === null}
+            />
+
+            <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportWord={() => document.getElementById('import-word-input').click()}
+                onImportHtmlFile={() => document.getElementById('import-html-input').click()}
+                onImportHtmlCode={handleImportHtmlCode}
             />
 
             <MoveNoteModal
@@ -1541,13 +1657,20 @@ const Docs = () => {
                         {/* Header Row - aligned with other columns */}
                         <div className="h-16 px-6 flex items-center shrink-0">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Workspace</h3>
-                            {/* Hidden input for Context Menu Import */}
+                            {/* Hidden Inputs */}
                             <input
                                 type="file"
                                 id="import-word-input"
                                 hidden
                                 accept=".docx"
                                 onChange={handleImportWord}
+                            />
+                            <input
+                                type="file"
+                                id="import-html-input"
+                                hidden
+                                accept=".html,.htm"
+                                onChange={handleImportHtmlFile}
                             />
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">

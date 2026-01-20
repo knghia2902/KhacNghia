@@ -163,7 +163,7 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onImportWord, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -214,6 +214,11 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
     // Add Note option cho folders
     if (itemType === 'folder' && onAddNote) {
         menuItems.splice(2, 0, { icon: 'note_add', label: 'Thêm trang', action: onAddNote });
+    }
+
+    // Import Word option cho folders
+    if ((itemType === 'folder' || isRootFolder) && onImportWord) {
+        menuItems.splice(3, 0, { icon: 'upload_file', label: 'Nhập từ Word', action: onImportWord });
     }
 
     // Smart positioning - đảm bảo menu không bị cắt ở cạnh màn hình
@@ -631,6 +636,7 @@ const Docs = () => {
     });
     const [activeDocId, setActiveDocId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [importTargetId, setImportTargetId] = useState(null); // For Context Menu Import
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
@@ -1377,14 +1383,27 @@ const Docs = () => {
 
         try {
             const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.convertToHtml({ arrayBuffer });
+
+            // Convert images to base64 to avoid local resource error
+            const options = {
+                convertImage: mammoth.images.imgElement(function (image) {
+                    return image.read("base64").then(function (imageBuffer) {
+                        return {
+                            src: "data:" + image.contentType + ";base64," + imageBuffer
+                        };
+                    });
+                })
+            };
+
+            const result = await mammoth.convertToHtml({ arrayBuffer }, options);
             const html = result.value;
             const title = file.name.replace(/\.docx?$/, '');
 
             const newDoc = {
+                id: crypto.randomUUID(),
                 title,
                 content: html,
-                parentId: activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
+                parentId: importTargetId || activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
                 date: new Date().toISOString(),
                 is_locked: false,
                 is_hidden: false
@@ -1402,6 +1421,7 @@ const Docs = () => {
             showToast('Lỗi: ' + err.message);
         } finally {
             e.target.value = '';
+            setImportTargetId(null); // Reset target
         }
     };
 
@@ -1455,6 +1475,7 @@ const Docs = () => {
                 onMove={() => { setIsMoveModalOpen(true); closeContextMenu(); }}
                 onEdit={() => { startEditing(); closeContextMenu(); }}
                 onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
+                onImportWord={() => { setImportTargetId(contextMenu.itemId || (contextMenu.parentId === null ? null : contextMenu.parentId)); document.getElementById('import-word-input').click(); closeContextMenu(); }}
                 onToggleLock={isAuthenticated ? handleToggleLock : null}
                 onToggleHide={isAuthenticated ? handleToggleHide : null}
                 isLocked={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isLocked : false}
@@ -1518,24 +1539,16 @@ const Docs = () => {
 
                     <div className="flex flex-col h-full">
                         {/* Header Row - aligned with other columns */}
-                        <div className="h-16 px-6 flex items-center justify-between shrink-0">
+                        <div className="h-16 px-6 flex items-center shrink-0">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Workspace</h3>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => document.getElementById('import-word-input').click()}
-                                    className="p-1.5 text-[#1d2624]/40 dark:text-white/40 hover:text-primary dark:hover:text-primary hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-                                    title="Nhập từ Word"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                                </button>
-                                <input
-                                    type="file"
-                                    id="import-word-input"
-                                    hidden
-                                    accept=".docx"
-                                    onChange={handleImportWord}
-                                />
-                            </div>
+                            {/* Hidden input for Context Menu Import */}
+                            <input
+                                type="file"
+                                id="import-word-input"
+                                hidden
+                                accept=".docx"
+                                onChange={handleImportWord}
+                            />
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
                             <nav className="space-y-0.5">

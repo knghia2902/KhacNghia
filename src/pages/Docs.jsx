@@ -165,7 +165,7 @@ const AVAILABLE_ICONS = [
 ];
 
 // --- Context Menu Component ---
-const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onImportWord, onExportHtml, onExportWord, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
+const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicate, onAddSubfolder, onMove, onEdit, onAddNote, onImportWord, onExport, onToggleLock, onToggleHide, isLocked, isHidden, itemType, isRootFolder }) => {
     const menuRef = React.useRef(null);
 
     useEffect(() => {
@@ -194,16 +194,15 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
         ...(itemType === 'folder' ? [{ icon: 'edit', label: 'Đổi tên', action: onRename }] : []),
         { icon: 'drive_file_move', label: 'Di chuyển', action: onMove },
         { icon: 'content_copy', label: 'Sao chép', action: onDuplicate },
-        ...(itemType === 'doc' && onExportHtml ? [{ icon: 'html', label: 'Export HTML', action: onExportHtml }] : []),
-        ...(itemType === 'doc' && onExportWord ? [{ icon: 'description', label: 'Export Word', action: onExportWord }] : []),
+        ...(itemType === 'doc' && onExport ? [{ icon: 'ios_share', label: 'Export', action: onExport }] : []),
         ...(itemType === 'doc' && onToggleLock ? [{
             icon: isLocked ? 'lock_open' : 'lock',
-            label: isLocked ? 'Mở khóa' : 'Khóa (yêu cầu đăng nhập)',
+            label: isLocked ? 'Unlock' : 'Lock',
             action: onToggleLock
         }] : []),
         ...(itemType === 'doc' && onToggleHide ? [{
             icon: isHidden ? 'visibility' : 'visibility_off',
-            label: isHidden ? 'Hiện' : 'Ẩn (chỉ Admin)',
+            label: isHidden ? 'Unhide' : 'Hide',
             action: onToggleHide
         }] : []),
         { icon: 'delete', label: 'Xóa', action: onDelete, danger: true },
@@ -259,6 +258,33 @@ const ContextMenu = ({ isOpen, position, onClose, onRename, onDelete, onDuplicat
             ))}
         </div>,
         document.body
+    );
+};
+
+// --- Export Modal ---
+const ExportModal = ({ isOpen, onClose, onExport }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative w-full max-w-sm bg-white/95 dark:bg-[#1d2624]/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 animate-[fadeIn_0.2s_ease-out]">
+                <h2 className="text-lg font-bold text-[#1d2624] dark:text-white mb-4">Export Document</h2>
+                <div className="space-y-2">
+                    <button onClick={() => onExport('html')} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors text-left font-medium text-[#1d2624] dark:text-white">
+                        <span className="material-symbols-outlined text-orange-500">html</span>
+                        HTML
+                    </button>
+                    <button onClick={() => onExport('word')} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors text-left font-medium text-[#1d2624] dark:text-white">
+                        <span className="material-symbols-outlined text-blue-500">description</span>
+                        Word (.docx)
+                    </button>
+                    <button onClick={() => onExport('pdf')} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#1d2624]/5 dark:hover:bg-white/10 transition-colors text-left font-medium text-[#1d2624] dark:text-white">
+                        <span className="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                        PDF
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -727,6 +753,8 @@ const Docs = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [importTargetId, setImportTargetId] = useState(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false); // Modal Import
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportTargetId, setExportTargetId] = useState(null);
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
@@ -1566,6 +1594,40 @@ const Docs = () => {
                 } else {
                     showToast('Lỗi: Thư viện export chưa được tải.');
                 }
+            } else if (format === 'pdf') {
+                const htmlStruct = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${targetDoc.title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; }
+        img { max-width: 100%; height: auto; }
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>${targetDoc.title}</h1>
+    ${processedContent}
+    <script>
+        window.onload = () => {
+             setTimeout(() => {
+                 window.print();
+             }, 500);
+        }
+    </script>
+</body>
+</html>`;
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                    printWindow.document.write(htmlStruct);
+                    printWindow.document.close();
+                } else {
+                    showToast('Popup blocked! Please allow popups.');
+                }
             }
 
             showToast('Xuất file thành công!');
@@ -1747,8 +1809,7 @@ const Docs = () => {
                 onAddNote={() => { setActiveFolderId(contextMenu.itemId); setIsNoteModalOpen(true); closeContextMenu(); }}
 
                 onImportWord={() => { setImportTargetId(contextMenu.itemId || (contextMenu.parentId === null ? null : contextMenu.parentId)); setIsImportModalOpen(true); closeContextMenu(); }}
-                onExportHtml={() => { handleExport('html', contextMenu.itemId); closeContextMenu(); }}
-                onExportWord={() => { handleExport('word', contextMenu.itemId); closeContextMenu(); }}
+                onExport={() => { setExportTargetId(contextMenu.itemId); setIsExportModalOpen(true); closeContextMenu(); }}
                 onToggleLock={isAuthenticated ? handleToggleLock : null}
                 onToggleHide={isAuthenticated ? handleToggleHide : null}
                 isLocked={contextMenu.itemType === 'doc' ? docs.find(d => d.id === contextMenu.itemId)?.isLocked : false}
@@ -1763,6 +1824,12 @@ const Docs = () => {
                 onImportWord={() => document.getElementById('import-word-input').click()}
                 onImportHtmlFile={() => document.getElementById('import-html-input').click()}
                 onImportHtmlCode={handleImportHtmlCode}
+            />
+
+            <ExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                onExport={(format) => { handleExport(format, exportTargetId); setIsExportModalOpen(false); }}
             />
 
             <MoveNoteModal
@@ -1985,33 +2052,16 @@ const Docs = () => {
                                         </button>
                                     </>
                                 ) : activeDoc && (
-                                    /* Export Dropdown */
-                                    <div className="relative group">
-                                        <button
-                                            type="button"
-                                            className="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/70 dark:text-white/70"
-                                            title="Export Options"
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">ios_share</span>
-                                            <span className="text-xs font-semibold hidden sm:inline">Export</span>
-                                        </button>
-                                        <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-[#1d2624] rounded-xl shadow-xl border border-[#1d2624]/10 dark:border-white/10 overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-20">
-                                            <button
-                                                onClick={() => handleExport('html')}
-                                                className="w-full text-left px-4 py-2 text-sm hover:bg-[#1d2624]/5 dark:hover:bg-white/10 flex items-center gap-2 text-[#1d2624] dark:text-white"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px] text-orange-500">html</span>
-                                                HTML
-                                            </button>
-                                            <button
-                                                onClick={() => handleExport('word')}
-                                                className="w-full text-left px-4 py-2 text-sm hover:bg-[#1d2624]/5 dark:hover:bg-white/10 flex items-center gap-2 text-[#1d2624] dark:text-white"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px] text-blue-500">description</span>
-                                                Word (.docx)
-                                            </button>
-                                        </div>
-                                    </div>
+                                    /* Export Button (Opens Modal) */
+                                    <button
+                                        type="button"
+                                        onClick={() => { setExportTargetId(activeDoc.id); setIsExportModalOpen(true); }}
+                                        className="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/70 dark:text-white/70"
+                                        title="Export Options"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">ios_share</span>
+                                        <span className="text-xs font-semibold hidden sm:inline">Export</span>
+                                    </button>
                                 )}
                                 <button
                                     type="button"

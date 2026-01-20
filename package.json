@@ -25,6 +25,8 @@
         "@uiw/react-md-editor": "^4.0.11",
         "@vitejs/plugin-react": "^5.1.1",
         "autoprefixer": "^10.4.23",
+        "file-saver": "^2.0.5",
+        "html-docx-js": "^0.3.1",
         "mammoth": "^1.11.0",
         "postcss": "^8.5.6",
         "react": "^19.2.0",

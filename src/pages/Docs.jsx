@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mammoth from 'mammoth';
+// import htmlDocx from 'html-docx-js/dist/html-docx';
+import { saveAs } from 'file-saver';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -1485,6 +1487,90 @@ const Docs = () => {
         return content;
     };
 
+    // --- Export Logic ---
+    const handleExport = async (format) => {
+        if (!activeDoc) return;
+        showToast(`Đang chuẩn bị xuất file ${format.toUpperCase()}...`);
+
+        try {
+            // 1. Prepare Content (Convert images to base64)
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = activeDoc.content;
+
+            const images = wrapper.getElementsByTagName('img');
+            for (let img of images) {
+                if (img.src.startsWith('http')) {
+                    try {
+                        const response = await fetch(img.src);
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        await new Promise((resolve) => {
+                            reader.onloadend = () => {
+                                img.src = reader.result;
+                                resolve();
+                            };
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (e) {
+                        console.warn('Cannot fetch image for export:', img.src);
+                    }
+                }
+            }
+
+            const processedContent = wrapper.innerHTML;
+            const fileName = (activeDoc.title || 'document').replace(/[^a-z0-9\u00C0-\u024F]/gi, '_');
+
+            if (format === 'html') {
+                const htmlStruct = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${activeDoc.title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 20px; }
+        img { max-width: 100%; height: auto; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+        td, th { border: 1px solid #ddd; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>${activeDoc.title}</h1>
+    ${processedContent}
+</body>
+</html>`;
+                const blob = new Blob([htmlStruct], { type: 'text/html;charset=utf-8' });
+                saveAs(blob, `${fileName}.html`);
+            } else if (format === 'word') {
+                // Wrap for html-docx-js
+                const htmlStruct = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${activeDoc.title}</title>
+</head>
+<body>
+    <h1>${activeDoc.title}</h1>
+    ${processedContent}
+</body>
+</html>`;
+                // Use html-docx-js to convert (loaded via script tag in index.html)
+                if (window.htmlDocx) {
+                    const converted = window.htmlDocx.asBlob(htmlStruct);
+                    saveAs(converted, `${fileName}.docx`);
+                } else {
+                    showToast('Lỗi: Thư viện export chưa được tải.');
+                }
+            }
+
+            showToast('Xuất file thành công!');
+        } catch (err) {
+            console.error('Export Failed:', err);
+            showToast('Lỗi xuất file: ' + err.message);
+        }
+    };
+
     const createImportedDoc = async (title, content) => {
         try {
             // Clean content before saving to avoid layout breakage
@@ -1539,10 +1625,22 @@ const Docs = () => {
             // Check warnings
             if (result.messages && result.messages.length > 0) {
                 console.warn('Mammoth Warnings:', result.messages);
-                // Có thể hiển thị warning cho user nếu cần thiết
+                // Show raw warnings to user if debug mode or help them understand why empty
+                if (!result.value) {
+                    alert('Cảnh báo Import: File Word này có cấu trúc phức tạp hoặc không chuẩn.\nChi tiết: ' + result.messages.map(m => m.message).join('\n'));
+                }
             }
 
             if (!result.value) {
+                // FALLBACK: Try to extract raw text if HTML conversion fails completely
+                const rawTextResult = await mammoth.extractRawText({ arrayBuffer });
+                if (rawTextResult.value && rawTextResult.value.trim()) {
+                    // Ask user if they want raw text
+                    if (confirm('Mammoth không thể chuyển đổi định dạng này sang HTML, nhưng tìm thấy văn bản thô. Bạn có muốn nhập văn bản thô không?')) {
+                        await createImportedDoc(file.name.replace(/\.docx?$/, '') + ' (Raw)', `<pre>${rawTextResult.value}</pre>`);
+                        return; // Done
+                    }
+                }
                 throw new Error('Không thể đọc nội dung file Word (File trống hoặc định dạng không hỗ trợ).');
             }
 
@@ -1862,31 +1960,52 @@ const Docs = () => {
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
-                                {isAuthenticated && activeDoc && (
+                                {isAuthenticated && activeDoc && isEditing ? (
                                     <>
-                                        {isEditing ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
-                                                    className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                                                    className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
-                                                >
-                                                    Save
-                                                </button>
-                                            </>
-                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
+                                            className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); saveEdit(); }}
+                                            className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
+                                        >
+                                            Save
+                                        </button>
                                     </>
+                                ) : activeDoc && (
+                                    /* Export Dropdown */
+                                    <div className="relative group">
+                                        <button
+                                            type="button"
+                                            className="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/70 dark:text-white/70"
+                                            title="Export Options"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">ios_share</span>
+                                            <span className="text-xs font-semibold hidden sm:inline">Export</span>
+                                        </button>
+                                        <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-[#1d2624] rounded-xl shadow-xl border border-[#1d2624]/10 dark:border-white/10 overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-20">
+                                            <button
+                                                onClick={() => handleExport('html')}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-[#1d2624]/5 dark:hover:bg-white/10 flex items-center gap-2 text-[#1d2624] dark:text-white"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px] text-orange-500">html</span>
+                                                HTML
+                                            </button>
+                                            <button
+                                                onClick={() => handleExport('word')}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-[#1d2624]/5 dark:hover:bg-white/10 flex items-center gap-2 text-[#1d2624] dark:text-white"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px] text-blue-500">description</span>
+                                                Word (.docx)
+                                            </button>
+                                        </div>
+                                    </div>
                                 )}
-                                <button type="button" className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all">
-                                    <span className="material-symbols-outlined text-[20px]">share</span>
-                                </button>
                                 <button
                                     type="button"
                                     className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all"

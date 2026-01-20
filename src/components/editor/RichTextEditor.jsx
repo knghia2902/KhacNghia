@@ -53,6 +53,83 @@ const RichTextEditor = ({
             attributes: {
                 class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[50vh] text-[#1d2624]/80 dark:text-white/80',
             },
+            // Handle paste images from clipboard
+            handlePaste: (view, event, slice) => {
+                const items = event.clipboardData?.items;
+                if (!items) return false;
+
+                for (const item of items) {
+                    if (item.type.startsWith('image/')) {
+                        event.preventDefault();
+                        const file = item.getAsFile();
+                        if (file) {
+                            // Inline async upload and insert
+                            (async () => {
+                                const fileName = `docs/${Date.now()}-${file.name?.replace(/[^a-zA-Z0-9.-]/g, '_') || 'pasted.png'}`;
+                                const { error } = await supabase.storage
+                                    .from('docs-media')
+                                    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+                                if (error) {
+                                    console.error('Paste upload error:', error);
+                                    return;
+                                }
+
+                                const { data: { publicUrl } } = supabase.storage
+                                    .from('docs-media')
+                                    .getPublicUrl(fileName);
+
+                                // Insert image at current position
+                                const { schema } = view.state;
+                                const node = schema.nodes.image.create({ src: publicUrl });
+                                const tr = view.state.tr.replaceSelectionWith(node);
+                                view.dispatch(tr);
+                            })();
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            },
+            // Handle drag & drop images
+            handleDrop: (view, event, slice, moved) => {
+                if (moved) return false;
+
+                const files = event.dataTransfer?.files;
+                if (!files || files.length === 0) return false;
+
+                for (const file of files) {
+                    if (file.type.startsWith('image/')) {
+                        event.preventDefault();
+                        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                        // Inline async upload and insert
+                        (async () => {
+                            const fileName = `docs/${Date.now()}-${file.name?.replace(/[^a-zA-Z0-9.-]/g, '_') || 'dropped.png'}`;
+                            const { error } = await supabase.storage
+                                .from('docs-media')
+                                .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+                            if (error) {
+                                console.error('Drop upload error:', error);
+                                return;
+                            }
+
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('docs-media')
+                                .getPublicUrl(fileName);
+
+                            // Insert image at drop position
+                            const { schema } = view.state;
+                            const node = schema.nodes.image.create({ src: publicUrl });
+                            const insertPos = pos?.pos || view.state.selection.from;
+                            const tr = view.state.tr.insert(insertPos, node);
+                            view.dispatch(tr);
+                        })();
+                        return true;
+                    }
+                }
+                return false;
+            },
         },
     });
 
@@ -549,10 +626,11 @@ const RichTextEditor = ({
                     border-top-color: rgba(255, 255, 255, 0.1);
                 }
                 .ProseMirror img {
+                    display: block;
                     max-width: 100%;
                     height: auto;
                     border-radius: 1rem;
-                    margin: 1rem 0;
+                    margin: 1.5rem auto;
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
                     border: 1px solid rgba(0, 0, 0, 0.08);
                 }

@@ -1462,12 +1462,41 @@ const Docs = () => {
     };
 
     // --- Generic Import Logic ---
+    const sanitizeHtml = (html) => {
+        if (!html) return '';
+
+        // 1. Extract content within <body> tags if present
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        let content = bodyMatch ? bodyMatch[1] : html;
+
+        // 2. Remove <script> tags
+        content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gmi, "");
+
+        // 3. Remove <style> tags (CSS gây vỡ layout thường nằm ở đây)
+        content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gmi, "");
+
+        // 4. Remove <link rel="stylesheet">
+        content = content.replace(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gmi, "");
+
+        // 5. Remove 'position: absolute/fixed' from inline styles (cơ bản)
+        content = content.replace(/position:\s*(absolute|fixed);?/gi, "");
+
+        return content;
+    };
+
     const createImportedDoc = async (title, content) => {
         try {
+            // Clean content before saving to avoid layout breakage
+            const cleanContent = sanitizeHtml(content);
+
+            if (!cleanContent || !cleanContent.trim()) {
+                throw new Error('Nội dung sau khi xử lý bị trống!');
+            }
+
             const newDoc = {
                 id: crypto.randomUUID(),
                 title,
-                content,
+                content: cleanContent,
                 parentId: importTargetId || activeFolderId || (folders.length > 0 ? folders[0].id : 'folder-docs'),
                 date: new Date().toISOString(),
                 is_locked: false,
@@ -1505,6 +1534,17 @@ const Docs = () => {
                 })
             };
             const result = await mammoth.convertToHtml({ arrayBuffer }, options);
+
+            // Check warnings
+            if (result.messages && result.messages.length > 0) {
+                console.warn('Mammoth Warnings:', result.messages);
+                // Có thể hiển thị warning cho user nếu cần thiết
+            }
+
+            if (!result.value) {
+                throw new Error('Không thể đọc nội dung file Word (File trống hoặc định dạng không hỗ trợ).');
+            }
+
             await createImportedDoc(file.name.replace(/\.docx?$/, ''), result.value);
         } catch (err) {
             showToast('Lỗi đọc file: ' + err.message);

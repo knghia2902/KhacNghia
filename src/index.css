@@ -103,3 +103,27 @@
 .focus-mode-active main>div {
     animation: focusIn 2s ease-out forwards;
 }
+
+/* Force-remove gaps from image components */
+.resizable-image-wrapper {
+    display: block !important;
+    text-align: center !important;
+    line-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.ReactCrop {
+    display: inline-block !important;
+    line-height: 0 !important;
+    vertical-align: top !important;
+}
+
+.ReactCrop__child-wrapper {
+    display: block !important;
+    line-height: 0 !important;
+}
+
+.ReactCrop__child-wrapper img {
+    vertical-align: top !important;
+}

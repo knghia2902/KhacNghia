@@ -17,7 +17,10 @@ const ResizableImage = Image.extend({
                 parseHTML: element => element.getAttribute('width') || element.style.width?.replace('px', ''),
                 renderHTML: attributes => {
                     if (!attributes.width) return {};
-                    return { width: attributes.width };
+                    return {
+                        width: attributes.width,
+                        style: `width: ${attributes.width}px; max-width: 100%;${attributes.height ? ` height: ${attributes.height}px;` : ''}`
+                    };
                 },
             },
             height: {
@@ -26,6 +29,15 @@ const ResizableImage = Image.extend({
                 renderHTML: attributes => {
                     if (!attributes.height) return {};
                     return { height: attributes.height };
+                },
+            },
+            // Store original src before crop for undo/restore
+            originalSrc: {
+                default: null,
+                parseHTML: element => element.getAttribute('data-original-src'),
+                renderHTML: attributes => {
+                    if (!attributes.originalSrc) return {};
+                    return { 'data-original-src': attributes.originalSrc };
                 },
             },
         };

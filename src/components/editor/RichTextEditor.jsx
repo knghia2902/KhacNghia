@@ -7,7 +7,6 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import ResizableImage from './extensions/ResizableImage';
-import ImageCropModal from './ImageCropModal';
 import { supabase } from '../../lib/supabaseClient';
 
 /**
@@ -135,55 +134,6 @@ const RichTextEditor = ({
     });
 
     const [isUploading, setIsUploading] = useState(false);
-
-    // Crop Modal State
-    const [cropModalOpen, setCropModalOpen] = useState(false);
-    const [cropImageSrc, setCropImageSrc] = useState(null);
-    const [cropNodePos, setCropNodePos] = useState(null);
-
-    // Listen for crop modal open events from ResizableImageComponent
-    useEffect(() => {
-        const handleOpenCropModal = (event) => {
-            const { src, nodePos } = event.detail;
-            setCropImageSrc(src);
-            setCropNodePos(nodePos);
-            setCropModalOpen(true);
-        };
-
-        window.addEventListener('openImageCropModal', handleOpenCropModal);
-        return () => {
-            window.removeEventListener('openImageCropModal', handleOpenCropModal);
-        };
-    }, []);
-
-    // Handle crop complete - upload cropped image and replace in editor
-    const handleCropComplete = useCallback(async (croppedBlob) => {
-        if (!editor || !croppedBlob) return;
-
-        try {
-            // Upload cropped image
-            const fileName = `docs/${Date.now()}-cropped.jpg`;
-            const { error } = await supabase.storage
-                .from('docs-media')
-                .upload(fileName, croppedBlob, { cacheControl: '3600', upsert: false });
-
-            if (error) {
-                console.error('Crop upload error:', error);
-                alert('Lỗi upload ảnh cropped: ' + error.message);
-                return;
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('docs-media')
-                .getPublicUrl(fileName);
-
-            // Replace current selection with new cropped image
-            editor.chain().focus().setImage({ src: publicUrl }).run();
-        } catch (err) {
-            console.error('Crop complete error:', err);
-            alert('Lỗi xử lý ảnh cropped');
-        }
-    }, [editor]);
 
     // Upload image to Supabase Storage
     const uploadImage = async (file) => {
@@ -692,19 +642,13 @@ const RichTextEditor = ({
                     outline: 3px solid #4ecdc4;
                     outline-offset: 2px;
                 }
+                /* Override for resizable images - remove margin */
+                .ProseMirror .resizable-image-wrapper img {
+                    margin: 0 !important;
+                    display: block;
+                    vertical-align: top;
+                }
             `}</style>
-
-            {/* Image Crop Modal */}
-            <ImageCropModal
-                isOpen={cropModalOpen}
-                imageSrc={cropImageSrc}
-                onClose={() => {
-                    setCropModalOpen(false);
-                    setCropImageSrc(null);
-                    setCropNodePos(null);
-                }}
-                onCropComplete={handleCropComplete}
-            />
         </div>
     );
 };

@@ -750,6 +750,7 @@ const Docs = () => {
         }
     });
     const [activeDocId, setActiveDocId] = useState(null);
+    const [isDocContentLoading, setIsDocContentLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [importTargetId, setImportTargetId] = useState(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false); // Modal Import
@@ -1098,7 +1099,8 @@ const Docs = () => {
                 { data: docsData, error: dError }
             ] = await Promise.all([
                 supabase.from('folders').select('*').order('sort_order', { ascending: true }),
-                supabase.from('docs').select('*').order('date', { ascending: false })
+                // Fetch lightweight metadata only, content is lazy-loaded
+                supabase.from('docs').select('id, title, parentId, date, tags, bg, is_locked, is_hidden, icon, color').order('date', { ascending: false })
             ]);
 
             if (fError || dError) throw fError || dError;
@@ -1165,6 +1167,41 @@ const Docs = () => {
             if (firstDocInFolder) setActiveDocId(firstDocInFolder.id);
         }
     }, [activeFolderId, docs, activeDocId]);
+
+    // OPTIMIZATION: Lazy Load Document Content
+    useEffect(() => {
+        const loadContent = async () => {
+            if (!activeDocId) return;
+            // Check if content is already loaded
+            const currentDoc = docs.find(d => d.id === activeDocId);
+            if (!currentDoc || currentDoc.content !== undefined) return;
+
+            setIsDocContentLoading(true);
+            try {
+                const { data, error } = await supabase
+                    .from('docs')
+                    .select('content, attachments')
+                    .eq('id', activeDocId)
+                    .single();
+
+                if (error) throw error;
+
+                // Update docs with fetched content
+                setDocs(prev => prev.map(d => 
+                    d.id === activeDocId 
+                        ? { ...d, content: data.content || '', attachments: data.attachments || [] }
+                        : d
+                ));
+            } catch (error) {
+                console.error('Error fetching doc content:', error);
+                showToast('Lỗi tải nội dung tài liệu');
+            } finally {
+                setIsDocContentLoading(false);
+            }
+        };
+
+        loadContent();
+    }, [activeDocId, docs]);
 
     // --- Computed ---
     const activeDoc = useMemo(() => docs.find(d => d.id === activeDocId), [docs, activeDocId]);
@@ -1271,11 +1308,29 @@ const Docs = () => {
         }
     };
 
-    const startEditing = () => {
+    const startEditing = async () => {
         if (!activeDoc) return;
+        
+        let contentToEdit = activeDoc.content;
+        let attachmentsToEdit = activeDoc.attachments;
+
+        if (contentToEdit === undefined) {
+            showToast('Loading document content...');
+            try {
+                const { data, error } = await supabase.from('docs').select('content, attachments').eq('id', activeDoc.id).single();
+                if (!error) {
+                    contentToEdit = data.content || '';
+                    attachmentsToEdit = data.attachments || [];
+                    setDocs(prev => prev.map(d => d.id === activeDoc.id ? { ...d, content: contentToEdit, attachments: attachmentsToEdit } : d));
+                }
+            } catch (err) {
+                console.error("Error loading content for edit", err);
+            }
+        }
+
         setEditTitle(activeDoc.title);
-        setEditContent(activeDoc.content);
-        setEditAttachments(activeDoc.attachments || []);
+        setEditContent(contentToEdit || '');
+        setEditAttachments(attachmentsToEdit || []);
         setIsEditing(true);
     };
 
@@ -1994,7 +2049,7 @@ const Docs = () => {
                                         </div>
                                     </div>
                                     <p className="text-xs text-[#1d2624]/60 dark:text-white/70 line-clamp-2 mb-3 break-words overflow-hidden">
-                                        {doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80)}...
+                                        {doc.content !== undefined ? (doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...') : <span className="opacity-50 italic">Đang tải...</span>}
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {doc.tags.map((tag, idx) => (
@@ -2118,10 +2173,20 @@ const Docs = () => {
                                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                                     <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
                                         <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-6 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
-                                        <div
-                                            className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-primary/5 [&_blockquote]:py-2 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6 [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-gray-100 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-all [&_pre]:my-6 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&_img]:block [&_img]:mx-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:border [&_img]:border-black/10 dark:[&_img]:border-white/10 [&_img]:my-6 [&_u]:underline-offset-[6px] [&_u]:decoration-1 [&_u]:decoration-primary/50 [&_hr]:my-8 [&_hr]:border-t [&_hr]:border-black/10 dark:[&_hr]:border-white/10 imported-content-wrapper"
-                                            dangerouslySetInnerHTML={{ __html: activeDoc.content }}
-                                        />
+                                        {activeDoc.content === undefined ? (
+                                            <div className="animate-pulse space-y-4 mt-8">
+                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-3/4"></div>
+                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-full"></div>
+                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-5/6"></div>
+                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-1/2 mt-8"></div>
+                                                <div className="h-32 bg-[#1d2624]/10 dark:bg-white/10 rounded w-full"></div>
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-primary/5 [&_blockquote]:py-2 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6 [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-gray-100 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-all [&_pre]:my-6 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&_img]:block [&_img]:mx-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:border [&_img]:border-black/10 dark:[&_img]:border-white/10 [&_img]:my-6 [&_u]:underline-offset-[6px] [&_u]:decoration-1 [&_u]:decoration-primary/50 [&_hr]:my-8 [&_hr]:border-t [&_hr]:border-black/10 dark:[&_hr]:border-white/10 imported-content-wrapper"
+                                                dangerouslySetInnerHTML={{ __html: activeDoc.content }}
+                                            />
+                                        )}
 
                                         {/* Attachments in View Mode */}
                                         {activeDoc.attachments && activeDoc.attachments.length > 0 && (

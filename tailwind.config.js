@@ -8,6 +8,13 @@ export default {
     theme: {
         extend: {
             colors: {
+                "atrium-primary": "#006a65",
+                "atrium-primary-container": "#4ecdc4",
+                "atrium-surface": "#f2fcf8",
+                "atrium-surface-low": "#ecf6f2",
+                "atrium-surface-lowest": "#ffffff",
+                "atrium-on-surface": "#141d1b",
+                "atrium-on-variant": "#3d4948",
                 "primary": "#4ecdc4",
                 "primary-dark": "#2cb3aa",
                 "secondary": "#ffbe76",
@@ -27,6 +34,7 @@ export default {
                 "old-display": ["Nunito", "Inter", "sans-serif"]
             },
             boxShadow: {
+                'ambient': '0 12px 60px rgba(20, 29, 27, 0.06)',
                 'glass': '0 8px 32px 0 rgba(13, 148, 136, 0.08)',
                 'float': '0 20px 40px -10px rgba(0, 0, 0, 0.08)',
                 'heavy-float': '0 30px 60px -15px rgba(13, 148, 136, 0.15)',

@@ -2023,6 +2023,7 @@ const Docs = () => {
                     onDocClick={handleDocClick}
                     onContextMenu={openContextMenu}
                     isFocusMode={isFocusMode}
+                    onAddNote={() => setIsNoteModalOpen(true)}
                 />
 
                 {/* Main Content */}

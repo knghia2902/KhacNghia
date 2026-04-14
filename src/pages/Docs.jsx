@@ -1482,10 +1482,11 @@ const Docs = () => {
                 <div className="select-none" data-testid={`folder-${folder.id}`} data-depth={depth}>
                     <div className="group relative flex items-center min-w-0 overflow-hidden">
                         <div
-                            className={`flex items-center w-full rounded-lg transition-colors group/row ${isActive ? 'bg-white/30' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                            className={`relative flex items-center w-full rounded-lg transition-colors group/row ${isActive ? '' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                             data-active={isActive}
                             onContextMenu={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
                         >
+                            {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-atrium-primary rounded-r-full"></div>}
                             <div style={{ width: `${depth * 8}px` }} className="shrink-0" data-testid="spacer" />
                             <button
                                 onClick={(e) => toggleFolderExpand(folder.id, e)}
@@ -1510,7 +1511,7 @@ const Docs = () => {
                             </button>
                             <button
                                 onClick={() => handleFolderClick(folder.id)}
-                                className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/70 dark:text-white/80'}`}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-sm font-sans font-medium text-left transition-colors min-w-0 w-full overflow-hidden ${isActive ? 'text-atrium-primary font-semibold' : 'text-[#1d2624]/70 dark:text-white/80'}`}
                             >
                                 <span className="flex-1 min-w-0 block whitespace-nowrap overflow-hidden transition-all duration-200 group-hover/row:text-ellipsis">{folder.title}</span>
                                 {isAuthenticated && (
@@ -1939,7 +1940,7 @@ const Docs = () => {
                 ></div>
             )}
 
-            <div className="flex-1 flex overflow-hidden relative p-4 md:p-8 gap-4 md:gap-6 w-full h-full bg-grid-pattern">
+            <div className="flex-1 flex overflow-hidden relative p-4 md:p-8 gap-4 md:gap-6 w-full h-full bg-atrium-surface bg-grid-pattern">
                 {/* Sidebar */}
                 <div className={`
                     fixed inset-y-0 left-0 z-50 w-72 md:w-[240px] h-full flex flex-col py-6 px-3 glass-panel rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static

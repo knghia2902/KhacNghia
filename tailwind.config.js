@@ -16,9 +16,20 @@ export default {
                 "background-dark": "#101614",
                 "mint-soft": "#e0f7f5",
                 "peach-soft": "#fff0e0",
+                cyan: {
+                    50: '#f0fdfc', 100: '#ccfbf8', 200: '#99f6f0', 300: '#5eead6', 400: '#2dd4c2', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a',
+                },
+                surface: '#f3f7f7',
             },
             fontFamily: {
-                "display": ["Nunito", "Inter", "sans-serif"]
+                "display": ['"Plus Jakarta Sans"', 'sans-serif'],
+                "sans": ['"Inter"', 'sans-serif'],
+                "old-display": ["Nunito", "Inter", "sans-serif"]
+            },
+            boxShadow: {
+                'glass': '0 8px 32px 0 rgba(13, 148, 136, 0.08)',
+                'float': '0 20px 40px -10px rgba(0, 0, 0, 0.08)',
+                'heavy-float': '0 30px 60px -15px rgba(13, 148, 136, 0.15)',
             },
             borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
         },

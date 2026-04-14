@@ -10,6 +10,7 @@ import RichTextEditor from '../components/editor/RichTextEditor';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import CascadingNav from '../components/layout/CascadingNav';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -771,6 +772,18 @@ const Docs = () => {
     const [isToastVisible, setIsToastVisible] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
+    const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = useState(false);
+
+    // Escape key to close secondary panel
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isSecondaryPanelOpen) {
+                setIsSecondaryPanelOpen(false);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isSecondaryPanelOpen]);
 
     // Toggle body class for focus mode global styling
     useEffect(() => {
@@ -1242,6 +1255,7 @@ const Docs = () => {
         setActiveFolderId(folderId);
         setSearchQuery('');
         setIsEditing(false);
+        setIsSecondaryPanelOpen(true);
     };
 
     const toggleFolderExpand = (folderId, e) => {
@@ -1925,25 +1939,26 @@ const Docs = () => {
                 ></div>
             )}
 
-            <div className="flex h-full w-full relative">
+            <div className="flex-1 flex overflow-hidden relative p-4 md:p-8 gap-4 md:gap-6 w-full h-full bg-grid-pattern">
                 {/* Sidebar */}
                 <div className={`
-                    fixed inset-y-0 left-0 z-50 w-72 h-full bg-[#fcfdfd] dark:bg-[#2a3530]/30 md:bg-transparent border-r border-white/20 dark:border-white/5 transition-all duration-300 ease-in-out md:translate-x-0 md:static md:w-64 flex flex-col shadow-2xl md:shadow-none
+                    fixed inset-y-0 left-0 z-50 w-72 md:w-[240px] h-full flex flex-col py-6 px-3 glass-panel rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
                     ${isFocusMode ? 'md:hidden' : ''}
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                    ${isSecondaryPanelOpen ? 'hidden md:flex' : 'flex'}
                 `}>
                     {/* Mobile Close Button */}
                     <button
                         onClick={() => setIsSidebarOpen(false)}
-                        className="absolute top-4 right-4 p-2 text-[#1d2624]/40 dark:text-white/40 md:hidden"
+                        className="absolute top-4 right-4 p-2 text-slate-500 md:hidden"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
 
                     <div className="flex flex-col h-full">
-                        {/* Header Row - aligned with other columns */}
-                        <div className="h-16 px-6 flex items-center shrink-0">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d2624]/40 dark:text-white/30 truncate">Workspace</h3>
+                        {/* Header Row */}
+                        <div className="mb-4 px-3 flex items-center shrink-0">
+                            <p className="text-[0.65rem] font-bold text-slate-500 tracking-widest uppercase truncate">Cấu trúc tài liệu</p>
                             {/* Hidden Inputs */}
                             <input
                                 type="file"
@@ -1960,12 +1975,12 @@ const Docs = () => {
                                 onChange={handleImportHtmlFile}
                             />
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
-                            <nav className="space-y-0.5">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-1 pb-6">
+                            <nav className="space-y-1">
                                 {loading ? (
                                     <div className="space-y-2 animate-pulse mt-2">
                                         {[1, 2, 3, 4, 5].map(i => (
-                                            <div key={i} className="h-8 bg-[#1d2624]/5 dark:bg-white/5 rounded-lg w-full"></div>
+                                            <div key={i} className="h-8 bg-white/40 rounded-lg w-full"></div>
                                         ))}
                                     </div>
                                 ) : isAuthenticated ? (
@@ -1982,90 +1997,35 @@ const Docs = () => {
                             </nav>
                         </div>
                         {isAuthenticated && (
-                            <div className="mt-auto p-4 flex justify-center">
+                            <div className="mt-auto p-2 flex justify-center">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="px-12 py-2 text-xs font-medium text-[#1d2624]/50 dark:text-white/50 border border-dashed border-[#1d2624]/15 dark:border-white/15 rounded-xl hover:bg-white/30 dark:hover:bg-white/5 hover:border-[#1d2624]/30 dark:hover:border-white/30 transition-all"
+                                    className="w-full py-2.5 text-xs font-bold text-slate-600 bg-white/50 border border-white/60 hover:bg-white/80 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2"
                                 >
-                                    New Folder
+                                    <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
+                                    Thư mục mới
                                 </button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <section className={`w-72 border-r border-white/20 dark:border-white/5 flex flex-col shrink-0 bg-white/10 min-w-0 ${isFocusMode ? 'hidden' : 'hidden lg:flex'}`} id="note-list">
-                    {/* Header Row - Search bar aligned with other columns */}
-                    <div className="h-16 px-4 flex items-center gap-2 shrink-0">
-                        <div className="flex-1 relative">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#1d2624]/40">search</span>
-                            <input
-                                className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-black/10 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40"
-                                placeholder="Search notes..."
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    {/* Filter tabs */}
-                    <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        <span className="px-2.5 py-1 rounded-md bg-white/60 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20 cursor-pointer">All</span>
-                        <span className="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 cursor-pointer hover:bg-white/60 transition-colors">Drafts</span>
-                        <span className="px-2.5 py-1 rounded-md bg-white/40 dark:bg-white/5 text-[10px] font-bold uppercase tracking-wider text-[#1d2624]/40 cursor-pointer hover:bg-white/60 transition-colors">Shared</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
-                        {loading ? (
-                            <div className="space-y-4 animate-pulse">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="h-24 bg-white/40 dark:bg-white/5 rounded-2xl border border-white/20"></div>
-                                ))}
-                            </div>
-                        ) : filteredDocs.length === 0 ? (
-                            <div className="text-center py-10 text-[#1d2624]/40 text-sm">No notes here</div>
-                        ) : (
-                            filteredDocs.map(doc => (
-                                <div
-                                    key={doc.id}
-                                    onClick={() => handleDocClick(doc.id)}
-                                    onContextMenu={(e) => openContextMenu(e, doc.id, 'doc', doc.parentId)}
-                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeDocId === doc.id ? 'bg-white dark:bg-white/10 shadow-sm border-primary/10' : 'hover:bg-white/40 dark:hover:bg-white/5 border-transparent'}`}
-                                >
-                                    <div className="flex justify-between items-start mb-1 min-w-0 gap-2">
-                                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            {/* Icon removed as per request */}
-                                            <h4 className={`font-bold text-sm line-clamp-1 break-words ${activeDocId === doc.id ? 'text-[#1d2624] dark:text-white' : 'text-[#1d2624]/80 dark:text-white/90'}`}>
-                                                {doc.title}
-                                            </h4>
-                                        </div>
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            {doc.isLocked && (
-                                                <span className="material-symbols-outlined text-[14px] text-amber-500" title="Khóa - Yêu cầu đăng nhập">lock</span>
-                                            )}
-                                            {doc.isHidden && (
-                                                <span className="material-symbols-outlined text-[14px] text-gray-400" title="Ẩn - Chỉ Admin">visibility_off</span>
-                                            )}
-                                            <span className="text-[10px] text-[#1d2624]/30 dark:text-white/40 whitespace-nowrap mt-0.5">{doc.date}</span>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-[#1d2624]/60 dark:text-white/70 line-clamp-2 mb-3 break-words overflow-hidden">
-                                        {doc.content !== undefined ? (doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...') : <span className="opacity-50 italic">Đang tải...</span>}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        {doc.tags.map((tag, idx) => (
-                                            <span key={idx} className="px-1.5 py-0.5 text-[9px] font-bold rounded uppercase bg-white/50 dark:bg-white/10 text-[#1d2624]/60 dark:text-white/70 border border-[#1d2624]/5 dark:border-white/10">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </section>
+                <CascadingNav
+                    isOpen={isSecondaryPanelOpen}
+                    onClose={() => setIsSecondaryPanelOpen(false)}
+                    items={filteredDocs}
+                    folderName={activeFolderId ? folders.find(f => f.id === activeFolderId)?.title : 'Tài liệu'}
+                    loading={loading}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    activeDocId={activeDocId}
+                    onDocClick={handleDocClick}
+                    onContextMenu={openContextMenu}
+                    isFocusMode={isFocusMode}
+                />
 
                 {/* Main Content */}
-                <section className={`flex-1 flex flex-col bg-white/5 relative h-full overflow-hidden transition-all duration-500 ${isFocusMode ? 'max-w-4xl mx-auto rounded-2xl shadow-2xl' : ''}`}>
+                <main className={`flex-1 flex flex-col relative overflow-hidden transition-all duration-500 ease-in-out ${isFocusMode ? 'max-w-4xl mx-auto z-30' : ''}`}>
                     {/* Mobile Toggle Button */}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
@@ -2236,7 +2196,7 @@ const Docs = () => {
                             <p>Select a note to view or create a new one.</p>
                         </div>
                     )}
-                </section>
+                </main>
             </div>
         </>
     );

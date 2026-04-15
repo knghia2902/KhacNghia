@@ -8,16 +8,16 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
-        // Check localStorage first
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            return savedTheme;
-        }
-        // Then check system preference
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // One-time migration: force dark mode for Digital Atrium redesign
+        const migrated = localStorage.getItem('theme_v2_migrated');
+        if (!migrated) {
+            localStorage.setItem('theme', 'dark');
+            localStorage.setItem('theme_v2_migrated', 'true');
             return 'dark';
         }
-        return 'light';
+        // After migration, respect user preference
+        const savedTheme = localStorage.getItem('theme');
+        return savedTheme || 'dark';
     });
 
     useEffect(() => {

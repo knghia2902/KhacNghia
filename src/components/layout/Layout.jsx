@@ -1,34 +1,23 @@
 import React from 'react';
 import Header from './Header';
-import Dock from './Dock';
 
 const Layout = ({ children }) => {
     return (
-        <div className="relative w-screen h-screen overflow-hidden bg-background-light dark:bg-background-dark text-[#1d2624] dark:text-white font-display selection:bg-primary/30">
-            {/* Background Layers */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center opacity-40 dark:opacity-20 blur-3xl scale-110" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSurl_rJXeZMa1QBJEVRe4iBvQEawiVc3X4LWn6cw84-iQOtGYyDXxRrAxAaFgj53y_sgcfy5J6NVI7Z-tKr443HyRXtp4zOzAfmfi1619vpkEFzMwDMDw_GCGBnnnpdiBVknE6DJnLLe2U_f1JHfa5qHWne-yt7SJnvxxSPzdrd3kqYMGI20nHyqwqrVfox_DizPKYupzh9ePzkexiW7zzmVVzNsVJo88XOv4bCSU146g4VbI-tPoSamJ697SlcfDTGghx42324A")' }}></div>
-                {/* Light Mode Gradients */}
-                <div className="absolute -top-[30%] -left-[8%] w-[80vw] h-[70vw] bg-[#36E29B] rounded-full blur-[150px] opacity-32 mix-blend-multiply dark:opacity-0"></div>
-                <div className="absolute -top-[10%] -right-[20%] w-[70vw] h-[60vw] bg-[#FBE5CF] rounded-full blur-[160px] opacity-100 mix-blend-multiply dark:opacity-0"></div>
-                <div className="absolute -bottom-[30%] -left-[5%] w-[70vw] h-[45vw] bg-[#F2E9D1] rounded-full blur-[160px] opacity-40 mix-blend-multiply dark:opacity-0"></div>
-                <div className="absolute -bottom-[40%] -right-[10%] w-[70vw] h-[60vw] bg-[#FBF1E6] rounded-full blur-[180px] opacity-5 mix-blend-multiply dark:opacity-0"></div>
-                {/* Dark Mode Gradients */}
-                <div className="absolute -top-[30%] -left-[8%] w-[75vw] h-[65vw] bg-[#1a5c3a] rounded-full blur-[180px] opacity-0 dark:opacity-90"></div>
-                <div className="absolute -top-[15%] -right-[15%] w-[60vw] h-[55vw] bg-[#4a3728] rounded-full blur-[160px] opacity-0 dark:opacity-70"></div>
-                <div className="absolute -bottom-[30%] -left-[5%] w-[55vw] h-[50vw] bg-[#655944] rounded-full blur-[150px] opacity-0 dark:opacity-20"></div>
-                <div className="absolute -bottom-[30%] -right-[10%] w-[65vw] h-[55vw] bg-[#655944] rounded-full blur-[180px] opacity-0 dark:opacity-90"></div>
-            </div>
+        <div className="h-screen w-screen overflow-hidden flex flex-col font-sans text-slate-800 dark:text-slate-100 relative bg-[#fcfdfd] dark:bg-[#101614] bg-grid-pattern selection:bg-cyan-500/30 transition-colors duration-500">
 
             <Header />
 
-            <main className="relative z-10 flex items-center justify-center h-full w-full pt-16 pb-24 md:pt-20 md:pb-[80px] px-4 md:px-0">
-                <div className="relative w-full max-w-[1400px] h-full frosted-glass rounded-2xl md:rounded-[3rem] border border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_20px_50px_-15px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col md:flex-row p-0">
-                    {children}
+            {children}
+            {/* Agent Chat */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 glass-panel dark:bg-black/40 dark:border-white/10 pl-4 pr-3 py-3 rounded-2xl shadow-heavy-float z-30 flex items-center gap-4 w-[600px] border border-white pointer-events-auto transition-colors">
+                <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shrink-0">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" opacity="0.3"/><path d="M10.5 14l-1.5-.5-1.5.5c-1.46.18-2.67 1.22-3.06 2.61L4 18l.44 1.39c.39 1.39 1.6 2.43 3.06 2.61l1.5.19 1.5-.19c1.46-.18 2.67-1.22 3.06-2.61l.44-1.39-.44-1.39c-.39-1.39-1.6-2.43-3.06-2.61L10.5 11l-1.5.5z"/></svg>
                 </div>
-            </main>
-
-            <Dock />
+                <input type="text" placeholder="Hỏi Vẹt Bookworm AI hoặc nhập lệnh để chỉnh sửa tài liệu..." className="flex-1 bg-transparent text-[0.85rem] font-medium text-slate-700 dark:text-slate-200 outline-none placeholder-slate-400 dark:placeholder-slate-500" />
+                <button className="px-5 py-2 rounded-xl bg-cyan-600 text-white text-xs font-bold shadow-md hover:bg-cyan-500 transition-colors">
+                    Gửi lệnh
+                </button>
+            </div>
         </div>
     );
 };

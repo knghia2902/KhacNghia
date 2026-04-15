@@ -1,50 +1,70 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { NavLink } from 'react-router-dom';
 
 const Header = () => {
-    const { user } = useAuth();
-    const { theme, toggleTheme } = useTheme();
-
-    // Get display name from metadata or fallback to email
-    const displayName = user?.user_metadata?.display_name || (user?.email ? user.email.split('@')[0] : 'Guest');
-    // Capitalize first letter if it's from email/fallback (optional, but good for consistency)
-    const formattedName = user?.user_metadata?.display_name
-        ? displayName
-        : displayName.charAt(0).toUpperCase() + displayName.slice(1);
-
     return (
-        <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:px-12 md:py-6">
-            <div className="flex flex-row items-center gap-3">
-                <div className="size-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/30 dark:border-white/10 text-primary-dark dark:text-primary shadow-sm">
-                    <span className="material-symbols-outlined">spa</span>
+        <header className="h-24 w-full flex items-center justify-between px-8 z-30 bg-transparent shrink-0">
+            <div className="flex items-center w-[250px] shrink-0">
+                <div className="w-10 h-10 bg-cyan-600 rounded-[12px] flex items-center justify-center mr-3 shadow-md">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
                 </div>
-                {/* Enhanced alignment: h-10 to match icon, flex center, and small visual offset for font baseline */}
-                <div className="h-10 flex items-center">
-                    <h2 className="text-xl font-extrabold tracking-tight hidden md:block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent leading-none mt-[2px]">Khắc Nghĩa</h2>
+                <div>
+                    <h1 className="font-display font-bold text-[1.1rem] text-cyan-600 tracking-tight leading-tight">Khắc Nghĩa</h1>
+                    <p className="text-[0.6rem] font-semibold text-slate-400 tracking-widest uppercase">Rảnh rỗi</p>
                 </div>
             </div>
-            <div className="flex items-center gap-3">
-                {/* Theme Toggle Button */}
-                <button
-                    onClick={toggleTheme}
-                    className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group"
-                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                >
-                    <span className="material-symbols-outlined text-[#1d2624]/70 dark:text-white/70 !text-[24px]">
-                        {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-                    </span>
-                </button>
 
-                <button className="h-10 w-10 flex items-center justify-center relative rounded-full hover:bg-white/20 dark:hover:bg-white/10 transition-colors group">
-                    <span className="material-symbols-outlined text-[#1d2624]/70 dark:text-white/70 !text-[24px]">notifications</span>
-                    <span className="absolute top-2.5 right-2.5 size-2 bg-secondary rounded-full border border-white dark:border-[#1d2624]"></span>
-                </button>
+            <nav className="flex items-center gap-10">
+                <NavLink to="/dashboard" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                    {({ isActive }) => (
+                        <div className="flex flex-col items-center">
+                            <span>Dashboard</span>
+                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
+                        </div>
+                    )}
+                </NavLink>
+                <NavLink to="/docs" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                    {({ isActive }) => (
+                        <div className="flex flex-col items-center">
+                            <span>Docs</span>
+                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
+                        </div>
+                    )}
+                </NavLink>
+                <NavLink to="/tools" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                    {({ isActive }) => (
+                        <div className="flex flex-col items-center">
+                            <span>Tools</span>
+                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
+                        </div>
+                    )}
+                </NavLink>
+                <NavLink to="/images" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                    {({ isActive }) => (
+                        <div className="flex flex-col items-center">
+                            <span>Images</span>
+                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
+                        </div>
+                    )}
+                </NavLink>
+            </nav>
 
-                <div className="h-10 flex items-center gap-2 pl-1 pr-4 rounded-full bg-white dark:bg-white/10 shadow-sm border border-transparent hover:shadow-md transition-all duration-300 ml-1">
-                    <div className="size-8 rounded-full bg-cover bg-center bg-[url('https://lh3.googleusercontent.com/aida-public/AB6AXuB7MIfWuberaUaXXFS9ZIR4l7jNPGntBkLfEDhd9wENwskIcai7VW4YdsfZveHyFSPtobfgxcxjzDgdYh18AJS8nW6ttaRK3xlmwojv7lQmIhWglOE73TIbmoF2u38m5xSLb-2Semh66OxZkCKqHT9kC_E7S9VMFIKIynFISOg674-E00XY1Mlxsj3LpKufdVGXzS38DHVfq0nt6EBcNlei1rFRkHc5QpP10MU-9TLfPktz0SDoZWsv-iMOL2GRwvdVM5-IebgeGBL0')]"></div>
-                    <span className="text-sm font-bold text-[#1d2624] dark:text-white hidden md:block max-w-[120px] truncate">{formattedName}</span>
+            <div className="flex items-center justify-end gap-4 w-[250px] shrink-0">
+                <div className="relative hidden xl:block">
+                    <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" placeholder="Tìm kiếm..." className="pl-10 pr-4 py-2 w-48 rounded-full bg-white/60 dark:bg-white/5 border border-white/80 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-[0.85rem] font-medium text-slate-700 dark:text-slate-200 placeholder-slate-500 shadow-sm" />
                 </div>
+                <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-cyan-600 glass-panel transition-colors">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" /></svg>
+                </button>
+                <div className="h-8 w-px bg-slate-300/50 dark:bg-white/10 mx-1"></div>
+                <button className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden hover:ring-2 ring-cyan-500/50 transition-all shadow-md">
+                    <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </button>
             </div>
         </header>
     );

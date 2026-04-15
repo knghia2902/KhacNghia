@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Landing = () => {
-    const [time, setTime] = React.useState(new Date());
+const Home = () => {
+    const navigate = useNavigate();
+    
+    // Core state
+    const [time, setTime] = useState(new Date());
+    
+    // Agent positioning and animation state
+    // Sàn có kích thước 700x700, tâm lý thuyết là (350, 350)
+    // Trừ đi một nửa kích thước agent (50, 50) để căn giữa chuẩn.
+    const [agentPos, setAgentPos] = useState({ left: 300, top: 310 }); 
+    const [isAgentRunning, setIsAgentRunning] = useState(false);
+    const [activeNode, setActiveNode] = useState(null);
 
-    React.useEffect(() => {
+    // Clock
+    useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -11,80 +23,176 @@ const Landing = () => {
     const todayDate = time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Handle clicking a node (Walk-to-Navigate)
+    const handleNodeClick = (targetPath, targetLeft, targetTop, nodeName) => {
+        if (isAgentRunning) return; // Prevent double clicking while walking
+        
+        setActiveNode(nodeName);
+        setIsAgentRunning(true);
+        // Di chuyển nhân vật (điều chỉnh offset cho khớp tâm mặt phẳng)
+        setAgentPos({ left: targetLeft, top: targetTop });
+
+        // Đợi bằng đúng thời gian CSS transition của agent (1.5s ~ 2s)
+        setTimeout(() => {
+            setIsAgentRunning(false);
+            // Chờ nhân vật đứng lại rồi chuyển trang
+            setTimeout(() => {
+                navigate(targetPath);
+            }, 300);
+        }, 1200); // 1.2s transition
+    };
+
     return (
-        <div className="w-full h-full md:p-8 flex items-center justify-center">
-            <div className="relative w-full max-w-[1400px] h-full flex flex-col md:flex-row">
-                <div className="flex-1 flex flex-col justify-center px-8 md:px-20 py-12 relative z-20">
-                    <div className="flex flex-col gap-6 md:gap-8 max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/40 dark:bg-white/5 border border-white/30 dark:border-white/10 w-fit backdrop-blur-sm shadow-sm">
-                            <div className="size-2 rounded-full bg-primary animate-pulse"></div>
-                            <span className="text-xs font-bold text-[#1d2624]/70 dark:text-white/70 uppercase tracking-widest">Zen Mode</span>
-                        </div>
-                        <h1 className="text-5xl md:text-7xl font-display font-extrabold text-[#1d2624] dark:text-white leading-[1.1] tracking-tight drop-shadow-sm">
-                            Design your <br />
-                            <span className="bg-gradient-to-r from-[#4ecdc4] to-[#ffbe76] bg-clip-text text-transparent">peace of mind.</span>
-                        </h1>
-                        <p className="text-lg md:text-xl text-[#1d2624]/70 dark:text-white/60 font-medium leading-relaxed max-w-lg">
-                            Everything you need is right here. Distraction-free, calm, and ready for your best work.
-                        </p>
-                        <div className="mt-4 relative w-full max-w-md group/search">
-                            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                <span className="material-symbols-outlined text-[#1d2624]/40 dark:text-white/40 group-focus-within/search:text-primary transition-colors">search</span>
-                            </div>
-                            <input className="w-full pl-14 pr-14 py-5 bg-white/60 dark:bg-black/20 border border-white/40 dark:border-white/10 rounded-2xl text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-white/80 dark:focus:bg-black/40 transition-all shadow-sm text-lg" placeholder="What are you creating today?" type="text" />
-                            <div className="absolute inset-y-0 right-3 flex items-center">
-                                <button className="size-10 rounded-xl flex items-center justify-center bg-white/50 dark:bg-white/10 hover:bg-primary hover:text-white dark:hover:bg-primary transition-all text-[#1d2624]/60 dark:text-white/60">
-                                    <span className="material-symbols-outlined">arrow_forward</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div className="mt-8 pt-8 border-t border-[#1d2624]/5 dark:border-white/5 flex gap-12">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 dark:text-white/40">Today</span>
-                                <span className="text-xl font-bold text-[#1d2624] dark:text-white">{todayDate}</span>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-[#1d2624]/40 dark:text-white/40">Local Time</span>
-                                <span className="text-xl font-bold text-[#1d2624] dark:text-white font-variant-numeric tabular-nums">{timeString}</span>
-                            </div>
-                        </div>
+        <div className="w-full h-full relative overflow-hidden bg-gradient-to-br from-[#101614] to-slate-900">
+            {/* Header / Info HUD overlaying the 3D scene */}
+            <div className="absolute top-8 left-8 z-50 pointer-events-none">
+                <div className="flex flex-col gap-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/40 border border-white/10 w-fit backdrop-blur-md shadow-lg">
+                        <div className="size-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                        <span className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-md">Digital Atrium</span>
                     </div>
+                    
+                    <h1 className="text-5xl md:text-6xl font-display font-extrabold text-white leading-[1.1] tracking-tight drop-shadow-xl select-none">
+                        Welcome to <br />
+                        <span className="bg-gradient-to-r from-[#4ecdc4] to-cyan-300 bg-clip-text text-transparent">the System.</span>
+                    </h1>
                 </div>
-                <div className="md:w-[45%] h-full relative overflow-hidden hidden md:block group/visual">
-                    <div className="absolute inset-0 bg-cover bg-center transition-transform duration-[2s] ease-out group-hover/visual:scale-105" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDSurl_rJXeZMa1QBJEVjRe4iBvQEawiVc3X4LWn6cw84-iQOtGYyDXxRrAxAaFgj53y_sgcfy5J6NVI7Z-tKr443HyRXtp4zOzAfmfi1619vpkEFzMwDMDw_GCGBnnnpdiBVknE6DJnLLe2U_f1JHfa5qHWne-yt7SJnvxxSPzdrd3kqYMGI20nHyqwqrVfox_DizPKYupzh9ePzkexiW7zzmVVzNsVJo88XOv4bCSU146g4VbI-tPoSamJ697SlcfDTGghx42324A")' }}></div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-transparent to-transparent dark:from-[#101614]/40 backdrop-blur-[2px]"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="absolute w-64 aspect-[3/4] bg-white/20 dark:bg-black/40 backdrop-blur-md rounded-3xl border border-white/20 dark:border-white/10 shadow-2xl rotate-[-8deg] translate-x-[-20px] translate-y-[20px] transition-transform duration-700 group-hover/visual:translate-x-[-30px] group-hover/visual:rotate-[-12deg]"></div>
-                        <div className="absolute w-64 aspect-[3/4] bg-white/40 dark:bg-black/60 backdrop-blur-xl rounded-3xl border border-white/40 dark:border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.2)] rotate-[4deg] flex flex-col p-6 transition-transform duration-700 group-hover/visual:rotate-[0deg] group-hover/visual:scale-105">
-                            <div className="flex justify-between items-start mb-auto">
-                                <div className="size-12 rounded-2xl bg-gradient-to-br from-[#4ecdc4] to-[#ffbe76] flex items-center justify-center text-white shadow-lg">
-                                    <span className="material-symbols-outlined">spa</span>
-                                </div>
-                                <div className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_10px_#4ade80]"></div>
-                            </div>
-                            <div className="space-y-3 mb-6">
-                                <div className="h-2 w-2/3 bg-[#1d2624]/10 dark:bg-white/20 rounded-full"></div>
-                                <div className="h-2 w-full bg-[#1d2624]/10 dark:bg-white/20 rounded-full"></div>
-                                <div className="h-2 w-1/2 bg-[#1d2624]/10 dark:bg-white/20 rounded-full"></div>
-                            </div>
-                            <div className="mt-auto">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="size-8 rounded-full bg-cover bg-center border border-white" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuB7MIfWuberaUaXXFS9ZIR4l7jNPGntBkLfEDhd9wENwskIcai7VW4YdsfZveHyFSPtobfgxcxjzDgdYh18AJS8nW6ttaRK3xlmwojv7lQmIhWglOE73TIbmoF2u38m5xSLb-2Semh66OxZkCKqHT9kC_E7S9VMFIKIynFISOg674-E00XY1Mlxsj3LpKufdVGXzS38DHVfq0nt6EBcNlei1rFRkHc5QpP10MU-9TLfPktz0SDoZWsv-iMOL2GRwvdVM5-IebgeGBL0")' }}></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-[#1d2624] dark:text-white">Alex M.</span>
-                                        <span className="text-[10px] text-[#1d2624]/60 dark:text-white/60">Admin</span>
-                                    </div>
-                                </div>
-                                <button className="w-full py-2 rounded-lg bg-[#1d2624]/5 dark:bg-white/10 text-xs font-bold uppercase tracking-wider text-[#1d2624] dark:text-white hover:bg-primary hover:text-white transition-colors">
-                                    View Profile
-                                </button>
-                            </div>
-                        </div>
+            </div>
+
+            <div className="absolute top-8 right-8 z-50 pointer-events-none text-right">
+                <div className="mt-2 pt-4 flex gap-8">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-cyan-400/80 drop-shadow">Today</span>
+                        <span className="text-xl font-bold text-white drop-shadow-md">{todayDate}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-cyan-400/80 drop-shadow">Local Time</span>
+                        <span className="text-xl font-bold text-white font-variant-numeric tabular-nums drop-shadow-md">{timeString}</span>
                     </div>
                 </div>
             </div>
+
+            {/* Hint text at bottom center */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 text-center pointer-events-none">
+                <p className="text-white/60 font-medium tracking-widest uppercase text-sm animate-pulse bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/5">
+                    Select a zone to navigate
+                </p>
+            </div>
+
+            {/* 3D ISOMETRIC WORLD */}
+            <div id="isometric-view" className="fixed inset-0 flex items-center justify-center z-0">
+                <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative">
+                    
+                    {/* Glowing Floor Grid */}
+                    <div className="iso-floor flex items-center justify-center">
+                        <div className="absolute w-20 h-20 bg-cyan-400/20 rounded-full blur-2xl animate-pulse"></div>
+                    </div>
+
+                    {/* ZONE 1: DOCS (Góc Trái Trên) */}
+                    <div 
+                        className={`cyber-pedestal ${activeNode === 'docs' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
+                        style={{ left: '100px', top: '100px' }}
+                        onClick={() => handleNodeClick('/docs', 110, 80, 'docs')}
+                    >
+                        <div className="pedestal-base"></div>
+                        <div className="pedestal-ring"></div>
+                        <div className="hologram-text">
+                            <span className="material-symbols-outlined">library_books</span>
+                            DOCS
+                        </div>
+                    </div>
+
+                    {/* ZONE 2: ADMIN (Góc Phải Trên) */}
+                    <div 
+                        className={`cyber-pedestal ${activeNode === 'admin' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
+                        style={{ left: '480px', top: '100px' }}
+                        onClick={() => handleNodeClick('/admin', 490, 80, 'admin')}
+                    >
+                        <div className="pedestal-base"></div>
+                        <div className="pedestal-ring" style={{ animationDelay: '-2s' }}></div>
+                        <div className="hologram-text text-amber-300">
+                            <span className="material-symbols-outlined text-amber-400">admin_panel_settings</span>
+                            ADMIN
+                        </div>
+                    </div>
+
+                    {/* ZONE 3: TOOLS (Góc Trái Dưới) */}
+                    <div 
+                        className={`cyber-pedestal ${activeNode === 'tools' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
+                        style={{ left: '100px', top: '480px' }}
+                        onClick={() => handleNodeClick('/tools', 110, 460, 'tools')}
+                    >
+                        <div className="pedestal-base"></div>
+                        <div className="pedestal-ring" style={{ animationDelay: '-5s' }}></div>
+                        <div className="hologram-text text-emerald-300">
+                            <span className="material-symbols-outlined text-emerald-400">build_circle</span>
+                            TOOLS
+                        </div>
+                    </div>
+
+                    {/* ZONE 4: GALLERY (Góc Phải Dưới) */}
+                    <div 
+                        className={`cyber-pedestal ${activeNode === 'gallery' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
+                        style={{ left: '480px', top: '480px' }}
+                        onClick={() => handleNodeClick('/gallery', 490, 460, 'gallery')}
+                    >
+                        <div className="pedestal-base"></div>
+                        <div className="pedestal-ring" style={{ animationDelay: '-7s' }}></div>
+                        <div className="hologram-text text-purple-300">
+                            <span className="material-symbols-outlined text-purple-400">imagesmode</span>
+                            GALLERY
+                        </div>
+                    </div>
+
+                    {/* CHIBI AGENT */}
+                    <div 
+                        className={`iso-agent ${isAgentRunning ? 'agent-run' : ''}`}
+                        style={{ 
+                            left: `${agentPos.left}px`, 
+                            top: `${agentPos.top}px`,
+                            transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}
+                    >
+                        {/* Shadow blob dưới chân */}
+                        <div className="absolute bottom-[-10px] w-20 h-6 bg-black/40 rounded-full blur-md"></div>
+                        
+                        <model-viewer 
+                            src={isAgentRunning 
+                                ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
+                                : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"} 
+                            camera-controls={false}
+                            disable-zoom
+                            disable-tap
+                            disable-pan
+                            autoplay 
+                            animation-name={isAgentRunning ? "Running" : "Walking"}
+                            camera-orbit="-45deg 75deg 5m"
+                            interaction-prompt="none"
+                            shadow-intensity="1"
+                            exposure="1.2"
+                            environment-image="neutral"
+                        ></model-viewer>
+                    </div>
+
+                </div>
+            </div>
+            
+            {/* Global Styles cho overrides riêng của Home nếu cần */}
+            <style>{`
+                /* Vô hiệu hóa hover của model container */
+                .iso-agent { pointer-events: none; }
+                
+                /* Riêng cho Home, nền đen mượt hơn Docs nên ta đổi gradient text của hologram admin/tools */
+                .hologram-text.text-amber-300 { color: rgba(253, 230, 138, 0.9); text-shadow: 0 0 10px rgba(245, 158, 11, 0.8); }
+                .hologram-text.text-emerald-300 { color: rgba(167, 243, 208, 0.9); text-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
+                .hologram-text.text-purple-300 { color: rgba(216, 180, 254, 0.9); text-shadow: 0 0 10px rgba(168, 85, 247, 0.8); }
+                
+                .hologram-text.text-amber-300 .material-symbols-outlined { color: rgba(251, 191, 36, 0.9); }
+                .hologram-text.text-emerald-300 .material-symbols-outlined { color: rgba(52, 211, 153, 0.9); }
+                .hologram-text.text-purple-300 .material-symbols-outlined { color: rgba(192, 132, 252, 0.9); }
+            `}</style>
         </div>
     );
 };
 
-export default Landing;
+export default Home;

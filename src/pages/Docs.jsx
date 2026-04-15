@@ -773,6 +773,12 @@ const Docs = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
     const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = useState(false);
+    const [isAgentRunning, setIsAgentRunning] = useState(false);
+    const [isAgentSelected, setIsAgentSelected] = useState(false);
+    const [agentPos, setAgentPos] = useState({ left: 300, top: 310 });
+    const [agentFacingAngle, setAgentFacingAngle] = useState(0);
+    const [showEditor, setShowEditor] = useState(false);
+    const [clickEffects, setClickEffects] = useState([]); // Thêm state cho click effects
 
     // Escape key to close secondary panel
     useEffect(() => {
@@ -1268,10 +1274,87 @@ const Docs = () => {
     };
 
     const handleDocClick = (docId) => {
-        setActiveDocId(docId);
-        setIsEditing(false);
+        if (docId !== activeDocId) {
+            const half = 50;
+            const agentCenterX = agentPos.left + half;
+            const agentCenterY = agentPos.top + half;
+            const dx = 30 - agentCenterX;
+            const dy = 30 - agentCenterY;
+            // Floor direction → Screen direction
+            const screenDx = (dx + dy) * 0.7071;
+            const screenDy = (-dx + dy) * 0.3536; // Y goes down natively
+            const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
+            setAgentFacingAngle(screenAngle - 90);
+            setAgentPos({ left: 600, top: 100 }); // Đi về phía tủ ở top vertex
+            setIsAgentRunning(true);
+            setIsAgentSelected(false);
+            setTimeout(() => {
+                setActiveDocId(docId);
+                setIsEditing(false);
+                setIsAgentRunning(false);
+                setShowEditor(true);
+            }, 800);
+        }
     };
 
+    const handleCloseDoc = () => {
+        setShowEditor(false);
+        const half = 50;
+        const agentCenterX = agentPos.left + half;
+        const agentCenterY = agentPos.top + half;
+        const dx = 350 - agentCenterX;
+        const dy = 360 - agentCenterY;
+        const screenDx = (dx + dy) * 0.7071;
+        const screenDy = (-dx + dy) * 0.3536;
+        const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
+        setAgentFacingAngle(screenAngle - 90);
+        setTimeout(() => {
+            setActiveDocId(null);
+            setAgentPos({ left: 300, top: 310 });
+            setAgentFacingAngle(0);
+        }, 500);
+    };
+
+    const handleFloorClick = (e) => {
+        if (!isAgentSelected) return;
+
+        const x = e.nativeEvent.offsetX;
+        const y = e.nativeEvent.offsetY;
+
+        // Tính hướng đi trên sàn
+        const half = 50;
+        const agentCenterX = agentPos.left + half;
+        const agentCenterY = agentPos.top + half;
+        const dx = x - agentCenterX;
+        const dy = y - agentCenterY;
+
+        // Chuyển floor direction → screen direction chuẩn (Y hướng xuống)
+        const screenDx = (dx + dy) * 0.7071;
+        const screenDy = (-dx + dy) * 0.3536;
+        const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
+
+        // Orbit: screenAngle - 90 để quay đúng hướng
+        setAgentFacingAngle(screenAngle - 90);
+
+        // Clamp giữ agent trong sàn
+        const size = 100;
+        const clampedX = Math.max(0, Math.min(700 - size, x - half));
+        const clampedY = Math.max(0, Math.min(700 - size, y - half));
+
+        setAgentPos({ left: clampedX, top: clampedY });
+        setIsAgentRunning(true);
+
+        // Hiệu ứng click (Ripple)
+        const effectId = Date.now();
+        setClickEffects(prev => [...prev, { id: effectId, x, y }]);
+        setTimeout(() => {
+            setClickEffects(prev => prev.filter(e => e.id !== effectId));
+        }, 1000);
+
+        setTimeout(() => {
+            setIsAgentRunning(false);
+        }, 800);
+    };
     const handleCreateFolder = async (name, parentId = null) => {
         const newFolder = {
             id: `folder-${Date.now()}`,
@@ -1518,7 +1601,7 @@ const Docs = () => {
                                     <div className="w-0 group-hover/row:w-6 overflow-hidden transition-all duration-200 flex items-center shrink-0">
                                         <span
                                             onClick={(e) => openContextMenu(e, folder.id, 'folder', folder.parentId)}
-                                            className="material-symbols-outlined text-[16px] hover:text-[#1d2624] cursor-pointer p-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity duration-200"
+                                            className="material-symbols-outlined text-[16px] hover:text-[#1d2624] dark:hover:text-white cursor-pointer p-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity duration-200"
                                             title="Tùy chọn"
                                         >more_horiz</span>
                                     </div>
@@ -1633,7 +1716,6 @@ const Docs = () => {
         img { max-width: 100%; height: auto; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
         td, th { border: 1px solid #ddd; padding: 8px; }
-    </style>
     </style>
 </head>
 <body>
@@ -1812,6 +1894,157 @@ const Docs = () => {
     return (
         <>
             <style>{`
+                /* ISOMETRIC CSS */
+                .isometric-container {
+                    perspective: 2000px;
+                    transform-style: preserve-3d;
+                }
+                .isometric-world {
+                    transform: rotateX(60deg) rotateZ(-45deg);
+                    transform-style: preserve-3d;
+                    transition: transform 1s ease-in-out;
+                }
+                
+                .iso-floor {
+                    width: 700px;
+                    height: 700px;
+                    background: rgba(13, 148, 136, 0.05);
+                    border: 2px dashed rgba(13, 148, 136, 0.2);
+                    position: absolute;
+                    transform-style: preserve-3d;
+                    border-radius: 20px;
+                    box-shadow: inset 0 0 50px rgba(13, 148, 136, 0.1);
+                }
+
+                .iso-cabinet {
+                    position: absolute;
+                    top: 50px;
+                    left: 50px;
+                    width: 100px;
+                    height: 80px;
+                    transform-style: preserve-3d;
+                    transform: translateZ(0);
+                }
+
+                .iso-archive {
+                    position: absolute;
+                    top: -140px;   /* Đỉnh "Top vertex" của isometric floor */
+                    left: 450px;
+                    width: 450px;
+                    height: 450px;
+                    transform: translateZ(40px) rotateZ(45deg) rotateX(-60deg);
+                    transform-style: preserve-3d;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                }
+
+                .iso-bed {
+                    position: absolute;
+                    top: 460px;
+                    left: 460px;
+                    width: 200px;
+                    height: 200px;
+                    border: none !important;
+                    box-shadow: none !important;
+                    outline: none !important;
+                    background: transparent !important;
+                    transform: translateZ(20px) rotateZ(45deg) rotateX(-60deg);
+                    transform-style: preserve-3d;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                }
+                .cab-face { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
+                .cab-front  { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(0px); background: #0d9488; transform-origin: bottom; bottom: 0;}
+                .cab-back   { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(-80px); background: #0f766e; transform-origin: bottom; bottom: 0;}
+                .cab-top    { width: 100px; height: 80px;  transform: translateZ(120px); background: #2dd4c2; }
+                .cab-left   { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(-40px) translateX(-40px); background: #115e59; transform-origin: left; left:0; bottom:0;}
+                .cab-right  { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(60px) translateX(-40px); background: #14b8a6; transform-origin: left; left:0; bottom:0;}
+
+                .cab-drawer { width: 90px; height: 32px; background: rgba(255,255,255,0.2); margin: 5px auto; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
+
+                .iso-agent {
+                    position: absolute;
+                    top: 310px;
+                    left: 300px;
+                    width: 100px;
+                    height: 100px;
+                    transform: translateZ(40px) rotateZ(45deg) rotateX(-60deg);
+                    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                    transform-style: preserve-3d;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: visible;
+                }
+                
+                model-viewer, model-viewer:focus, model-viewer:focus-visible {
+                    outline: none !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    background: transparent !important;
+                }
+
+                model-viewer::part(default-progress-bar),
+                model-viewer::part(default-progress-mask) {
+                    display: none !important;
+                }
+
+                .iso-agent.selected {
+                    filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.8));
+                }
+
+                .selection-ring {
+                    position: absolute;
+                    width: 140px;
+                    height: 140px;
+                    border: 4px solid #06b6d4;
+                    border-radius: 50%;
+                    opacity: 0;
+                    transform: translateZ(-10px) scale(0.8);
+                    transition: all 0.3s ease;
+                    pointer-events: none;
+                }
+
+                .iso-agent.selected .selection-ring {
+                    opacity: 1;
+                    transform: translateZ(-10px) scale(1.1);
+                    animation: pulse-ring 2s infinite;
+                }
+
+                @keyframes pulse-ring {
+                    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+                    70% { box-shadow: 0 0 0 20px rgba(6, 182, 212, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+                }
+
+                model-viewer {
+                    width: 100%;
+                    height: 100%;
+                    --poster-color: transparent;
+                    filter: drop-shadow(0px 20px 10px rgba(0,0,0,0.3));
+                    pointer-events: none;
+                }
+
+                .agent-run {
+                    /* Chỉ nâng nhẹ khi chạy - KHÔNG override position */
+                    transform: translateZ(50px) rotateZ(45deg) rotateX(-60deg) !important;
+                }
+
+                #editor-content { opacity: 0; pointer-events: none; transition: opacity 0.5s, transform 0.5s; transform: translateY(20px); }
+                #editor-content.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+                .world-shifted {
+                    transform: rotateX(60deg) rotateZ(-45deg) scale(0.45) translateX(550px) translateY(-280px);
+                    opacity: 0.3;
+                }
+
                 .imported-content-wrapper {
                     width: 100% !important;
                     max-width: 100% !important;
@@ -1940,18 +2173,17 @@ const Docs = () => {
                 ></div>
             )}
 
-            <div className="flex-1 flex overflow-hidden relative p-4 md:p-8 gap-4 md:gap-6 w-full h-full bg-atrium-surface bg-grid-pattern">
+            <div className="flex-1 flex overflow-hidden relative px-8 pb-8 gap-6">
                 {/* Sidebar */}
-                <div className={`
-                    fixed inset-y-0 left-0 z-50 w-72 md:w-[240px] h-full flex flex-col py-6 px-3 glass-panel rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
+                <aside className={`
+                    w-[240px] h-full flex flex-col py-6 px-3 z-20 glass-panel dark:bg-black/30 dark:border-white/10 rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
                     ${isFocusMode ? 'md:hidden' : ''}
-                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    ${isSecondaryPanelOpen ? 'hidden md:flex' : 'flex'}
+                    ${isSidebarOpen ? 'translate-x-0 fixed inset-y-0 left-0' : 'hidden md:flex'}
                 `}>
                     {/* Mobile Close Button */}
                     <button
                         onClick={() => setIsSidebarOpen(false)}
-                        className="absolute top-4 right-4 p-2 text-slate-500 md:hidden"
+                        className="absolute top-4 right-4 p-2 text-slate-500 dark:text-slate-400 md:hidden"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -1959,7 +2191,7 @@ const Docs = () => {
                     <div className="flex flex-col h-full">
                         {/* Header Row */}
                         <div className="mb-4 px-3 flex items-center shrink-0">
-                            <p className="text-[0.65rem] font-bold text-slate-500 tracking-widest uppercase truncate">Cấu trúc tài liệu</p>
+                            <p className="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase truncate">Cấu trúc tài liệu</p>
                             {/* Hidden Inputs */}
                             <input
                                 type="file"
@@ -1981,7 +2213,7 @@ const Docs = () => {
                                 {loading ? (
                                     <div className="space-y-2 animate-pulse mt-2">
                                         {[1, 2, 3, 4, 5].map(i => (
-                                            <div key={i} className="h-8 bg-white/40 rounded-lg w-full"></div>
+                                            <div key={i} className="h-8 bg-white/40 dark:bg-white/5 rounded-lg w-full"></div>
                                         ))}
                                     </div>
                                 ) : isAuthenticated ? (
@@ -2001,7 +2233,7 @@ const Docs = () => {
                             <div className="mt-auto p-2 flex justify-center">
                                 <button
                                     onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full py-2.5 text-xs font-bold text-slate-600 bg-white/50 border border-white/60 hover:bg-white/80 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2"
+                                    className="w-full py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2"
                                 >
                                     <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
                                     Thư mục mới
@@ -2009,7 +2241,7 @@ const Docs = () => {
                             </div>
                         )}
                     </div>
-                </div>
+                </aside>
 
                 <CascadingNav
                     isOpen={isSecondaryPanelOpen}
@@ -2027,28 +2259,97 @@ const Docs = () => {
                 />
 
                 {/* Main Content */}
-                <main className={`flex-1 flex flex-col relative overflow-hidden transition-all duration-500 ease-in-out ${isFocusMode ? 'max-w-4xl mx-auto z-30' : ''}`}>
-                    {/* Mobile Toggle Button */}
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="md:hidden absolute top-4 left-4 p-2 text-[#1d2624]/60 dark:text-white/60 hover:bg-[#1d2624]/5 dark:hover:bg-white/5 rounded-lg transition-colors z-30"
-                    >
-                        <span className="material-symbols-outlined">menu</span>
-                    </button>
-                    {activeDoc && (
-                        <div className="h-16 px-8 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-md z-10">
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setIsFocusMode(!isFocusMode)}
-                                    className={`p-2 rounded-lg transition-colors flex items-center justify-center ${isFocusMode ? 'bg-primary/20 text-primary-dark' : 'hover:bg-white/20 text-[#1d2624]/60'}`}
-                                    title={isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
-                                >
-                                    <span className="material-symbols-outlined text-[20px]">{isFocusMode ? 'fullscreen_exit' : 'fullscreen'}</span>
-                                </button>
-                                <div className="h-4 w-px bg-white/20"></div>
-                                <span className="text-sm font-medium text-[#1d2624]/40 flex items-center gap-2">
-                                    {isEditing ? 'Editing Mode' : `Last saved ${activeDoc.date}`}
-                                </span>
+                <main className="flex-1 relative overflow-hidden flex items-center justify-center">
+                    
+                    {/* THE 3D ISOMETRIC EMPTY STATE */}
+                    <div id="isometric-view" className={`fixed top-0 bottom-0 right-0 z-0 pointer-events-none flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] left-0 ${!showEditor && isSecondaryPanelOpen ? 'md:left-[660px]' : ''} ${showEditor ? 'world-shifted' : ''}`}>
+                        <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
+                            {/* Floor grid */}
+                            <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={handleFloorClick}>
+                                <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
+                                
+                                {/* Click Ripples */}
+                                {clickEffects.map(effect => (
+                                    <div 
+                                        key={effect.id} 
+                                        className="absolute pointer-events-none rounded-full"
+                                        style={{
+                                            left: effect.x - 20,
+                                            top: effect.y - 20,
+                                            width: '40px',
+                                            height: '40px',
+                                            border: '3px solid #06b6d4',
+                                            background: 'rgba(6, 182, 212, 0.2)',
+                                            animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                            
+                            {/* The Archive 3D Model */}
+                            <div className="iso-archive">
+                                <model-viewer 
+                                    src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
+                                    alt="3D Archive"
+                                    disable-zoom="true"
+                                    disable-tap="true"
+                                    disable-pan="true"
+                                    interaction-prompt="none"
+                                    shadow-intensity="1">
+                                </model-viewer>
+                            </div>
+
+                            {/* The Bed 3D Model */}
+                            <div className="iso-bed">
+                                <model-viewer 
+                                    src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
+                                    alt="3D Bed"
+                                    camera-orbit="135deg 55deg auto"
+                                    field-of-view="10deg"
+                                    disable-zoom="true"
+                                    disable-tap="true"
+                                    disable-pan="true"
+                                    interaction-prompt="none"
+                                    shadow-intensity="1">
+                                </model-viewer>
+                            </div>
+
+                            {/* Chibi Model 2 (Replacing Parrot Agent) */}
+                            <div 
+                                id="chibi-agent" 
+                                className={`iso-agent ${isAgentRunning ? 'agent-run' : ''} ${isAgentSelected ? 'selected' : ''} cursor-pointer transition-transform`}
+                                style={{ left: agentPos.left, top: agentPos.top }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsAgentSelected(!isAgentSelected);
+                                }}
+                            >
+                                <model-viewer 
+                                    src={isAgentRunning 
+                                        ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
+                                        : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"}
+                                    alt="3D AI Agent"
+                                    camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                    min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                    max-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                    disable-zoom="true"
+                                    disable-tap="true"
+                                    disable-pan="true"
+                                    interaction-prompt="none"
+                                    shadow-intensity="1"
+                                    autoplay="true">
+                                </model-viewer>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ACTUAL EDITOR CONTENT */}
+                    <article id="editor-content" className={`max-w-5xl w-full mx-auto p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-none relative z-20 overflow-y-auto h-full border border-white/60 dark:border-white/5 bg-gradient-to-br from-white/95 to-slate-50/80 dark:from-[#131b19]/90 dark:to-[#0f1412]/95 backdrop-blur-3xl flex flex-col transition-colors duration-500 delay-100 ${showEditor ? 'active' : ''}`}>
+                        
+                        {/* Header actions */}
+                        <div className="flex justify-between items-center mb-6 shrink-0">
+                            <div className="inline-block px-3 py-1 rounded-full bg-cyan-100/80 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 text-[0.65rem] font-bold tracking-widest uppercase border border-cyan-200 dark:border-cyan-800/50">
+                                Documentation
                             </div>
                             <div className="flex items-center gap-3">
                                 {isAuthenticated && activeDoc && isEditing ? (
@@ -2056,71 +2357,71 @@ const Docs = () => {
                                         <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); cancelEdit(); }}
-                                            className="px-4 py-1.5 rounded-lg text-sm font-bold text-[#1d2624]/70 bg-gray-100 hover:bg-gray-200 border border-gray-200 hover:border-gray-300 transition-all"
+                                            className="px-4 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-slate-600 text-xs font-bold transition-all"
                                         >
-                                            Cancel
+                                            Hủy
                                         </button>
                                         <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                                            className="px-4 py-1.5 rounded-lg bg-[#1d2624] dark:bg-white text-white dark:text-[#1d2624] text-sm font-bold shadow-md hover:scale-105 transition-all"
+                                            className="px-4 py-1.5 rounded-full bg-cyan-600 text-white text-xs font-bold shadow-md hover:bg-cyan-500 transition-all"
                                         >
-                                            Save
+                                            Lưu
                                         </button>
                                     </>
                                 ) : activeDoc && (
-                                    /* Export Button (Opens Modal) */
                                     <button
                                         type="button"
                                         onClick={() => { setExportTargetId(activeDoc.id); setIsExportModalOpen(true); }}
-                                        className="h-9 px-3 flex items-center gap-2 rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all text-[#1d2624]/70 dark:text-white/70"
-                                        title="Export Options"
+                                        className="px-4 py-1.5 rounded-full bg-slate-200/50 hover:bg-slate-300 text-slate-600 text-xs font-bold transition-colors flex items-center gap-2"
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">ios_share</span>
-                                        <span className="text-xs font-semibold hidden sm:inline">Export</span>
+                                        <span className="material-symbols-outlined text-[16px]">ios_share</span> Export
                                     </button>
                                 )}
-                                <button
-                                    type="button"
-                                    className="size-9 flex items-center justify-center rounded-lg bg-white/50 border border-white/20 hover:bg-white/80 transition-all"
-                                    onClick={(e) => isAuthenticated && activeDoc && !isEditing && openContextMenu(e, activeDoc.id, 'doc', activeDoc.parentId)}
-                                    title="More options"
-                                >
-                                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                {isAuthenticated && activeDoc && !isEditing && (
+                                    <button
+                                        type="button"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200/50 hover:bg-slate-300 text-slate-600 transition-colors"
+                                        onClick={(e) => openContextMenu(e, activeDoc.id, 'doc', activeDoc.parentId)}
+                                    >
+                                        <span className="material-symbols-outlined text-[16px]">more_vert</span>
+                                    </button>
+                                )}
+                                <button onClick={handleCloseDoc} className="px-4 py-1.5 rounded-full bg-slate-200/50 hover:bg-slate-300 text-slate-600 text-xs font-bold transition-colors ml-2">
+                                    Đóng tài liệu
                                 </button>
                             </div>
                         </div>
-                    )}
-
-                    {activeDoc ? (
-                        <div className="isolate aspect-video w-full flex-1 flex flex-col overflow-hidden">
-                            {/* Lock Screen - Show when doc is locked and user not logged in */}
-                            {activeDoc.isLocked && !isAuthenticated ? (
-                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                                    <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mb-6">
-                                        <span className="material-symbols-outlined text-4xl text-amber-500">lock</span>
+                        
+                        {/* Document Content */}
+                        {activeDoc ? (
+                            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                                {activeDoc.isLocked && !isAuthenticated ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                        <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center mb-6">
+                                            <span className="material-symbols-outlined text-4xl text-amber-500">lock</span>
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-[#1d2624] dark:text-white mb-2">Tài liệu được bảo vệ</h2>
+                                        <p className="text-[#1d2624]/60 dark:text-white/60 mb-6 max-w-md">
+                                            Tài liệu này yêu cầu đăng nhập để xem nội dung. Vui lòng đăng nhập để truy cập.
+                                        </p>
+                                        <button
+                                            className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition-all shadow-lg"
+                                            onClick={() => navigate('/login')}
+                                        >
+                                            Đăng nhập
+                                        </button>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-[#1d2624] dark:text-white mb-2">Tài liệu được bảo vệ</h2>
-                                    <p className="text-[#1d2624]/60 dark:text-white/60 mb-6 max-w-md">
-                                        Tài liệu này yêu cầu đăng nhập để xem nội dung. Vui lòng đăng nhập để truy cập.
-                                    </p>
-                                    <button
-                                        className="px-6 py-2.5 bg-[#1d2624] dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-[#1d2624] font-bold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
-                                        onClick={() => navigate('/login')}
-                                    >
-                                        Đăng nhập
-                                    </button>
-                                </div>
-                            ) : isEditing ? (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                                    <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-4 animate-[fadeIn_0.2s_ease-out] overflow-hidden min-w-0">
+                                ) : isEditing ? (
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative pr-2">
                                         <input
                                             type="text"
                                             value={editTitle}
                                             onChange={(e) => setEditTitle(e.target.value)}
-                                            className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white bg-transparent border-none focus:outline-none placeholder:text-[#1d2624]/20 w-full pb-6 border-b border-[#1d2624]/10 dark:border-white/10"
+                                            className="font-display text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight bg-transparent border-none focus:outline-none placeholder:text-slate-300 w-full"
                                             placeholder="Tiêu đề"
                                         />
+                                        <div className="h-px w-full bg-gradient-to-r from-cyan-200 via-emerald-100 to-transparent mb-8"></div>
                                         <RichTextEditor
                                             content={editContent}
                                             onChange={setEditContent}
@@ -2130,30 +2431,40 @@ const Docs = () => {
                                             onAttachmentRemove={(id) => setEditAttachments(prev => prev.filter(a => a.id !== id))}
                                         />
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                                    <div className="max-w-3xl mx-auto py-6 px-8 md:px-12 space-y-6 animate-[fadeIn_0.3s_ease-out] overflow-hidden min-w-0">
-                                        <h1 className="text-5xl font-extrabold tracking-tight text-[#1d2624] dark:text-white leading-[1.15] break-words [overflow-wrap:anywhere] pb-6 border-b border-[#1d2624]/10 dark:border-white/10">{activeDoc.title}</h1>
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar relative pr-2">
+                                        <h1 id="doc-title" className="font-display text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-500 dark:from-cyan-400 dark:via-teal-300 dark:to-cyan-200 mb-4 tracking-tight drop-shadow-sm">{activeDoc.title}</h1>
+                                        <div className="w-20 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 dark:from-cyan-500 dark:to-teal-400 mb-8 shadow-sm"></div>
+                                        
                                         {activeDoc.content === undefined ? (
                                             <div className="animate-pulse space-y-4 mt-8">
-                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-3/4"></div>
-                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-full"></div>
-                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-5/6"></div>
-                                                <div className="h-4 bg-[#1d2624]/10 dark:bg-white/10 rounded w-1/2 mt-8"></div>
-                                                <div className="h-32 bg-[#1d2624]/10 dark:bg-white/10 rounded w-full"></div>
+                                                <div className="h-4 bg-slate-200/60 dark:bg-white/10 rounded w-3/4"></div>
+                                                <div className="h-4 bg-slate-200/60 dark:bg-white/10 rounded w-full"></div>
+                                                <div className="h-4 bg-slate-200/60 dark:bg-white/10 rounded w-5/6"></div>
                                             </div>
                                         ) : (
                                             <div
-                                                className="prose prose-lg dark:prose-invert max-w-none text-[#1d2624]/80 dark:text-white/80 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mt-8 [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-5 [&>h3]:mb-2 [&>p]:leading-relaxed [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-6 [&>ol]:space-y-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/50 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-primary/5 [&_blockquote]:py-2 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6 [&_pre]:bg-gray-900 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:text-gray-100 [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-all [&_pre]:my-6 [&>code]:bg-gray-100 [&>code]:dark:bg-white/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&_img]:block [&_img]:mx-auto [&_img]:max-w-full [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:border [&_img]:border-black/10 dark:[&_img]:border-white/10 [&_img]:my-6 [&_u]:underline-offset-[6px] [&_u]:decoration-1 [&_u]:decoration-primary/50 [&_hr]:my-8 [&_hr]:border-t [&_hr]:border-black/10 dark:[&_hr]:border-white/10 imported-content-wrapper"
+                                                className="prose prose-slate prose-lg max-w-none text-slate-600 dark:text-slate-300
+                                                prose-headings:font-display prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-slate-800 dark:prose-headings:text-slate-100
+                                                prose-h2:pb-2 prose-h2:border-b prose-h2:border-slate-200/60 dark:prose-h2:border-slate-700/60
+                                                prose-p:leading-relaxed prose-p:mb-5 
+                                                prose-a:text-cyan-600 dark:prose-a:text-cyan-400 prose-a:font-semibold prose-a:no-underline hover:prose-a:underline hover:prose-a:text-cyan-700 dark:hover:prose-a:text-cyan-300
+                                                prose-strong:font-bold prose-strong:text-slate-800 dark:prose-strong:text-slate-100
+                                                prose-code:text-cyan-700 dark:prose-code:text-cyan-300 prose-code:bg-cyan-50/80 dark:prose-code:bg-cyan-950/40 prose-code:px-2 prose-code:py-0.5 prose-code:rounded-lg prose-code:font-medium prose-code:before:content-none prose-code:after:content-none
+                                                prose-pre:bg-slate-800/95 dark:prose-pre:bg-black/60 prose-pre:backdrop-blur-2xl prose-pre:border prose-pre:border-slate-700 dark:prose-pre:border-white/10 prose-pre:shadow-2xl prose-pre:rounded-2xl prose-pre:text-slate-50
+                                                prose-blockquote:border-l-4 prose-blockquote:border-cyan-400 prose-blockquote:bg-gradient-to-r prose-blockquote:from-cyan-50/50 dark:prose-blockquote:from-cyan-900/20 prose-blockquote:to-transparent prose-blockquote:py-3 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:font-medium
+                                                prose-img:rounded-2xl prose-img:shadow-xl prose-img:border prose-img:border-slate-100 dark:prose-img:border-white/10
+                                                prose-ul:list-disc prose-ul:pl-6 prose-ul:marker:text-cyan-400
+                                                prose-ol:list-decimal prose-ol:pl-6 prose-ol:marker:text-cyan-600 dark:prose-ol:marker:text-cyan-400 prose-ol:marker:font-semibold
+                                                prose-hr:border-slate-200/60 dark:prose-hr:border-slate-700/60
+                                                imported-content-wrapper transition-colors duration-500 delay-100"
                                                 dangerouslySetInnerHTML={{ __html: activeDoc.content }}
                                             />
                                         )}
 
-                                        {/* Attachments in View Mode */}
                                         {activeDoc.attachments && activeDoc.attachments.length > 0 && (
-                                            <div className="mt-8 p-4 bg-white/20 dark:bg-black/10 rounded-xl border border-[#1d2624]/10 dark:border-white/10">
-                                                <h4 className="text-sm font-semibold text-[#1d2624]/70 dark:text-white/70 mb-3 flex items-center gap-2">
+                                            <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                                                     <span className="material-symbols-outlined text-[16px]">attach_file</span>
                                                     Đính kèm ({activeDoc.attachments.length})
                                                 </h4>
@@ -2164,40 +2475,27 @@ const Docs = () => {
                                                             href={attachment.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-3 p-3 bg-white/30 dark:bg-white/5 rounded-lg hover:bg-white/60 dark:hover:bg-white/10 transition-colors group"
+                                                            className="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-slate-100 transition-colors border border-slate-200 group"
                                                         >
-                                                            <span className="material-symbols-outlined text-[20px] text-primary shrink-0">
-                                                                {attachment.type?.includes('pdf') ? 'picture_as_pdf' :
-                                                                    attachment.type?.includes('word') || attachment.name?.endsWith('.doc') || attachment.name?.endsWith('.docx') ? 'description' :
-                                                                        attachment.type?.includes('excel') || attachment.type?.includes('spreadsheet') || attachment.name?.endsWith('.xls') || attachment.name?.endsWith('.xlsx') ? 'table_chart' :
-                                                                            attachment.type?.includes('powerpoint') || attachment.type?.includes('presentation') || attachment.name?.endsWith('.ppt') || attachment.name?.endsWith('.pptx') ? 'slideshow' :
-                                                                                attachment.type?.includes('zip') || attachment.type?.includes('rar') ? 'folder_zip' :
-                                                                                    'draft'}
-                                                            </span>
+                                                            <span className="material-symbols-outlined text-[20px] text-cyan-600 shrink-0">description</span>
                                                             <div className="min-w-0 flex-1">
-                                                                <p className="text-sm font-medium text-[#1d2624] dark:text-white truncate">
-                                                                    {attachment.name}
-                                                                </p>
-                                                                <p className="text-xs text-[#1d2624]/50 dark:text-white/50">
-                                                                    {(attachment.size / 1024 / 1024).toFixed(2)} MB
-                                                                </p>
+                                                                <p className="text-sm font-medium text-slate-700 truncate">{attachment.name}</p>
+                                                                <p className="text-xs text-slate-500">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
                                                             </div>
-                                                            <span className="material-symbols-outlined text-[18px] opacity-0 group-hover:opacity-100 text-primary transition-opacity">download</span>
                                                         </a>
                                                     ))}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-[#1d2624]/40">
-                            <span className="material-symbols-outlined text-6xl mb-4 opacity-20">article</span>
-                            <p>Select a note to view or create a new one.</p>
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                                <p>Select a note to view or create a new one.</p>
+                            </div>
+                        )}
+                    </article>
                 </main>
             </div>
         </>
@@ -2205,3 +2503,4 @@ const Docs = () => {
 };
 
 export default Docs;
+// force vite reload

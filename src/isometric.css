@@ -1,0 +1,216 @@
+/* ISOMETRIC CSS */
+.isometric-container {
+    perspective: 2000px;
+    transform-style: preserve-3d;
+}
+.isometric-world {
+    /* Isometric Projection */
+    transform: rotateX(60deg) rotateZ(-45deg);
+    transform-style: preserve-3d;
+    transition: transform 1s ease-in-out;
+}
+
+.iso-floor {
+    width: 700px;
+    height: 700px;
+    background: rgba(13, 148, 136, 0.05);
+    border: 2px dashed rgba(13, 148, 136, 0.2);
+    position: absolute;
+    transform-style: preserve-3d;
+    border-radius: 20px;
+    box-shadow: inset 0 0 50px rgba(13, 148, 136, 0.1);
+}
+
+/* 3D Cabinet Box */
+.iso-cabinet {
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    width: 100px;
+    height: 80px;
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+}
+.cab-face { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
+.cab-front  { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(0px); background: #0d9488; transform-origin: bottom; bottom: 0;}
+.cab-back   { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(-80px); background: #0f766e; transform-origin: bottom; bottom: 0;}
+.cab-top    { width: 100px; height: 80px;  transform: translateZ(120px); background: #2dd4c2; }
+.cab-left   { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(-40px) translateX(-40px); background: #115e59; transform-origin: left; left:0; bottom:0;}
+.cab-right  { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(60px) translateX(-40px); background: #14b8a6; transform-origin: left; left:0; bottom:0;}
+
+.cab-drawer { width: 90px; height: 32px; background: rgba(255,255,255,0.2); margin: 5px auto; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
+
+.iso-bed {
+    position: absolute;
+    top: 460px;
+    left: 460px;
+    width: 200px;
+    height: 200px;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background: transparent !important;
+    transform: translateZ(20px) rotateZ(45deg) rotateX(-60deg);
+    transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+model-viewer, model-viewer:focus, model-viewer:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+model-viewer::part(default-progress-bar),
+model-viewer::part(default-progress-mask) {
+    display: none !important;
+}
+
+/* 3D Agent (Model Viewer Container) */
+.iso-agent {
+    position: absolute;
+    top: 310px;
+    left: 300px;
+    width: 100px;
+    height: 100px;
+    /* Billboard effect to face camera despite world rotation */
+    transform: translateZ(40px) rotateZ(45deg) rotateX(-60deg);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+model-viewer {
+    width: 100%;
+    height: 100%;
+    --poster-color: transparent;
+    /* Add drop shadow effect to the 3d model container to ground it */
+    filter: drop-shadow(0px 20px 10px rgba(0,0,0,0.3));
+    /* Chặn mọi tương tác chuột trên model-viewer để tránh zoom/xoay */
+    pointer-events: none;
+}
+
+/* Animation Classes */
+.agent-run {
+    /* Chỉ nâng nhẹ khi chạy - KHÔNG override position */
+    transform: translateZ(50px) rotateZ(45deg) rotateX(-60deg) !important;
+}
+
+.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+.fade-in { opacity: 1; pointer-events: auto; transition: opacity 0.5s; }
+
+#editor-content { opacity: 0; pointer-events: none; transition: opacity 0.5s; transform: translateY(20px); transition: opacity 0.5s, transform 0.5s;}
+#editor-content.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+.world-shifted {
+    transform: rotateX(60deg) rotateZ(-45deg) scale(0.45) translateX(550px) translateY(-280px);
+    opacity: 0.3;
+}
+
+@keyframes floor-ripple {
+    0% {
+        transform: scale(0.5);
+        opacity: 1;
+        box-shadow: 0 0 10px rgba(6, 182, 212, 0.8), inset 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+        box-shadow: 0 0 30px rgba(6, 182, 212, 0), inset 0 0 20px rgba(6, 182, 212, 0);
+    }
+}
+
+/* Hologram Pedestals for Dashboard */
+.cyber-pedestal {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cyber-pedestal:hover {
+    transform: translateZ(10px);
+}
+
+.pedestal-base {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(6, 182, 212, 0.1);
+    border: 2px solid rgba(6, 182, 212, 0.6);
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), inset 0 0 20px rgba(6, 182, 212, 0.3);
+    /* Lưới (Grid) phát sáng bên trong */
+    background-image: 
+        linear-gradient(rgba(6, 182, 212, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Các vòng năng lượng xoay quanh bệ đỡ */
+.pedestal-ring {
+    position: absolute;
+    width: 110%;
+    height: 110%;
+    border: 1px dashed rgba(6, 182, 212, 0.8);
+    border-radius: 50%;
+    top: -5%;
+    left: -5%;
+    animation: ring-spin 10s linear infinite;
+    pointer-events: none;
+}
+
+.cyber-pedestal:hover .pedestal-ring {
+    border: 2px dashed rgba(6, 182, 212, 1);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    animation: ring-spin 5s linear infinite;
+}
+
+@keyframes ring-spin {
+    from { transform: rotateZ(0deg); }
+    to { transform: rotateZ(360deg); }
+}
+
+/* Chữ Hologram lơ lửng */
+.hologram-text {
+    position: absolute;
+    /* Dựng đứng form chữ dậy vuông góc với mặt phẳng lưới (90 độ) + hướng vào Camera (Z -45deg) */
+    transform: translateZ(40px) rotateZ(45deg) rotateX(-90deg);
+    color: rgba(165, 243, 252, 0.9);
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.6);
+    pointer-events: none;
+    animation: float-holo 3s ease-in-out infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hologram-text .material-symbols-outlined {
+    font-size: 40px;
+    color: rgba(6, 182, 212, 0.9);
+}
+
+@keyframes float-holo {
+    0%, 100% { transform: translateZ(40px) rotateZ(45deg) rotateX(-90deg); }
+    50% { transform: translateZ(60px) rotateZ(45deg) rotateX(-90deg); }
+}

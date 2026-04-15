@@ -214,3 +214,219 @@ model-viewer {
     0%, 100% { transform: translateZ(40px) rotateZ(45deg) rotateX(-90deg); }
     50% { transform: translateZ(60px) rotateZ(45deg) rotateX(-90deg); }
 }
+
+/* ============================================
+   GRID DASHBOARD LAYOUT (Phase 03.2)
+   ============================================ */
+
+#zone-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.75rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* Zone Cell */
+.zone-cell {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: rgba(16, 22, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+}
+
+.zone-cell:hover,
+.zone-cell.zone-hovered {
+    border-color: var(--zone-border);
+    box-shadow:
+        0 0 40px var(--zone-glow),
+        inset 0 0 30px var(--zone-glow);
+    background: rgba(16, 22, 20, 0.75);
+}
+
+.zone-cell:hover .zone-inner-glow,
+.zone-cell.zone-hovered .zone-inner-glow {
+    opacity: 1 !important;
+}
+
+.zone-cell:hover .zone-scroll-hint,
+.zone-cell.zone-hovered .zone-scroll-hint {
+    opacity: 1;
+}
+
+/* Zoom Animation */
+.zone-cell.zone-zooming {
+    transform: scale(2.5);
+    opacity: 0;
+    z-index: 50;
+    border-color: var(--zone-border);
+    box-shadow: 0 0 80px var(--zone-glow);
+    transition: all 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zone-cell.zone-fading {
+    transform: scale(0.85);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Mini Isometric Scene ---- */
+.mini-iso-scene {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    transform: rotateX(55deg) rotateZ(-45deg) scale(0.8);
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zone-cell:hover .mini-iso-scene {
+    transform: rotateX(55deg) rotateZ(-45deg) scale(0.9);
+}
+
+.mini-iso-floor {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(13, 148, 136, 0.03);
+    border: 1px dashed;
+    border-radius: 12px;
+    transform-style: preserve-3d;
+}
+
+/* 3D Model inside zone */
+.mini-iso-model {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%) translateZ(20px) rotateZ(45deg) rotateX(-55deg);
+    transform-style: preserve-3d;
+}
+
+.mini-iso-model model-viewer {
+    filter: drop-shadow(0px 15px 8px rgba(0,0,0,0.4));
+}
+
+/* Placeholder Pedestal for zones without 3D models */
+.mini-iso-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    transform: translateX(-50%) translateY(-50%) translateZ(0);
+    transform-style: preserve-3d;
+}
+
+.placeholder-pedestal {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 15px 15px;
+}
+
+.placeholder-ring {
+    position: absolute;
+    width: 115%;
+    height: 115%;
+    border: 1px dashed;
+    border-radius: 50%;
+    top: -7.5%;
+    left: -7.5%;
+    animation: ring-spin 12s linear infinite;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.placeholder-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%) translateZ(30px) rotateZ(45deg) rotateX(-55deg);
+    font-size: 48px;
+    animation: float-icon 3s ease-in-out infinite;
+}
+
+.placeholder-icon .material-symbols-outlined {
+    font-size: 52px;
+}
+
+@keyframes float-icon {
+    0%, 100% { transform: translateX(-50%) translateY(-50%) translateZ(30px) rotateZ(45deg) rotateX(-55deg); }
+    50%      { transform: translateX(-50%) translateY(-50%) translateZ(50px) rotateZ(45deg) rotateX(-55deg); }
+}
+
+/* ---- Zone Label ---- */
+.zone-label {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+.zone-label-icon .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.zone-label-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.zone-label-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.zone-label-desc {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* Scroll hint arrow */
+.zone-scroll-hint {
+    position: absolute;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.zone-scroll-hint::after {
+    content: 'scroll';
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.25);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}

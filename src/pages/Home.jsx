@@ -1,18 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const ZONES = [
+    {
+        id: 'docs',
+        label: 'DOCS',
+        path: '/docs',
+        icon: 'library_books',
+        color: 'cyan',
+        glowColor: 'rgba(6, 182, 212, 0.6)',
+        bgGlow: 'rgba(6, 182, 212, 0.08)',
+        model: '/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb',
+        description: 'Tài liệu & Kiến thức'
+    },
+    {
+        id: 'admin',
+        label: 'ADMIN',
+        path: '/admin',
+        icon: 'admin_panel_settings',
+        color: 'amber',
+        glowColor: 'rgba(245, 158, 11, 0.6)',
+        bgGlow: 'rgba(245, 158, 11, 0.08)',
+        model: null,
+        description: 'Quản trị Hệ thống'
+    },
+    {
+        id: 'tools',
+        label: 'TOOLS',
+        path: '/tools',
+        icon: 'construction',
+        color: 'emerald',
+        glowColor: 'rgba(16, 185, 129, 0.6)',
+        bgGlow: 'rgba(16, 185, 129, 0.08)',
+        model: null,
+        description: 'Công cụ & Tiện ích'
+    },
+    {
+        id: 'gallery',
+        label: 'GALLERY',
+        path: '/gallery',
+        icon: 'imagesmode',
+        color: 'purple',
+        glowColor: 'rgba(168, 85, 247, 0.6)',
+        bgGlow: 'rgba(168, 85, 247, 0.08)',
+        model: null,
+        description: 'Thư viện Hình ảnh'
+    }
+];
+
+const COLOR_MAP = {
+    cyan:    { text: '#a5f3fc', shadow: 'rgba(6, 182, 212, 0.8)',   iconColor: 'rgba(6, 182, 212, 0.9)',   border: 'rgba(6, 182, 212, 0.3)',   glow: 'rgba(6, 182, 212, 0.15)' },
+    amber:   { text: '#fde68a', shadow: 'rgba(245, 158, 11, 0.8)',  iconColor: 'rgba(251, 191, 36, 0.9)',  border: 'rgba(245, 158, 11, 0.3)',  glow: 'rgba(245, 158, 11, 0.15)' },
+    emerald: { text: '#a7f3d0', shadow: 'rgba(16, 185, 129, 0.8)',  iconColor: 'rgba(52, 211, 153, 0.9)',  border: 'rgba(16, 185, 129, 0.3)',  glow: 'rgba(16, 185, 129, 0.15)' },
+    purple:  { text: '#d8b4fe', shadow: 'rgba(168, 85, 247, 0.8)',  iconColor: 'rgba(192, 132, 252, 0.9)', border: 'rgba(168, 85, 247, 0.3)',  glow: 'rgba(168, 85, 247, 0.15)' }
+};
 
 const Home = () => {
     const navigate = useNavigate();
-    
+
     // Core state
     const [time, setTime] = useState(new Date());
-    
-    // Agent positioning and animation state
-    // Sàn có kích thước 700x700, tâm lý thuyết là (350, 350)
-    // Trừ đi một nửa kích thước agent (50, 50) để căn giữa chuẩn.
-    const [agentPos, setAgentPos] = useState({ left: 300, top: 310 }); 
-    const [isAgentRunning, setIsAgentRunning] = useState(false);
-    const [activeNode, setActiveNode] = useState(null);
+    const [hoveredZone, setHoveredZone] = useState(null);
+    const [zoomTarget, setZoomTarget] = useState(null);
+    const gridRef = useRef(null);
 
     // Clock
     useEffect(() => {
@@ -23,174 +73,207 @@ const Home = () => {
     const todayDate = time.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Handle clicking a node (Walk-to-Navigate)
-    const handleNodeClick = (targetPath, targetLeft, targetTop, nodeName) => {
-        if (isAgentRunning) return; // Prevent double clicking while walking
-        
-        setActiveNode(nodeName);
-        setIsAgentRunning(true);
-        // Di chuyển nhân vật (điều chỉnh offset cho khớp tâm mặt phẳng)
-        setAgentPos({ left: targetLeft, top: targetTop });
+    // Scroll Wheel Zoom Navigation
+    useEffect(() => {
+        const grid = gridRef.current;
+        if (!grid) return;
 
-        // Đợi bằng đúng thời gian CSS transition của agent (1.5s ~ 2s)
-        setTimeout(() => {
-            setIsAgentRunning(false);
-            // Chờ nhân vật đứng lại rồi chuyển trang
-            setTimeout(() => {
-                navigate(targetPath);
-            }, 300);
-        }, 1200); // 1.2s transition
+        let scrollAccumulator = 0;
+        const SCROLL_THRESHOLD = 150;
+
+        const handleWheel = (e) => {
+            e.preventDefault();
+
+            if (zoomTarget) return; // Already zooming
+
+            if (e.deltaY > 0 && hoveredZone) {
+                scrollAccumulator += Math.abs(e.deltaY);
+
+                if (scrollAccumulator >= SCROLL_THRESHOLD) {
+                    scrollAccumulator = 0;
+                    setZoomTarget(hoveredZone);
+
+                    const zone = ZONES.find(z => z.id === hoveredZone);
+                    if (zone) {
+                        setTimeout(() => {
+                            navigate(zone.path);
+                        }, 650);
+                    }
+                }
+            } else {
+                scrollAccumulator = Math.max(0, scrollAccumulator - Math.abs(e.deltaY) * 0.5);
+            }
+        };
+
+        grid.addEventListener('wheel', handleWheel, { passive: false });
+        return () => grid.removeEventListener('wheel', handleWheel);
+    }, [hoveredZone, zoomTarget, navigate]);
+
+    // Click Navigation (fallback)
+    const handleZoneClick = (zone) => {
+        if (zoomTarget) return;
+        setZoomTarget(zone.id);
+        setTimeout(() => navigate(zone.path), 500);
+    };
+
+    // Zone cell class based on zoom state
+    const getZoneCellClass = (zoneId) => {
+        let cls = 'zone-cell';
+        if (zoomTarget === zoneId) cls += ' zone-zooming';
+        else if (zoomTarget && zoomTarget !== zoneId) cls += ' zone-fading';
+        if (hoveredZone === zoneId && !zoomTarget) cls += ' zone-hovered';
+        return cls;
     };
 
     return (
         <div className="w-full h-full relative overflow-hidden bg-gradient-to-br from-[#101614] to-slate-900">
-            {/* Header / Info HUD overlaying the 3D scene */}
-            <div className="absolute top-8 left-8 z-50 pointer-events-none">
-                <div className="flex flex-col gap-6">
+            {/* Header / Info HUD overlaying the Grid */}
+            <div className="absolute top-6 left-8 z-50 pointer-events-none">
+                <div className="flex flex-col gap-4">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/40 border border-white/10 w-fit backdrop-blur-md shadow-lg">
                         <div className="size-2 rounded-full bg-cyan-400 animate-pulse"></div>
                         <span className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-md">Digital Atrium</span>
                     </div>
-                    
-                    <h1 className="text-5xl md:text-6xl font-display font-extrabold text-white leading-[1.1] tracking-tight drop-shadow-xl select-none">
+
+                    <h1 className="text-4xl md:text-5xl font-display font-extrabold text-white leading-[1.1] tracking-tight drop-shadow-xl select-none">
                         Welcome to <br />
                         <span className="bg-gradient-to-r from-[#4ecdc4] to-cyan-300 bg-clip-text text-transparent">the System.</span>
                     </h1>
                 </div>
             </div>
 
-            <div className="absolute top-8 right-8 z-50 pointer-events-none text-right">
-                <div className="mt-2 pt-4 flex gap-8">
+            <div className="absolute top-6 right-8 z-50 pointer-events-none text-right">
+                <div className="mt-2 pt-2 flex gap-8">
                     <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold uppercase tracking-wider text-cyan-400/80 drop-shadow">Today</span>
-                        <span className="text-xl font-bold text-white drop-shadow-md">{todayDate}</span>
+                        <span className="text-lg font-bold text-white drop-shadow-md">{todayDate}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold uppercase tracking-wider text-cyan-400/80 drop-shadow">Local Time</span>
-                        <span className="text-xl font-bold text-white font-variant-numeric tabular-nums drop-shadow-md">{timeString}</span>
+                        <span className="text-lg font-bold text-white font-variant-numeric tabular-nums drop-shadow-md">{timeString}</span>
                     </div>
                 </div>
             </div>
 
             {/* Hint text at bottom center */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 text-center pointer-events-none">
-                <p className="text-white/60 font-medium tracking-widest uppercase text-sm animate-pulse bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/5">
-                    Select a zone to navigate
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 text-center pointer-events-none">
+                <p className="text-white/50 font-medium tracking-widest uppercase text-xs animate-pulse bg-black/30 px-5 py-2 rounded-full backdrop-blur-md border border-white/5">
+                    Scroll down on a zone or click to navigate
                 </p>
             </div>
 
-            {/* 3D ISOMETRIC WORLD */}
-            <div id="isometric-view" className="fixed inset-0 flex items-center justify-center z-0">
-                <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative">
-                    
-                    {/* Glowing Floor Grid */}
-                    <div className="iso-floor flex items-center justify-center">
-                        <div className="absolute w-20 h-20 bg-cyan-400/20 rounded-full blur-2xl animate-pulse"></div>
-                    </div>
+            {/* 4-ZONE GRID DASHBOARD */}
+            <div
+                ref={gridRef}
+                id="zone-grid"
+                className="absolute inset-0 pt-28 pb-16 px-6"
+            >
+                {ZONES.map((zone) => {
+                    const colors = COLOR_MAP[zone.color];
+                    return (
+                        <div
+                            key={zone.id}
+                            className={getZoneCellClass(zone.id)}
+                            style={{
+                                '--zone-glow': colors.glow,
+                                '--zone-border': colors.border,
+                                '--zone-text': colors.text,
+                                '--zone-shadow': colors.shadow,
+                                '--zone-icon': colors.iconColor,
+                            }}
+                            onClick={() => handleZoneClick(zone)}
+                            onMouseEnter={() => setHoveredZone(zone.id)}
+                            onMouseLeave={() => setHoveredZone(null)}
+                        >
+                            {/* Inner glow background effect */}
+                            <div
+                                className="absolute inset-0 opacity-0 transition-opacity duration-500 zone-inner-glow"
+                                style={{
+                                    background: `radial-gradient(ellipse at center, ${zone.bgGlow} 0%, transparent 70%)`
+                                }}
+                            />
 
-                    {/* ZONE 1: DOCS (Góc Trái Trên) */}
-                    <div 
-                        className={`cyber-pedestal ${activeNode === 'docs' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
-                        style={{ left: '100px', top: '100px' }}
-                        onClick={() => handleNodeClick('/docs', 110, 80, 'docs')}
-                    >
-                        <div className="pedestal-base"></div>
-                        <div className="pedestal-ring"></div>
-                        <div className="hologram-text">
-                            <span className="material-symbols-outlined">library_books</span>
-                            DOCS
+                            {/* Mini Isometric Scene */}
+                            <div className="mini-iso-scene">
+                                {/* Mini Floor */}
+                                <div className="mini-iso-floor" style={{
+                                    borderColor: `${zone.glowColor}`,
+                                    boxShadow: `inset 0 0 30px ${zone.bgGlow}`
+                                }}>
+                                    {/* Grid pattern on floor */}
+                                    <div className="absolute inset-0 rounded-xl" style={{
+                                        backgroundImage: `
+                                            linear-gradient(${zone.glowColor.replace('0.6', '0.15')} 1px, transparent 1px),
+                                            linear-gradient(90deg, ${zone.glowColor.replace('0.6', '0.15')} 1px, transparent 1px)
+                                        `,
+                                        backgroundSize: '20px 20px'
+                                    }} />
+                                </div>
+
+                                {/* 3D Content */}
+                                {zone.model ? (
+                                    <div className="mini-iso-model">
+                                        <model-viewer
+                                            src={zone.model}
+                                            camera-controls={false}
+                                            disable-zoom
+                                            disable-tap
+                                            disable-pan
+                                            autoplay
+                                            camera-orbit="30deg 65deg 4m"
+                                            interaction-prompt="none"
+                                            shadow-intensity="0.8"
+                                            exposure="1.2"
+                                            environment-image="neutral"
+                                            style={{ width: '250px', height: '250px', pointerEvents: 'none' }}
+                                        ></model-viewer>
+                                    </div>
+                                ) : (
+                                    <div className="mini-iso-placeholder">
+                                        {/* Pedestal */}
+                                        <div className="placeholder-pedestal" style={{
+                                            borderColor: zone.glowColor,
+                                            boxShadow: `0 0 20px ${zone.bgGlow}, inset 0 0 15px ${zone.bgGlow}`
+                                        }}>
+                                            <div className="placeholder-ring" style={{
+                                                borderColor: zone.glowColor
+                                            }} />
+                                        </div>
+                                        {/* Floating Icon */}
+                                        <div className="placeholder-icon" style={{
+                                            color: colors.iconColor,
+                                            textShadow: `0 0 15px ${colors.shadow}`
+                                        }}>
+                                            <span className="material-symbols-outlined">{zone.icon}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Zone Label (bottom-left) */}
+                            <div className="zone-label">
+                                <div className="zone-label-icon" style={{ color: colors.iconColor }}>
+                                    <span className="material-symbols-outlined">{zone.icon}</span>
+                                </div>
+                                <div className="zone-label-text">
+                                    <span className="zone-label-name" style={{
+                                        color: colors.text,
+                                        textShadow: `0 0 10px ${colors.shadow}`
+                                    }}>{zone.label}</span>
+                                    <span className="zone-label-desc">{zone.description}</span>
+                                </div>
+                            </div>
+
+                            {/* Scroll indicator (visible on hover) */}
+                            <div className="zone-scroll-hint">
+                                <span className="material-symbols-outlined text-white/40 text-lg animate-bounce">
+                                    expand_more
+                                </span>
+                            </div>
                         </div>
-                    </div>
-
-                    {/* ZONE 2: ADMIN (Góc Phải Trên) */}
-                    <div 
-                        className={`cyber-pedestal ${activeNode === 'admin' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
-                        style={{ left: '480px', top: '100px' }}
-                        onClick={() => handleNodeClick('/admin', 490, 80, 'admin')}
-                    >
-                        <div className="pedestal-base"></div>
-                        <div className="pedestal-ring" style={{ animationDelay: '-2s' }}></div>
-                        <div className="hologram-text text-amber-300">
-                            <span className="material-symbols-outlined text-amber-400">admin_panel_settings</span>
-                            ADMIN
-                        </div>
-                    </div>
-
-                    {/* ZONE 3: TOOLS (Góc Trái Dưới) */}
-                    <div 
-                        className={`cyber-pedestal ${activeNode === 'tools' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
-                        style={{ left: '100px', top: '480px' }}
-                        onClick={() => handleNodeClick('/tools', 110, 460, 'tools')}
-                    >
-                        <div className="pedestal-base"></div>
-                        <div className="pedestal-ring" style={{ animationDelay: '-5s' }}></div>
-                        <div className="hologram-text text-emerald-300">
-                            <span className="material-symbols-outlined text-emerald-400">build_circle</span>
-                            TOOLS
-                        </div>
-                    </div>
-
-                    {/* ZONE 4: GALLERY (Góc Phải Dưới) */}
-                    <div 
-                        className={`cyber-pedestal ${activeNode === 'gallery' ? 'ring-4 ring-cyan-400 rounded-2xl shadow-[0_0_30px_#22d3ee]' : ''}`}
-                        style={{ left: '480px', top: '480px' }}
-                        onClick={() => handleNodeClick('/gallery', 490, 460, 'gallery')}
-                    >
-                        <div className="pedestal-base"></div>
-                        <div className="pedestal-ring" style={{ animationDelay: '-7s' }}></div>
-                        <div className="hologram-text text-purple-300">
-                            <span className="material-symbols-outlined text-purple-400">imagesmode</span>
-                            GALLERY
-                        </div>
-                    </div>
-
-                    {/* CHIBI AGENT */}
-                    <div 
-                        className={`iso-agent ${isAgentRunning ? 'agent-run' : ''}`}
-                        style={{ 
-                            left: `${agentPos.left}px`, 
-                            top: `${agentPos.top}px`,
-                            transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)' 
-                        }}
-                    >
-                        {/* Shadow blob dưới chân */}
-                        <div className="absolute bottom-[-10px] w-20 h-6 bg-black/40 rounded-full blur-md"></div>
-                        
-                        <model-viewer 
-                            src={isAgentRunning 
-                                ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
-                                : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"} 
-                            camera-controls={false}
-                            disable-zoom
-                            disable-tap
-                            disable-pan
-                            autoplay 
-                            animation-name={isAgentRunning ? "Running" : "Walking"}
-                            camera-orbit="-45deg 75deg 5m"
-                            interaction-prompt="none"
-                            shadow-intensity="1"
-                            exposure="1.2"
-                            environment-image="neutral"
-                        ></model-viewer>
-                    </div>
-
-                </div>
+                    );
+                })}
             </div>
-            
-            {/* Global Styles cho overrides riêng của Home nếu cần */}
-            <style>{`
-                /* Vô hiệu hóa hover của model container */
-                .iso-agent { pointer-events: none; }
-                
-                /* Riêng cho Home, nền đen mượt hơn Docs nên ta đổi gradient text của hologram admin/tools */
-                .hologram-text.text-amber-300 { color: rgba(253, 230, 138, 0.9); text-shadow: 0 0 10px rgba(245, 158, 11, 0.8); }
-                .hologram-text.text-emerald-300 { color: rgba(167, 243, 208, 0.9); text-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
-                .hologram-text.text-purple-300 { color: rgba(216, 180, 254, 0.9); text-shadow: 0 0 10px rgba(168, 85, 247, 0.8); }
-                
-                .hologram-text.text-amber-300 .material-symbols-outlined { color: rgba(251, 191, 36, 0.9); }
-                .hologram-text.text-emerald-300 .material-symbols-outlined { color: rgba(52, 211, 153, 0.9); }
-                .hologram-text.text-purple-300 .material-symbols-outlined { color: rgba(192, 132, 252, 0.9); }
-            `}</style>
         </div>
     );
 };

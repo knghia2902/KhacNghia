@@ -827,9 +827,10 @@ const Docs = () => {
         }
         const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
         showToast('Đang tải lên mô hình...');
+        const mimeType = ext === 'glb' ? 'model/gltf-binary' : 'model/gltf+json';
         const { error: uploadError } = await supabase.storage
             .from('models')
-            .upload(safeName, file, { contentType: 'application/octet-stream', upsert: true });
+            .upload(safeName, file, { contentType: mimeType, upsert: true });
         if (uploadError) {
             showToast('Lỗi upload: ' + uploadError.message);
             return;
@@ -2735,6 +2736,8 @@ const Docs = () => {
                                         <model-viewer
                                             src={model.src}
                                             alt={model.name}
+                                            crossorigin="anonymous"
+                                            camera-orbit="45deg 55deg auto"
                                             orientation={`${model.rotX || 0}deg ${model.rotY || 0}deg ${model.rotation || 0}deg`}
                                             disable-zoom="true"
                                             disable-tap="true"
@@ -2742,7 +2745,12 @@ const Docs = () => {
                                             interaction-prompt="none"
                                             shadow-intensity="1"
                                             autoplay="true"
-                                            style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                                            style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+                                            onError={(e) => console.error("Model Viewer Error:", model.name, e)}
+                                        >
+                                            <div slot="poster" className="absolute inset-0 flex items-center justify-center bg-black/20 text-white text-[10px] rounded-xl font-bold">
+                                                Đang tải...
+                                            </div>
                                         </model-viewer>
                                         {isEditMode && selectedMesh === model.id && (
                                             <button

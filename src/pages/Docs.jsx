@@ -2626,7 +2626,7 @@ const Docs = () => {
                                         style={{
                                             left: `${modelsTransform.archive.x}px`,
                                             top: `${modelsTransform.archive.y}px`,
-                                            transform: `translateZ(40px) rotateZ(${45 + modelsTransform.archive.rotation}deg) rotateX(-60deg) scale(${modelsTransform.archive.scale})`,
+                                        transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.archive.scale})`,
                                             pointerEvents: isEditMode ? 'auto' : 'none',
                                             cursor: isEditMode ? 'move' : 'default'
                                         }}
@@ -2636,7 +2636,7 @@ const Docs = () => {
                                             src="/models/The_Lanterned_Archive.glb" 
                                             alt="3D Archive"
                                             camera-orbit="145deg 55deg auto"
-                                            orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg 0deg`}
+                                            orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg ${modelsTransform.archive.rotation || 0}deg`}
                                             field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
@@ -2652,7 +2652,7 @@ const Docs = () => {
                                         style={{
                                             left: `${modelsTransform.bed.x}px`,
                                             top: `${modelsTransform.bed.y}px`,
-                                            transform: `translateZ(20px) rotateZ(${45 + modelsTransform.bed.rotation}deg) rotateX(-60deg) scale(${modelsTransform.bed.scale})`,
+                                            transform: `translateZ(20px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.bed.scale})`,
                                             pointerEvents: isEditMode ? 'auto' : 'none',
                                             cursor: isEditMode ? 'move' : 'default'
                                         }}
@@ -2662,7 +2662,7 @@ const Docs = () => {
                                             src="/models/Shoddy_bed.glb" 
                                             alt="3D Bed"
                                             camera-orbit="135deg 55deg auto"
-                                            orientation={`${modelsTransform.bed.rotX || 0}deg ${modelsTransform.bed.rotY || 0}deg 0deg`}
+                                            orientation={`${modelsTransform.bed.rotX || 0}deg ${modelsTransform.bed.rotY || 0}deg ${modelsTransform.bed.rotation || 0}deg`}
                                             field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
@@ -2706,7 +2706,7 @@ const Docs = () => {
                                          style={{ 
                                              left: `${modelsTransform.tools.x}px`,
                                              top: `${modelsTransform.tools.y}px`,
-                                             transform: `translateZ(40px) rotateZ(${45 + modelsTransform.tools.rotation}deg) rotateX(-60deg) scale(${modelsTransform.tools.scale})`,
+                                             transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.tools.scale})`,
                                              pointerEvents: isEditMode ? 'auto' : 'none',
                                              cursor: isEditMode ? 'move' : 'default'
                                          }}
@@ -2716,7 +2716,7 @@ const Docs = () => {
                                             src="/models/LoRen.glb" 
                                             alt="3D Tools"
                                             camera-orbit="45deg 55deg auto"
-                                            orientation={`${modelsTransform.tools.rotX || 0}deg ${modelsTransform.tools.rotY || 0}deg 0deg`}
+                                            orientation={`${modelsTransform.tools.rotX || 0}deg ${modelsTransform.tools.rotY || 0}deg ${modelsTransform.tools.rotation || 0}deg`}
                                             field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
@@ -2796,7 +2796,7 @@ const Docs = () => {
                                             top: `${model.y}px`,
                                             width: '300px',
                                             height: '300px',
-                                            transform: `translateZ(40px) rotateZ(${45 + (model.rotation || 0)}deg) rotateX(-60deg) scale(${model.scale || 1})`,
+                                            transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${model.scale || 1})`,
                                             transformStyle: 'preserve-3d',
                                             pointerEvents: isEditMode ? 'auto' : 'none',
                                             cursor: isEditMode ? 'move' : 'default'
@@ -2815,7 +2815,7 @@ const Docs = () => {
                                         <model-viewer
                                             src={model.src}
                                             alt={model.name}
-                                            orientation={`${model.rotX || 0}deg ${model.rotY || 0}deg 0deg`}
+                                            orientation={`${model.rotX || 0}deg ${model.rotY || 0}deg ${model.rotation || 0}deg`}
                                             disable-zoom="true"
                                             disable-tap="true"
                                             disable-pan="true"

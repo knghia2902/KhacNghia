@@ -795,9 +795,9 @@ const Docs = () => {
     
     // Model transforms draft
     const [modelsTransform, setModelsTransform] = useState({
-        archive: { x: 450, y: -140, scale: 1, rotation: 0 },
-        bed: { x: 460, y: 460, scale: 1, rotation: 0 },
-        tools: { x: 30, y: 30, scale: 1, rotation: 0 }
+        archive: { x: 450, y: -140, scale: 1, rotation: 0, rotX: 0, rotY: 0 },
+        bed: { x: 460, y: 460, scale: 1, rotation: 0, rotX: 0, rotY: 0 },
+        tools: { x: 30, y: 30, scale: 1, rotation: 0, rotX: 0, rotY: 0 }
     });
 
     // Zone transforms draft
@@ -839,7 +839,7 @@ const Docs = () => {
             id: `custom-${Date.now()}`,
             name: file.name.replace(`.${ext}`, ''),
             src: urlData.publicUrl,
-            x: 200, y: 200, scale: 1, rotation: 0, zone: selectedZone || 'docs'
+            x: 200, y: 200, scale: 1, rotation: 0, rotX: 0, rotY: 0, zone: selectedZone || 'docs'
         };
         setCustomModels(prev => [...prev, newModel]);
         showToast(`Đã import "${newModel.name}"!`);
@@ -2615,8 +2615,11 @@ const Docs = () => {
                                         onPointerDown={(e) => handleMeshPointerDown(e, 'archive')}
                                     >
                                         <model-viewer 
-                                            src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
+                                            src="/models/Meshy_AI_Forge_Table_0413233157_texture.glb" 
                                             alt="3D Archive"
+                                            camera-orbit="145deg 55deg auto"
+                                            orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg 0deg`}
+                                            field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
                                             disable-pan="true"
@@ -2641,6 +2644,7 @@ const Docs = () => {
                                             src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
                                             alt="3D Bed"
                                             camera-orbit="135deg 55deg auto"
+                                            orientation={`${modelsTransform.bed.rotX || 0}deg ${modelsTransform.bed.rotY || 0}deg 0deg`}
                                             field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
@@ -2691,14 +2695,16 @@ const Docs = () => {
                                          onPointerDown={(e) => handleMeshPointerDown(e, 'tools')}
                                     >
                                         <model-viewer 
-                                            src="/models/LoRen.glb" 
+                                            src="/models/Meshy_AI_Forge_Table_0413233157_texture.glb" 
                                             alt="3D Tools"
+                                            camera-orbit="45deg 55deg auto"
+                                            orientation={`${modelsTransform.tools.rotX || 0}deg ${modelsTransform.tools.rotY || 0}deg 0deg`}
+                                            field-of-view="10deg"
                                             disable-zoom="true"
                                             disable-tap="true"
                                             disable-pan="true"
                                             interaction-prompt="none"
                                             shadow-intensity="1"
-                                            camera-orbit="auto auto auto"
                                             autoplay="true"
                                             style={{ width: '100%', height: '100%', filter: 'drop-shadow(0px 20px 10px rgba(0,0,0,0.5))' }}>
                                         </model-viewer>
@@ -2893,10 +2899,24 @@ const Docs = () => {
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot (°)</label>
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Z</label>
                                         <input type="number" 
                                             value={getVal('rotation')} 
                                             onChange={(e) => setVal('rotation', Number(e.target.value))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot X</label>
+                                        <input type="number" 
+                                            value={getVal('rotX')} 
+                                            onChange={(e) => setVal('rotX', Number(e.target.value))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Y</label>
+                                        <input type="number" 
+                                            value={getVal('rotY')} 
+                                            onChange={(e) => setVal('rotY', Number(e.target.value))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">

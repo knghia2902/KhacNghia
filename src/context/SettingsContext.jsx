@@ -10,6 +10,7 @@ export const SettingsProvider = ({ children }) => {
     const { user } = useAuth();
     const [worldConfig, setWorldConfig] = useState({});
     const [loadingSettings, setLoadingSettings] = useState(true);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -76,7 +77,7 @@ export const SettingsProvider = ({ children }) => {
     };
 
     return (
-        <SettingsContext.Provider value={{ worldConfig, updateWorldConfig, loadingSettings }}>
+        <SettingsContext.Provider value={{ worldConfig, updateWorldConfig, loadingSettings, isEditMode, setIsEditMode }}>
             {children}
         </SettingsContext.Provider>
     );

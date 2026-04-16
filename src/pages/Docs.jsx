@@ -924,11 +924,18 @@ const Docs = () => {
             }
             setShowEditor(false);
 
-            // Center camera on the CENTER of the zone (not top-left corner)
+            // Center camera on the CENTER of the zone
             const zoneData = zonesTransform[zone];
-            const centerOffsetX = zoneData.x + zoneData.w / 2;
-            const centerOffsetY = zoneData.y + zoneData.h / 2;
-            setCameraPos({ tx: -centerOffsetX + window.innerWidth / 2 / 1, ty: -centerOffsetY + window.innerHeight / 2 / 1, scale: 1 });
+            const cx = zoneData.x + zoneData.w / 2;
+            const cy = zoneData.y + zoneData.h / 2;
+
+            // Isometric to Screen projection (rotateZ(-45deg) then rotateX(60deg))
+            const sx = (cx + cy) * 0.7071;
+            const sy = (-cx + cy) * 0.3535;
+
+            // Move camera in opposite direction to center the point
+            setCameraPos({ tx: -sx, ty: -sy, scale: 1 });
+
             // Hiện lại
             setTimeout(() => setIsTeleporting(false), 100);
         }, 400);

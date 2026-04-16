@@ -929,9 +929,13 @@ const Docs = () => {
             const cx = zoneData.x + zoneData.w / 2;
             const cy = zoneData.y + zoneData.h / 2;
 
+            // Tính quãng đường từ center của world container (350, 350) đến center của Zone
+            const offsetX = cx - 350;
+            const offsetY = cy - 350;
+
             // Isometric to Screen projection (rotateZ(-45deg) then rotateX(60deg))
-            const sx = (cx + cy) * 0.7071;
-            const sy = (-cx + cy) * 0.3535;
+            const sx = (offsetX + offsetY) * 0.7071;
+            const sy = (-offsetX + offsetY) * 0.3535;
 
             // Move camera in opposite direction to center the point
             setCameraPos({ tx: -sx, ty: -sy, scale: 1 });
@@ -2622,7 +2626,7 @@ const Docs = () => {
                                         onPointerDown={(e) => handleMeshPointerDown(e, 'archive')}
                                     >
                                         <model-viewer 
-                                            src="/models/Meshy_AI_Forge_Table_0413233157_texture.glb" 
+                                            src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
                                             alt="3D Archive"
                                             camera-orbit="145deg 55deg auto"
                                             orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg 0deg`}

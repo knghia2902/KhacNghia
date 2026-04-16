@@ -2730,9 +2730,7 @@ const Docs = () => {
                                         </>
                                     )}
                                     
-                                    <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
-                                        <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(192, 132, 252, 0.9)', filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))' }}>imagesmode</span>
-                                    </div>
+
                                 </div>
 
                                 {/* ==== REGION 4: ADMIN (Bottom Right) ==== */}
@@ -2760,37 +2758,7 @@ const Docs = () => {
                                         </>
                                     )}
                                     
-                                    {/* 3 Interactive Setting Objects */}
-                                    
-                                    {/* Profile Shortcut */}
-                                    <div className="absolute top-[30%] left-[30%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
-                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
-                                         onClick={(e) => handleSettingObjectClick(e, 'profile', 800 + 240, 800 + 240)}>
-                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-pink-500/80 to-rose-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(244,63,94,0.4)] relative">
-                                             <span className="material-symbols-outlined text-4xl text-white">person</span>
-                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
-                                        </div>
-                                    </div>
 
-                                    {/* Theme Shortcut */}
-                                    <div className="absolute top-[60%] left-[30%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
-                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
-                                         onClick={(e) => handleSettingObjectClick(e, 'theme', 800 + 240, 800 + 480)}>
-                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-purple-500/80 to-indigo-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(168,85,247,0.4)] relative">
-                                             <span className="material-symbols-outlined text-4xl text-white">palette</span>
-                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
-                                        </div>
-                                    </div>
-
-                                    {/* Edit Space Shortcut */}
-                                    <div className="absolute top-[45%] left-[60%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
-                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
-                                         onClick={(e) => handleSettingObjectClick(e, 'security', 800 + 480, 800 + 360)}>
-                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-cyan-500/80 to-blue-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(6,182,212,0.4)] relative">
-                                             <span className="material-symbols-outlined text-4xl text-white">security</span>
-                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
-                                        </div>
-                                    </div>
 
                                 </div>
 

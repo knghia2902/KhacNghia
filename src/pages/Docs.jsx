@@ -797,6 +797,7 @@ const Docs = () => {
     const [modelsTransform, setModelsTransform] = useState({
         archive: { x: 450, y: -140, scale: 1, rotation: 0 },
         bed: { x: 460, y: 460, scale: 1, rotation: 0 },
+        cabinet: { x: 50, y: 50, scale: 1, rotation: 0 },
         tools: { x: 30, y: 30, scale: 1, rotation: 0 }
     });
 
@@ -2510,6 +2511,16 @@ const Docs = () => {
                         }}>
                             <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
                                 
+                                {/* Edit Mode Grid (Global - fixed position) */}
+                                {isEditMode && (
+                                    <div className="absolute top-[-500px] left-[-500px] w-[3000px] h-[3000px] pointer-events-none opacity-40 z-[-1]"
+                                         style={{
+                                             backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.4) 2px, transparent 2px), linear-gradient(90deg, rgba(6, 182, 212, 0.4) 2px, transparent 2px)',
+                                             backgroundSize: '100px 100px'
+                                         }}>
+                                    </div>
+                                )}
+
                                 {/* Global Click Ripples */}
                                 {clickEffects.map(effect => (
                                     <div 
@@ -2523,7 +2534,7 @@ const Docs = () => {
                                             border: '3px solid #06b6d4',
                                             background: 'rgba(6, 182, 212, 0.2)',
                                             animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                                            transform: 'translateZ(1px)', // Hơi nổi lên khỏi sàn
+                                            transform: 'translateZ(1px)',
                                             zIndex: 10
                                         }}
                                     />
@@ -2554,15 +2565,7 @@ const Docs = () => {
                                         </>
                                     )}
                                     
-                                    {/* Edit Mode Grid (All Zones) */}
-                                    {isEditMode && (
-                                        <div className="absolute top-[-200px] left-[-200px] w-[2000px] h-[2000px] pointer-events-none opacity-40 z-[-1]"
-                                             style={{
-                                                 backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.4) 2px, transparent 2px), linear-gradient(90deg, rgba(6, 182, 212, 0.4) 2px, transparent 2px)',
-                                                 backgroundSize: '100px 100px'
-                                             }}>
-                                        </div>
-                                    )}
+
 
                                     {/* The Archive 3D Model */}
                                     <div 
@@ -2610,6 +2613,25 @@ const Docs = () => {
                                             interaction-prompt="none"
                                             shadow-intensity="1">
                                         </model-viewer>
+                                    </div>
+
+                                    {/* The Cabinet 3D Model */}
+                                    <div 
+                                        className={`iso-cabinet ${isEditMode && selectedMesh === 'cabinet' ? '!ring-4 !ring-teal-500 !bg-teal-500/10 !rounded-xl' : ''}`}
+                                        style={{
+                                            left: `${modelsTransform.cabinet.x}px`,
+                                            top: `${modelsTransform.cabinet.y}px`,
+                                            transform: `translateZ(0px) scale(${modelsTransform.cabinet.scale})`,
+                                            pointerEvents: isEditMode ? 'auto' : 'auto',
+                                            cursor: isEditMode ? 'move' : 'default'
+                                        }}
+                                        onPointerDown={(e) => handleMeshPointerDown(e, 'cabinet')}
+                                    >
+                                        <div className="cab-face cab-front"><div className="cab-drawer"></div><div className="cab-drawer"></div><div className="cab-drawer"></div></div>
+                                        <div className="cab-face cab-back"></div>
+                                        <div className="cab-face cab-top"></div>
+                                        <div className="cab-face cab-left"></div>
+                                        <div className="cab-face cab-right"></div>
                                     </div>
 
                                 </div>
@@ -2706,9 +2728,19 @@ const Docs = () => {
                                      }}>
                                     <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'admin' ? 'opacity-80' : ''}`} 
                                          style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} 
+                                         onPointerDown={(e) => handleFloorPointerDown(e, 'admin')}
                                          onClick={(e) => handleFloorClickGlobal(e, zonesTransform.admin.x, zonesTransform.admin.y, 'admin')}>
                                         <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
                                     </div>
+                                    
+                                    {/* Resize Handles */}
+                                    {isEditMode && selectedZone === 'admin' && (
+                                        <>
+                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'w')} />
+                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'h')} />
+                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'se')} />
+                                        </>
+                                    )}
                                     
                                     {/* 3 Interactive Setting Objects */}
                                     

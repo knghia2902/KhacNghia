@@ -2771,6 +2771,7 @@ const Docs = () => {
                                             interaction-prompt="none"
                                             shadow-intensity="1"
                                             autoplay="true"
+                                            loading="lazy"
                                             style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
                                             onError={(e) => console.error("Model Viewer Error:", model.name, e)}
                                         >
@@ -2827,7 +2828,10 @@ const Docs = () => {
                                         disable-pan="true"
                                         interaction-prompt="none"
                                         shadow-intensity="1"
-                                        autoplay="true">
+                                        autoplay="true"
+                                        loading="eager"
+                                        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+                                    >
                                     </model-viewer>
                                 </div>
 

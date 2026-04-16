@@ -5,6 +5,7 @@ import mammoth from 'mammoth';
 import { saveAs } from 'file-saver';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { supabase } from '../lib/supabaseClient';
 import RichTextEditor from '../components/editor/RichTextEditor';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -786,6 +787,35 @@ const Docs = () => {
     const [clickEffects, setClickEffects] = useState([]);
     const [isTeleporting, setIsTeleporting] = useState(false);
 
+    // Edit mode drag state
+    const { isEditMode, setIsEditMode, updateWorldConfig, worldConfig } = useSettings();
+    const [selectedMesh, setSelectedMesh] = useState(null);
+    const [draggingMesh, setDraggingMesh] = useState(null);
+    const dragOffset = useRef({ x: 0, y: 0 });
+    
+    // Model transforms draft
+    const [modelsTransform, setModelsTransform] = useState({
+        archive: { x: 450, y: -140, scale: 1, rotation: 0 },
+        bed: { x: 460, y: 460, scale: 1, rotation: 0 },
+        tools: { x: 30, y: 30, scale: 1, rotation: 0 }
+    });
+
+    const handleMeshPointerDown = (e, meshId) => {
+        if (!isEditMode) return;
+        e.stopPropagation(); // Prevent floor click teleport
+        setSelectedMesh(meshId);
+        setDraggingMesh(meshId);
+        dragOffset.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const [activeSettingGroup, setActiveSettingGroup] = useState('profile');
+
+    const handleSettingObjectClick = (e, group, targetX, targetY) => {
+        e.stopPropagation();
+        setActiveSettingGroup(group);
+        handleFloorClickGlobal(e, targetX, targetY, 'admin');
+    };
+
     // Teleport logic
     const navigateToZone = (zone, targetPos) => {
         // Biến mất (Blink Teleport)
@@ -833,6 +863,25 @@ const Docs = () => {
     };
 
     const handlePointerMove = (e) => {
+        if (draggingMesh) {
+            const dx = e.clientX - dragOffset.current.x;
+            const dy = e.clientY - dragOffset.current.y;
+            // Screen to Isometric floor roughly
+            const isoX = (dx * 1.414 + dy * 1.414 / 0.5) * 0.5;
+            const isoY = (-dx * 1.414 + dy * 1.414 / 0.5) * 0.5;
+            
+            setModelsTransform(p => ({
+                ...p,
+                [draggingMesh]: {
+                    ...p[draggingMesh],
+                    x: p[draggingMesh].x + isoX / cameraPos.scale,
+                    y: p[draggingMesh].y + isoY / cameraPos.scale
+                }
+            }));
+            dragOffset.current = { x: e.clientX, y: e.clientY };
+            return;
+        }
+
         if (!isDragging.current) return;
         const dx = e.clientX - startPoint.current.x;
         const dy = e.clientY - startPoint.current.y;
@@ -842,6 +891,7 @@ const Docs = () => {
 
     const handlePointerUp = () => {
         isDragging.current = false;
+        setDraggingMesh(null);
     };
 
     // Escape key to close secondary panel
@@ -2321,7 +2371,7 @@ const Docs = () => {
                         )}
                         
                         {activeZone === 'admin' && (
-                            <AdminPanel />
+                            <AdminPanel activeSettingGroup={activeSettingGroup} />
                         )}
                     </div>
                 </aside>
@@ -2388,8 +2438,28 @@ const Docs = () => {
                                         <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
                                     </div>
                                     
+                                    {/* Edit Mode Grid (All Zones) */}
+                                    {isEditMode && (
+                                        <div className="absolute top-[-200px] left-[-200px] w-[2000px] h-[2000px] pointer-events-none opacity-40 z-[-1]"
+                                             style={{
+                                                 backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.4) 2px, transparent 2px), linear-gradient(90deg, rgba(6, 182, 212, 0.4) 2px, transparent 2px)',
+                                                 backgroundSize: '100px 100px'
+                                             }}>
+                                        </div>
+                                    )}
+
                                     {/* The Archive 3D Model */}
-                                    <div className="iso-archive">
+                                    <div 
+                                        className={`iso-archive ${isEditMode && selectedMesh === 'archive' ? '!ring-4 !ring-cyan-500 !bg-cyan-500/10 !rounded-3xl' : ''}`}
+                                        style={{
+                                            left: `${modelsTransform.archive.x}px`,
+                                            top: `${modelsTransform.archive.y}px`,
+                                            transform: `translateZ(40px) rotateZ(${45 + modelsTransform.archive.rotation}deg) rotateX(-60deg) scale(${modelsTransform.archive.scale})`,
+                                            pointerEvents: isEditMode ? 'auto' : 'none',
+                                            cursor: isEditMode ? 'move' : 'default'
+                                        }}
+                                        onPointerDown={(e) => handleMeshPointerDown(e, 'archive')}
+                                    >
                                         <model-viewer 
                                             src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
                                             alt="3D Archive"
@@ -2402,7 +2472,17 @@ const Docs = () => {
                                     </div>
 
                                     {/* The Bed 3D Model */}
-                                    <div className="iso-bed">
+                                    <div 
+                                        className={`iso-bed ${isEditMode && selectedMesh === 'bed' ? '!ring-4 !ring-emerald-500 !bg-emerald-500/10 !rounded-3xl' : ''}`}
+                                        style={{
+                                            left: `${modelsTransform.bed.x}px`,
+                                            top: `${modelsTransform.bed.y}px`,
+                                            transform: `translateZ(20px) rotateZ(${45 + modelsTransform.bed.rotation}deg) rotateX(-60deg) scale(${modelsTransform.bed.scale})`,
+                                            pointerEvents: isEditMode ? 'auto' : 'none',
+                                            cursor: isEditMode ? 'move' : 'default'
+                                        }}
+                                        onPointerDown={(e) => handleMeshPointerDown(e, 'bed')}
+                                    >
                                         <model-viewer 
                                             src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
                                             alt="3D Bed"
@@ -2425,7 +2505,16 @@ const Docs = () => {
                                     </div>
                                     
                                     {/* The Tools Model */}
-                                    <div className="absolute top-[30px] left-[30px] w-[350px] h-[350px]" style={{ transform: 'translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}>
+                                    <div className={`absolute w-[350px] h-[350px] ${isEditMode && selectedMesh === 'tools' ? 'ring-4 ring-amber-500 bg-amber-500/10 rounded-3xl' : ''}`}
+                                         style={{ 
+                                             left: `${modelsTransform.tools.x}px`,
+                                             top: `${modelsTransform.tools.y}px`,
+                                             transform: `translateZ(40px) rotateZ(${45 + modelsTransform.tools.rotation}deg) rotateX(-60deg) scale(${modelsTransform.tools.scale})`,
+                                             pointerEvents: isEditMode ? 'auto' : 'none',
+                                             cursor: isEditMode ? 'move' : 'default'
+                                         }}
+                                         onPointerDown={(e) => handleMeshPointerDown(e, 'tools')}
+                                    >
                                         <model-viewer 
                                             src="/models/LoRen.glb" 
                                             alt="3D Tools"
@@ -2458,9 +2547,38 @@ const Docs = () => {
                                         <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
                                     </div>
                                     
-                                    <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
-                                        <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(251, 191, 36, 0.9)', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.8))' }}>admin_panel_settings</span>
+                                    {/* 3 Interactive Setting Objects */}
+                                    
+                                    {/* Profile Shortcut */}
+                                    <div className="absolute top-[30%] left-[30%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
+                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
+                                         onClick={(e) => handleSettingObjectClick(e, 'profile', 800 + 240, 800 + 240)}>
+                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-pink-500/80 to-rose-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(244,63,94,0.4)] relative">
+                                             <span className="material-symbols-outlined text-4xl text-white">person</span>
+                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
+                                        </div>
                                     </div>
+
+                                    {/* Theme Shortcut */}
+                                    <div className="absolute top-[60%] left-[30%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
+                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
+                                         onClick={(e) => handleSettingObjectClick(e, 'theme', 800 + 240, 800 + 480)}>
+                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-purple-500/80 to-indigo-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(168,85,247,0.4)] relative">
+                                             <span className="material-symbols-outlined text-4xl text-white">palette</span>
+                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Edit Space Shortcut */}
+                                    <div className="absolute top-[45%] left-[60%] w-[100px] h-[100px] flex items-center justify-center cursor-pointer hover:-translate-y-4 transition-transform duration-300" 
+                                         style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}
+                                         onClick={(e) => handleSettingObjectClick(e, 'security', 800 + 480, 800 + 360)}>
+                                        <div className="w-[80px] h-[80px] rounded-2xl bg-gradient-to-tr from-cyan-500/80 to-blue-400/80 backdrop-blur flex items-center justify-center border-2 border-white/20 shadow-[0_10px_20px_rgba(6,182,212,0.4)] relative">
+                                             <span className="material-symbols-outlined text-4xl text-white">security</span>
+                                             <div className="absolute -bottom-6 w-[60px] h-2 bg-black/40 blur-md rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 {/* ==== THE RUNNING AGENT (Hoisted to global map coordinates) ==== */}
@@ -2507,6 +2625,64 @@ const Docs = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* World Editor Panel */}
+                    {isEditMode && (
+                        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-black/80 backdrop-blur-md border border-cyan-500/50 shadow-2xl rounded-2xl p-4 z-50 flex flex-col md:flex-row items-center gap-6 animate-[fadeIn_0.5s_ease-out]">
+                            <div className="flex flex-col mr-2">
+                                <h3 className="text-cyan-600 dark:text-cyan-400 font-bold text-sm tracking-widest uppercase mb-1">World Editor</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Kéo thả object, nhập thông số.</p>
+                            </div>
+
+                            {selectedMesh ? (
+                                <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X (px)</label>
+                                        <input type="number" 
+                                            value={Math.round(modelsTransform[selectedMesh].x)} 
+                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], x: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y (px)</label>
+                                        <input type="number" 
+                                            value={Math.round(modelsTransform[selectedMesh].y)} 
+                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], y: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot (°)</label>
+                                        <input type="number" 
+                                            value={modelsTransform[selectedMesh].rotation} 
+                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], rotation: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Scale</label>
+                                        <input type="number" step="0.1" 
+                                            value={modelsTransform[selectedMesh].scale} 
+                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], scale: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-sm text-slate-400 italic md:w-[320px] text-center">Chọn một model để chỉnh sửa...</div>
+                            )}
+
+                            <div className="flex gap-2 ml-auto">
+                                <button onClick={() => setIsEditMode(false)} className="px-4 py-2 text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                                    Hủy
+                                </button>
+                                <button onClick={() => { 
+                                    setIsEditMode(false); 
+                                    updateWorldConfig({ modelsTransform }); 
+                                    showToast('Đã lưu cấu hình không gian!'); 
+                                }} className="px-4 py-2 text-xs font-bold bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 shadow-lg shadow-cyan-500/30 transition whitespace-nowrap">
+                                    Lưu Thay Đổi
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ACTUAL EDITOR CONTENT */}
                     <article id="editor-content" className={`max-w-5xl w-full mx-auto p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-none relative z-20 overflow-y-auto h-full border border-white/60 dark:border-white/5 bg-gradient-to-br from-white/95 to-slate-50/80 dark:from-[#131b19]/90 dark:to-[#0f1412]/95 backdrop-blur-3xl flex flex-col transition-colors duration-500 delay-100 ${showEditor ? 'active' : ''}`}>

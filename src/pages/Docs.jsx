@@ -2620,60 +2620,6 @@ const Docs = () => {
                                     
 
 
-                                    {/* The Archive 3D Model */}
-                                    <div 
-                                        className={`iso-archive ${isEditMode && selectedMesh === 'archive' ? '!ring-4 !ring-cyan-500 !bg-cyan-500/10 !rounded-3xl' : ''}`}
-                                        style={{
-                                            left: `${modelsTransform.archive.x}px`,
-                                            top: `${modelsTransform.archive.y}px`,
-                                        transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.archive.scale})`,
-                                            pointerEvents: isEditMode ? 'auto' : 'none',
-                                            cursor: isEditMode ? 'move' : 'default'
-                                        }}
-                                        onPointerDown={(e) => handleMeshPointerDown(e, 'archive')}
-                                    >
-                                        <model-viewer 
-                                            src="/models/The_Lanterned_Archive.glb" 
-                                            alt="3D Archive"
-                                            camera-orbit="145deg 55deg auto"
-                                            orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg ${modelsTransform.archive.rotation || 0}deg`}
-                                            field-of-view="10deg"
-                                            disable-zoom="true"
-                                            disable-tap="true"
-                                            disable-pan="true"
-                                            interaction-prompt="none"
-                                            shadow-intensity="1">
-                                        </model-viewer>
-                                    </div>
-
-                                    {/* The Bed 3D Model */}
-                                    <div 
-                                        className={`iso-bed ${isEditMode && selectedMesh === 'bed' ? '!ring-4 !ring-emerald-500 !bg-emerald-500/10 !rounded-3xl' : ''}`}
-                                        style={{
-                                            left: `${modelsTransform.bed.x}px`,
-                                            top: `${modelsTransform.bed.y}px`,
-                                            transform: `translateZ(20px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.bed.scale})`,
-                                            pointerEvents: isEditMode ? 'auto' : 'none',
-                                            cursor: isEditMode ? 'move' : 'default'
-                                        }}
-                                        onPointerDown={(e) => handleMeshPointerDown(e, 'bed')}
-                                    >
-                                        <model-viewer 
-                                            src="/models/Shoddy_bed.glb" 
-                                            alt="3D Bed"
-                                            camera-orbit="135deg 55deg auto"
-                                            orientation={`${modelsTransform.bed.rotX || 0}deg ${modelsTransform.bed.rotY || 0}deg ${modelsTransform.bed.rotation || 0}deg`}
-                                            field-of-view="10deg"
-                                            disable-zoom="true"
-                                            disable-tap="true"
-                                            disable-pan="true"
-                                            interaction-prompt="none"
-                                            shadow-intensity="1">
-                                        </model-viewer>
-                                    </div>
-
-
-
                                 </div>
 
                                 {/* ==== REGION 2: TOOLS (Top Right) ==== */}
@@ -2701,32 +2647,6 @@ const Docs = () => {
                                         </>
                                     )}
 
-                                    {/* The Tools Model */}
-                                    <div className={`absolute w-[350px] h-[350px] ${isEditMode && selectedMesh === 'tools' ? 'ring-4 ring-amber-500 bg-amber-500/10 rounded-3xl' : ''}`}
-                                         style={{ 
-                                             left: `${modelsTransform.tools.x}px`,
-                                             top: `${modelsTransform.tools.y}px`,
-                                             transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${modelsTransform.tools.scale})`,
-                                             pointerEvents: isEditMode ? 'auto' : 'none',
-                                             cursor: isEditMode ? 'move' : 'default'
-                                         }}
-                                         onPointerDown={(e) => handleMeshPointerDown(e, 'tools')}
-                                    >
-                                        <model-viewer 
-                                            src="/models/LoRen.glb" 
-                                            alt="3D Tools"
-                                            camera-orbit="45deg 55deg auto"
-                                            orientation={`${modelsTransform.tools.rotX || 0}deg ${modelsTransform.tools.rotY || 0}deg ${modelsTransform.tools.rotation || 0}deg`}
-                                            field-of-view="10deg"
-                                            disable-zoom="true"
-                                            disable-tap="true"
-                                            disable-pan="true"
-                                            interaction-prompt="none"
-                                            shadow-intensity="1"
-                                            autoplay="true"
-                                            style={{ width: '100%', height: '100%', filter: 'drop-shadow(0px 20px 10px rgba(0,0,0,0.5))' }}>
-                                        </model-viewer>
-                                    </div>
                                 </div>
 
                                 {/* ==== REGION 3: GALLERY (Bottom Left) ==== */}
@@ -3014,6 +2934,50 @@ const Docs = () => {
                                 }} className="px-4 py-2 text-xs font-bold bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 shadow-lg shadow-cyan-500/30 transition whitespace-nowrap">
                                     Lưu Thay Đổi
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* WORLD EDITOR MODEL LIST - Floating at Left */}
+                    {isEditMode && (
+                        <div className="absolute top-24 left-4 z-50 bg-white/90 dark:bg-[#131b19]/90 backdrop-blur-xl p-4 rounded-3xl shadow-xl shadow-cyan-900/10 dark:shadow-black/50 border border-white/50 dark:border-white/5 w-64 max-h-[60vh] flex flex-col pointer-events-auto">
+                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 flex items-center justify-between shrink-0">
+                                Mô Hình Đã Nhập
+                                <span className="bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-2 rounded-full text-[10px]">{customModels.length}</span>
+                            </h3>
+                            <div className="space-y-2 overflow-y-auto custom-scrollbar pr-1 flex-1">
+                                {customModels.length === 0 ? (
+                                    <div className="text-[11px] text-slate-400 italic text-center py-4 bg-black/5 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                        Chưa có mô hình nào.<br/>Nhấn "Import Model" để thêm.
+                                    </div>
+                                ) : customModels.map(model => (
+                                    <div 
+                                        key={model.id}
+                                        onClick={() => {
+                                            setSelectedMesh(model.id);
+                                            setSelectedZone(null);
+                                        }}
+                                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer text-xs font-medium transition-all ${
+                                            selectedMesh === model.id 
+                                                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' 
+                                                : 'bg-slate-100 dark:bg-black/30 hover:bg-slate-200 dark:hover:bg-black/50 text-slate-700 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 truncate">
+                                            <span className="material-symbols-outlined text-[16px] opacity-70">view_in_ar</span>
+                                            <span className="truncate">{model.name}</span>
+                                        </div>
+                                        {selectedMesh === model.id && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }} 
+                                                className="text-white hover:text-rose-200 opacity-80 hover:opacity-100 flex-shrink-0"
+                                                title="Xóa"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}

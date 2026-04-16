@@ -11,6 +11,9 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import CascadingNav from '../components/layout/CascadingNav';
+import ToolsPanel from '../components/panels/ToolsPanel';
+import GalleryPanel from '../components/panels/GalleryPanel';
+import AdminPanel from '../components/panels/AdminPanel';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -773,17 +776,47 @@ const Docs = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
     const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = useState(false);
-    const [isAgentRunning, setIsAgentRunning] = useState(false);
+    
+    // --- Unified SPA State ---
+    const [activeZone, setActiveZone] = useState('docs'); // docs | tools | gallery | admin
     const [isAgentSelected, setIsAgentSelected] = useState(false);
     const [agentPos, setAgentPos] = useState({ left: 300, top: 310 });
     const [agentFacingAngle, setAgentFacingAngle] = useState(0);
     const [showEditor, setShowEditor] = useState(false);
-    const [clickEffects, setClickEffects] = useState([]); // Thêm state cho click effects
+    const [clickEffects, setClickEffects] = useState([]);
+    const [isTeleporting, setIsTeleporting] = useState(false);
+
+    // Teleport logic
+    const navigateToZone = (zone, targetPos) => {
+        // Biến mất (Blink Teleport)
+        setIsTeleporting(true);
+
+        // Sau khi mờ đi (400ms), dịch chuyển tọa độ và Camera
+        setTimeout(() => {
+            setAgentPos(targetPos);
+            setActiveZone(zone);
+            
+            if (zone !== 'docs') {
+                setIsSecondaryPanelOpen(false);
+            }
+            setShowEditor(false);
+
+            // Center camera precisely on the center of the zone and reset zoom
+            if (zone === 'docs') setCameraPos({ tx: 0, ty: 0, scale: 1 });
+            else if (zone === 'tools') setCameraPos({ tx: -565, ty: 282, scale: 1 });
+            else if (zone === 'gallery') setCameraPos({ tx: -565, ty: -282, scale: 1 });
+            else if (zone === 'admin') setCameraPos({ tx: -1130, ty: 0, scale: 1 });
+
+            // Hiện lại
+            setTimeout(() => setIsTeleporting(false), 100);
+        }, 400);
+    };
 
     // --- One-Map Camera State ---
     const [cameraPos, setCameraPos] = useState({ tx: 0, ty: 0, scale: 1 });
     const isDragging = useRef(false);
     const startPoint = useRef({ x: 0, y: 0 });
+    const modelViewerRef = useRef(null);
 
     const handleWheel = (e) => {
         // Prevent default only if hovering the canvas
@@ -1330,34 +1363,34 @@ const Docs = () => {
 
     const handleCloseDoc = () => {
         setShowEditor(false);
-        const half = 50;
-        const agentCenterX = agentPos.left + half;
-        const agentCenterY = agentPos.top + half;
-        const dx = 350 - agentCenterX;
-        const dy = 360 - agentCenterY;
-        const screenDx = (dx + dy) * 0.7071;
-        const screenDy = (-dx + dy) * 0.3536;
-        const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
-        setAgentFacingAngle(screenAngle - 90);
-        setTimeout(() => {
-            setActiveDocId(null);
-            setAgentPos({ left: 300, top: 310 });
-            setAgentFacingAngle(0);
-        }, 500);
+        setActiveDocId(null);
+        setAgentPos({ left: 300, top: 310 });
+        setAgentFacingAngle(0);
     };
 
-    const handleFloorClick = (e) => {
-        if (!isAgentSelected) return;
+    const handleFloorClickGlobal = (e, zoneOffsetX, zoneOffsetY, zoneName) => {
+        const localX = e.nativeEvent.offsetX;
+        const localY = e.nativeEvent.offsetY;
+        const half = 50;
+        const size = 100;
+        const clampedLocalX = Math.max(0, Math.min(700 - size, localX - half));
+        const clampedLocalY = Math.max(0, Math.min(700 - size, localY - half));
+        const targetPos = { left: clampedLocalX + zoneOffsetX, top: clampedLocalY + zoneOffsetY };
 
-        const x = e.nativeEvent.offsetX;
-        const y = e.nativeEvent.offsetY;
+        // Nếu click khác vùng -> Teleport sang vùng đó, xuất hiện đúng chỗ click
+        if (activeZone !== zoneName) {
+             navigateToZone(zoneName, targetPos);
+             return;
+        }
+
+        const globalX = localX + zoneOffsetX;
+        const globalY = localY + zoneOffsetY;
 
         // Tính hướng đi trên sàn
-        const half = 50;
         const agentCenterX = agentPos.left + half;
         const agentCenterY = agentPos.top + half;
-        const dx = x - agentCenterX;
-        const dy = y - agentCenterY;
+        const dx = globalX - agentCenterX;
+        const dy = globalY - agentCenterY;
 
         // Chuyển floor direction → screen direction chuẩn (Y hướng xuống)
         const screenDx = (dx + dy) * 0.7071;
@@ -1367,24 +1400,19 @@ const Docs = () => {
         // Orbit: screenAngle - 90 để quay đúng hướng
         setAgentFacingAngle(screenAngle - 90);
 
-        // Clamp giữ agent trong sàn
-        const size = 100;
-        const clampedX = Math.max(0, Math.min(700 - size, x - half));
-        const clampedY = Math.max(0, Math.min(700 - size, y - half));
+        // Đổi sang model Running qua DOM (không re-render React)
+        if (modelViewerRef.current) {
+            modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb');
+        }
 
-        setAgentPos({ left: clampedX, top: clampedY });
-        setIsAgentRunning(true);
+        setAgentPos(targetPos);
 
         // Hiệu ứng click (Ripple)
         const effectId = Date.now();
-        setClickEffects(prev => [...prev, { id: effectId, x, y }]);
+        setClickEffects(prev => [...prev, { id: effectId, x: globalX, y: globalY }]);
         setTimeout(() => {
             setClickEffects(prev => prev.filter(e => e.id !== effectId));
         }, 1000);
-
-        setTimeout(() => {
-            setIsAgentRunning(false);
-        }, 800);
     };
     const handleCreateFolder = async (name, parentId = null) => {
         const newFolder = {
@@ -2205,7 +2233,7 @@ const Docs = () => {
             )}
 
             <div className="flex-1 flex overflow-hidden relative px-8 pb-8 gap-6">
-                {/* Sidebar */}
+                {/* Sidebar (Folders) - Hides when not in docs zone */}
                 <aside className={`
                     w-[240px] h-full flex flex-col py-6 px-3 z-20 glass-panel dark:bg-black/30 dark:border-white/10 rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
                     ${isFocusMode ? 'md:hidden' : ''}
@@ -2220,74 +2248,92 @@ const Docs = () => {
                     </button>
 
                     <div className="flex flex-col h-full">
-                        {/* Header Row */}
-                        <div className="mb-4 px-3 flex items-center shrink-0">
-                            <p className="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase truncate">Cấu trúc tài liệu</p>
-                            {/* Hidden Inputs */}
-                            <input
-                                type="file"
-                                id="import-word-input"
-                                hidden
-                                accept=".docx"
-                                onChange={handleImportWord}
-                            />
-                            <input
-                                type="file"
-                                id="import-html-input"
-                                hidden
-                                accept=".html,.htm"
-                                onChange={handleImportHtmlFile}
-                            />
-                        </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-1 pb-6">
-                            <nav className="space-y-1">
-                                {loading ? (
-                                    <div className="space-y-2 animate-pulse mt-2">
-                                        {[1, 2, 3, 4, 5].map(i => (
-                                            <div key={i} className="h-8 bg-white/40 dark:bg-white/5 rounded-lg w-full"></div>
-                                        ))}
+                        {activeZone === 'docs' && (
+                            <>
+                                {/* Header Row */}
+                                <div className="mb-4 px-3 flex items-center shrink-0">
+                                    <p className="text-[0.65rem] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase truncate">Cấu trúc tài liệu</p>
+                                    {/* Hidden Inputs */}
+                                    <input
+                                        type="file"
+                                        id="import-word-input"
+                                        hidden
+                                        accept=".docx"
+                                        onChange={handleImportWord}
+                                    />
+                                    <input
+                                        type="file"
+                                        id="import-html-input"
+                                        hidden
+                                        accept=".html,.htm"
+                                        onChange={handleImportHtmlFile}
+                                    />
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar px-1 pb-6">
+                                    <nav className="space-y-1">
+                                        {loading ? (
+                                            <div className="space-y-2 animate-pulse mt-2">
+                                                {[1, 2, 3, 4, 5].map(i => (
+                                                    <div key={i} className="h-8 bg-white/40 dark:bg-white/5 rounded-lg w-full"></div>
+                                                ))}
+                                            </div>
+                                        ) : isAuthenticated ? (
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                onDragEnd={handleDragEnd}
+                                            >
+                                                {renderFolderTree(null)}
+                                            </DndContext>
+                                        ) : (
+                                            renderFolderTree(null)
+                                        )}
+                                    </nav>
+                                </div>
+                                {isAuthenticated && (
+                                    <div className="mt-auto p-2 flex justify-center shrink-0">
+                                        <button
+                                            onClick={() => setIsFolderModalOpen(true)}
+                                            className="w-full py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
+                                            Thư mục mới
+                                        </button>
                                     </div>
-                                ) : isAuthenticated ? (
-                                    <DndContext
-                                        sensors={sensors}
-                                        collisionDetection={closestCenter}
-                                        onDragEnd={handleDragEnd}
-                                    >
-                                        {renderFolderTree(null)}
-                                    </DndContext>
-                                ) : (
-                                    renderFolderTree(null)
                                 )}
-                            </nav>
-                        </div>
-                        {isAuthenticated && (
-                            <div className="mt-auto p-2 flex justify-center">
-                                <button
-                                    onClick={() => setIsFolderModalOpen(true)}
-                                    className="w-full py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-white/5 border border-white/60 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 rounded-xl transition-all shadow-sm flex justify-center items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
-                                    Thư mục mới
-                                </button>
-                            </div>
+                            </>
+                        )}
+                        
+                        {activeZone === 'tools' && (
+                            <ToolsPanel />
+                        )}
+                        
+                        {activeZone === 'gallery' && (
+                            <GalleryPanel />
+                        )}
+                        
+                        {activeZone === 'admin' && (
+                            <AdminPanel />
                         )}
                     </div>
                 </aside>
 
-                <CascadingNav
-                    isOpen={isSecondaryPanelOpen}
-                    onClose={() => setIsSecondaryPanelOpen(false)}
-                    items={filteredDocs}
-                    folderName={activeFolderId ? folders.find(f => f.id === activeFolderId)?.title : 'Tài liệu'}
-                    loading={loading}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    activeDocId={activeDocId}
-                    onDocClick={handleDocClick}
-                    onContextMenu={openContextMenu}
-                    isFocusMode={isFocusMode}
-                    onAddNote={() => setIsNoteModalOpen(true)}
-                />
+                <div className="flex h-full">
+                    <CascadingNav
+                        isOpen={isSecondaryPanelOpen && activeZone === 'docs'}
+                        onClose={() => setIsSecondaryPanelOpen(false)}
+                        items={filteredDocs}
+                        folderName={activeFolderId ? folders.find(f => f.id === activeFolderId)?.title : 'Tài liệu'}
+                        loading={loading}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        activeDocId={activeDocId}
+                        onDocClick={handleDocClick}
+                        onContextMenu={openContextMenu}
+                        isFocusMode={isFocusMode}
+                        onAddNote={() => setIsNoteModalOpen(true)}
+                    />
+                </div>
 
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex items-center justify-center">
@@ -2303,33 +2349,35 @@ const Docs = () => {
                     >
                         <div style={{ 
                             transform: `translate(${cameraPos.tx}px, ${cameraPos.ty}px) scale(${cameraPos.scale})`,
-                            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+                            transition: isDragging.current ? 'none' : (isTeleporting ? 'transform 1.2s cubic-bezier(0.16,1,0.3,1)' : 'transform 0.1s ease-out'),
                             transformStyle: 'preserve-3d'
                         }}>
                             <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
                                 
+                                {/* Global Click Ripples */}
+                                {clickEffects.map(effect => (
+                                    <div 
+                                        key={effect.id} 
+                                        className="absolute pointer-events-none rounded-full"
+                                        style={{
+                                            left: effect.x - 20,
+                                            top: effect.y - 20,
+                                            width: '40px',
+                                            height: '40px',
+                                            border: '3px solid #06b6d4',
+                                            background: 'rgba(6, 182, 212, 0.2)',
+                                            animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                                            transform: 'translateZ(1px)', // Hơi nổi lên khỏi sàn
+                                            zIndex: 10
+                                        }}
+                                    />
+                                ))}
+
                                 {/* ==== REGION 1: DOCS (Untouched Original) ==== */}
                                 <div className="absolute top-0 left-0 w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
                                     {/* Floor grid */}
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={handleFloorClick}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={(e) => handleFloorClickGlobal(e, 0, 0, 'docs')}>
                                         <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
-                                        
-                                        {/* Click Ripples */}
-                                        {clickEffects.map(effect => (
-                                            <div 
-                                                key={effect.id} 
-                                                className="absolute pointer-events-none rounded-full"
-                                                style={{
-                                                    left: effect.x - 20,
-                                                    top: effect.y - 20,
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    border: '3px solid #06b6d4',
-                                                    background: 'rgba(6, 182, 212, 0.2)',
-                                                    animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                                                }}
-                                            />
-                                        ))}
                                     </div>
                                     
                                     {/* The Archive 3D Model */}
@@ -2360,42 +2408,16 @@ const Docs = () => {
                                         </model-viewer>
                                     </div>
 
-                                    {/* Chibi Model 2 (Replacing Parrot Agent) */}
-                                    <div 
-                                        id="chibi-agent" 
-                                        className={`iso-agent ${isAgentRunning ? 'agent-run' : ''} ${isAgentSelected ? 'selected' : ''} cursor-pointer transition-transform`}
-                                        style={{ left: agentPos.left, top: agentPos.top }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsAgentSelected(!isAgentSelected);
-                                        }}
-                                    >
-                                        <model-viewer 
-                                            src={isAgentRunning 
-                                                ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
-                                                : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"}
-                                            alt="3D AI Agent"
-                                            camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                            min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                            max-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                            disable-zoom="true"
-                                            disable-tap="true"
-                                            disable-pan="true"
-                                            interaction-prompt="none"
-                                            shadow-intensity="1"
-                                            autoplay="true">
-                                        </model-viewer>
-                                    </div>
                                 </div>
 
                                 {/* ==== REGION 2: TOOLS (Top Right) ==== */}
                                 <div className="absolute top-[0px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} onClick={() => navigate('/tools')}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 800, 0, 'tools')}>
                                         <p className="text-emerald-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">CÔNG CỤ & TIỆN ÍCH</p>
                                     </div>
                                     
                                     {/* The Tools Model */}
-                                    <div className="absolute top-[50%] left-[50%] w-[350px] h-[350px]" style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}>
+                                    <div className="absolute top-[30px] left-[30px] w-[350px] h-[350px]" style={{ transform: 'translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}>
                                         <model-viewer 
                                             src="/models/LoRen.glb" 
                                             alt="3D Tools"
@@ -2413,7 +2435,7 @@ const Docs = () => {
 
                                 {/* ==== REGION 3: GALLERY (Bottom Left) ==== */}
                                 <div className="absolute top-[800px] left-[0px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} onClick={() => navigate('/gallery')}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 0, 800, 'gallery')}>
                                         <p className="text-purple-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">THƯ VIỆN HÌNH ẢNH</p>
                                     </div>
                                     
@@ -2424,13 +2446,54 @@ const Docs = () => {
 
                                 {/* ==== REGION 4: ADMIN (Bottom Right) ==== */}
                                 <div className="absolute top-[800px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} onClick={() => navigate('/admin')}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 800, 800, 'admin')}>
                                         <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
                                     </div>
                                     
                                     <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
                                         <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(251, 191, 36, 0.9)', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.8))' }}>admin_panel_settings</span>
                                     </div>
+                                </div>
+
+                                {/* ==== THE RUNNING AGENT (Hoisted to global map coordinates) ==== */}
+                                <div 
+                                    id="chibi-agent" 
+                                    className={`iso-agent ${isAgentSelected ? 'selected' : ''} cursor-pointer`}
+                                    style={{ 
+                                        left: agentPos.left, 
+                                        top: agentPos.top, 
+                                        position: 'absolute',
+                                        willChange: 'left, top',
+                                        opacity: isTeleporting ? 0 : 1,
+                                        transition: isTeleporting 
+                                            ? 'opacity 0.4s ease-in-out' 
+                                            : 'left 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease-in-out'
+                                    }}
+                                    onTransitionEnd={(e) => {
+                                        // Khi CSS transition kết thúc (agent đã đến đích), đổi về Walking
+                                        if (e.propertyName === 'left' && modelViewerRef.current) {
+                                            modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb');
+                                        }
+                                    }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsAgentSelected(!isAgentSelected);
+                                    }}
+                                >
+                                    <model-viewer 
+                                        ref={modelViewerRef}
+                                        src="/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"
+                                        alt="3D AI Agent"
+                                        camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                        min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                        max-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                        disable-zoom="true"
+                                        disable-tap="true"
+                                        disable-pan="true"
+                                        interaction-prompt="none"
+                                        shadow-intensity="1"
+                                        autoplay="true">
+                                    </model-viewer>
                                 </div>
 
                             </div>

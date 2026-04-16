@@ -80,7 +80,6 @@ model-viewer::part(default-progress-mask) {
     height: 100px;
     /* Billboard effect to face camera despite world rotation */
     transform: translateZ(40px) rotateZ(45deg) rotateX(-60deg);
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     transform-style: preserve-3d;
     display: flex;
     flex-direction: column;
@@ -101,8 +100,8 @@ model-viewer {
 
 /* Animation Classes */
 .agent-run {
-    /* Chỉ nâng nhẹ khi chạy - KHÔNG override position */
-    transform: translateZ(50px) rotateZ(45deg) rotateX(-60deg) !important;
+    /* Giữ nguyên transform như base - KHÔNG thay đổi Z để tránh giật khi dừng */
+    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.5));
 }
 
 .fade-out { opacity: 0; pointer-events: none; transition: opacity 0.5s; }

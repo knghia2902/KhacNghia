@@ -2388,8 +2388,8 @@ const Docs = () => {
                                     </div>
                                 </div>
 
-                                {/* ==== REGION 2: TOOLS (New Zone) ==== */}
-                                <div className="absolute top-[800px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                {/* ==== REGION 2: TOOLS (Top Right) ==== */}
+                                <div className="absolute top-[0px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
                                     <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} onClick={() => navigate('/tools')}>
                                         <p className="text-emerald-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">CÔNG CỤ & TIỆN ÍCH</p>
                                     </div>
@@ -2408,6 +2408,28 @@ const Docs = () => {
                                             autoplay="true"
                                             style={{ width: '100%', height: '100%', filter: 'drop-shadow(0px 20px 10px rgba(0,0,0,0.5))' }}>
                                         </model-viewer>
+                                    </div>
+                                </div>
+
+                                {/* ==== REGION 3: GALLERY (Bottom Left) ==== */}
+                                <div className="absolute top-[800px] left-[0px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} onClick={() => navigate('/gallery')}>
+                                        <p className="text-purple-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">THƯ VIỆN HÌNH ẢNH</p>
+                                    </div>
+                                    
+                                    <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
+                                        <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(192, 132, 252, 0.9)', filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))' }}>imagesmode</span>
+                                    </div>
+                                </div>
+
+                                {/* ==== REGION 4: ADMIN (Bottom Right) ==== */}
+                                <div className="absolute top-[800px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} onClick={() => navigate('/admin')}>
+                                        <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
+                                    </div>
+                                    
+                                    <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
+                                        <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(251, 191, 36, 0.9)', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.8))' }}>admin_panel_settings</span>
                                     </div>
                                 </div>
 

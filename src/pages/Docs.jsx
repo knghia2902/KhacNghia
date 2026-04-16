@@ -2132,19 +2132,11 @@ const Docs = () => {
                     box-shadow: inset 0 0 50px rgba(13, 148, 136, 0.1);
                 }
 
-                .iso-cabinet {
-                    position: absolute;
-                    top: 50px;
-                    left: 50px;
-                    width: 100px;
-                    height: 80px;
-                    transform-style: preserve-3d;
-                    transform: translateZ(0);
-                }
+
 
                 .iso-archive {
                     position: absolute;
-                    top: -140px;   /* Đỉnh "Top vertex" của isometric floor */
+                    top: -140px;
                     left: 450px;
                     width: 450px;
                     height: 450px;
@@ -2154,6 +2146,8 @@ const Docs = () => {
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
+                }
+                .iso-archive model-viewer {
                     pointer-events: none;
                 }
 
@@ -2173,7 +2167,19 @@ const Docs = () => {
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
+                }
+                .iso-bed model-viewer {
                     pointer-events: none;
+                }
+                .iso-cabinet {
+                    position: absolute;
+                    top: 50px;
+                    left: 50px;
+                    width: 100px;
+                    height: 80px;
+                    transform-style: preserve-3d;
+                    transform: translateZ(0);
+                    cursor: pointer;
                 }
                 .cab-face { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
                 .cab-front  { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(0px); background: #0d9488; transform-origin: bottom; bottom: 0;}

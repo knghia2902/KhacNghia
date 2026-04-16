@@ -12,6 +12,16 @@
 - Cấu hình PostgreSQL Indexes trên các bảng cấu trúc hệ thống nếu cần.
 - Kiểm thử và đo lường sự cải thiện qua Vercel.
 
+### Phase 03.3: Trang Settings va Cai dat he thong (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 3
+**Plans:** 1/3 plans executed
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.3 to break down)
+
 ### Phase 03.2: Chia 4 vùng lưới Dashboard và Zoom Navigation (INSERTED)
 
 **Goal:** [Urgent work - to be planned]

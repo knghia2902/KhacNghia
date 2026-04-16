@@ -2633,7 +2633,7 @@ const Docs = () => {
                                         onPointerDown={(e) => handleMeshPointerDown(e, 'archive')}
                                     >
                                         <model-viewer 
-                                            src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
+                                            src="/models/The_Lanterned_Archive.glb" 
                                             alt="3D Archive"
                                             camera-orbit="145deg 55deg auto"
                                             orientation={`${modelsTransform.archive.rotX || 0}deg ${modelsTransform.archive.rotY || 0}deg 0deg`}
@@ -2659,7 +2659,7 @@ const Docs = () => {
                                         onPointerDown={(e) => handleMeshPointerDown(e, 'bed')}
                                     >
                                         <model-viewer 
-                                            src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
+                                            src="/models/Shoddy_bed.glb" 
                                             alt="3D Bed"
                                             camera-orbit="135deg 55deg auto"
                                             orientation={`${modelsTransform.bed.rotX || 0}deg ${modelsTransform.bed.rotY || 0}deg 0deg`}
@@ -2713,7 +2713,7 @@ const Docs = () => {
                                          onPointerDown={(e) => handleMeshPointerDown(e, 'tools')}
                                     >
                                         <model-viewer 
-                                            src="/models/Meshy_AI_Forge_Table_0413233157_texture.glb" 
+                                            src="/models/LoRen.glb" 
                                             alt="3D Tools"
                                             camera-orbit="45deg 55deg auto"
                                             orientation={`${modelsTransform.tools.rotX || 0}deg ${modelsTransform.tools.rotY || 0}deg 0deg`}

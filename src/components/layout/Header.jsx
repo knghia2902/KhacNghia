@@ -1,7 +1,38 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+
+const ZONE_TABS = [
+    { id: 'dashboard', label: 'Dashboard', zone: null, path: '/dashboard' },
+    { id: 'docs', label: 'Docs', zone: 'docs' },
+    { id: 'tools', label: 'Tools', zone: 'tools' },
+    { id: 'images', label: 'Images', zone: 'gallery' },
+];
 
 const Header = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+
+    const currentZone = searchParams.get('zone') || 'docs';
+    const isDocsPage = location.pathname === '/docs';
+
+    const handleTabClick = (tab) => {
+        if (tab.path) {
+            // External route (Dashboard)
+            navigate(tab.path);
+        } else {
+            // Zone navigation within one-map
+            navigate(`/docs?zone=${tab.zone}`);
+        }
+    };
+
+    const isActive = (tab) => {
+        if (tab.path) {
+            return location.pathname === tab.path;
+        }
+        return isDocsPage && currentZone === tab.zone;
+    };
+
     return (
         <header className="h-24 w-full flex items-center justify-between px-8 z-30 bg-transparent shrink-0">
             <div className="flex items-center w-[250px] shrink-0">
@@ -19,38 +50,21 @@ const Header = () => {
             </div>
 
             <nav className="flex items-center gap-10">
-                <NavLink to="/dashboard" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                    {({ isActive }) => (
-                        <div className="flex flex-col items-center">
-                            <span>Dashboard</span>
-                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
-                        </div>
-                    )}
-                </NavLink>
-                <NavLink to="/docs" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                    {({ isActive }) => (
-                        <div className="flex flex-col items-center">
-                            <span>Docs</span>
-                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
-                        </div>
-                    )}
-                </NavLink>
-                <NavLink to="/tools" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                    {({ isActive }) => (
-                        <div className="flex flex-col items-center">
-                            <span>Tools</span>
-                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
-                        </div>
-                    )}
-                </NavLink>
-                <NavLink to="/images" className={({ isActive }) => `text-[0.95rem] font-medium transition-colors ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                    {({ isActive }) => (
-                        <div className="flex flex-col items-center">
-                            <span>Images</span>
-                            {isActive && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
-                        </div>
-                    )}
-                </NavLink>
+                {ZONE_TABS.map(tab => {
+                    const active = isActive(tab);
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => handleTabClick(tab)}
+                            className={`text-[0.95rem] font-medium transition-colors cursor-pointer bg-transparent border-none outline-none ${active ? 'text-cyan-700 dark:text-cyan-400 font-bold relative pb-1' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                        >
+                            <div className="flex flex-col items-center">
+                                <span>{tab.label}</span>
+                                {active && <div className="absolute -bottom-[26px] w-12 h-[3px] bg-cyan-600 dark:bg-cyan-400 rounded-t-md"></div>}
+                            </div>
+                        </button>
+                    );
+                })}
             </nav>
 
             <div className="flex items-center justify-end gap-4 w-[250px] shrink-0">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import mammoth from 'mammoth';
 // import htmlDocx from 'html-docx-js/dist/html-docx';
 import { saveAs } from 'file-saver';
@@ -725,6 +725,7 @@ const Docs = () => {
     console.log('[Docs] Component rendering - AUTO SAVE VERSION 2.0');
 
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     // --- State ---
     const [folders, setFolders] = useState(() => {
@@ -779,13 +780,20 @@ const Docs = () => {
     const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = useState(false);
     
     // --- Unified SPA State ---
-    const [activeZone, setActiveZone] = useState('docs'); // docs | tools | gallery | admin
+    const [activeZone, setActiveZoneInternal] = useState('docs'); // docs | tools | gallery | admin
     const [isAgentSelected, setIsAgentSelected] = useState(false);
     const [agentPos, setAgentPos] = useState({ left: 300, top: 310 });
     const [agentFacingAngle, setAgentFacingAngle] = useState(0);
     const [showEditor, setShowEditor] = useState(false);
     const [clickEffects, setClickEffects] = useState([]);
     const [isTeleporting, setIsTeleporting] = useState(false);
+
+    // Wrapper: set zone + sync URL
+    const setActiveZone = (zone) => {
+        setActiveZoneInternal(zone);
+    };
+
+
 
     // Edit mode drag state
     const { isEditMode, setIsEditMode, updateWorldConfig, worldConfig } = useSettings();
@@ -952,6 +960,17 @@ const Docs = () => {
             setTimeout(() => setIsTeleporting(false), 100);
         }, 400);
     };
+
+    // Sync zone from URL search params (Header tabs)
+    useEffect(() => {
+        const zoneFromUrl = searchParams.get('zone');
+        if (zoneFromUrl && zoneFromUrl !== activeZone && ['docs', 'tools', 'gallery', 'admin'].includes(zoneFromUrl)) {
+            const zoneData = zonesTransform[zoneFromUrl];
+            const targetX = zoneData.x + zoneData.w / 2 - 50;
+            const targetY = zoneData.y + zoneData.h / 2 - 50;
+            navigateToZone(zoneFromUrl, { left: targetX, top: targetY });
+        }
+    }, [searchParams]);
 
     // --- One-Map Camera State ---
     const [cameraPos, setCameraPos] = useState({ tx: 0, ty: 0, scale: 1 });
@@ -1546,17 +1565,22 @@ const Docs = () => {
 
     const handleDocClick = (docId) => {
         if (docId !== activeDocId) {
+            // Dynamic target: center of the docs zone
+            const zoneData = zonesTransform.docs;
+            const targetX = zoneData.x + zoneData.w / 2 - 50;
+            const targetY = zoneData.y + zoneData.h / 2 - 50;
+
             const half = 50;
             const agentCenterX = agentPos.left + half;
             const agentCenterY = agentPos.top + half;
-            const dx = 30 - agentCenterX;
-            const dy = 30 - agentCenterY;
+            const dx = targetX - agentCenterX;
+            const dy = targetY - agentCenterY;
             // Floor direction → Screen direction
             const screenDx = (dx + dy) * 0.7071;
-            const screenDy = (-dx + dy) * 0.3536; // Y goes down natively
+            const screenDy = (-dx + dy) * 0.3536;
             const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
             setAgentFacingAngle(screenAngle - 90);
-            setAgentPos({ left: 600, top: 100 }); // Đi về phía tủ ở top vertex
+            setAgentPos({ left: targetX, top: targetY });
 
             // Đổi sang Running qua DOM
             if (modelViewerRef.current) {
@@ -1579,7 +1603,9 @@ const Docs = () => {
     const handleCloseDoc = () => {
         setShowEditor(false);
         setActiveDocId(null);
-        setAgentPos({ left: 300, top: 310 });
+        // Return agent to center of docs zone
+        const zoneData = zonesTransform.docs;
+        setAgentPos({ left: zoneData.x + zoneData.w / 2 - 50, top: zoneData.y + zoneData.h / 2 - 50 });
         setAgentFacingAngle(0);
     };
 

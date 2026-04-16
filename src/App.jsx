@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/layout/Layout';
-import Home from './pages/Home';
 import Admin from './pages/Admin';
 import Docs from './pages/Docs';
 import Tools from './pages/Tools';
@@ -26,7 +25,7 @@ function App() {
       <ThemeProvider>
         <Layout>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Navigate to="/docs" replace />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

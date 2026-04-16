@@ -33,8 +33,7 @@ const Dock = () => {
             className={`dock-container fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 p-1.5 frosted-glass rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.12)] max-w-[90vw] overflow-x-auto custom-scrollbar-hide ${isVisible ? '' : 'dock-hidden'}`}
             id="bottom-dock"
         >
-            <DockItem to="/" icon="home" label="Home" exact />
-            <DockItem to="/docs" icon="description" label="Docs" />
+            <DockItem to="/docs" icon="description" label="Docs" exact />
             <DockItem to="/tools" icon="construction" label="Tools" />
             <DockItem to="/gallery" icon="image" label="Gallery" />
 

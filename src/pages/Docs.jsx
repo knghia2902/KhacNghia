@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import mammoth from 'mammoth';
 // import htmlDocx from 'html-docx-js/dist/html-docx';
@@ -779,6 +779,37 @@ const Docs = () => {
     const [agentFacingAngle, setAgentFacingAngle] = useState(0);
     const [showEditor, setShowEditor] = useState(false);
     const [clickEffects, setClickEffects] = useState([]); // Thêm state cho click effects
+
+    // --- One-Map Camera State ---
+    const [cameraPos, setCameraPos] = useState({ tx: 0, ty: 0, scale: 1 });
+    const isDragging = useRef(false);
+    const startPoint = useRef({ x: 0, y: 0 });
+
+    const handleWheel = (e) => {
+        // Prevent default only if hovering the canvas
+        if (e.target.closest('article') || e.target.closest('aside') || e.target.closest('.cascading-nav')) return;
+        
+        const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+        setCameraPos(p => ({ ...p, scale: Math.max(0.3, Math.min(3, p.scale * zoomDelta)) }));
+    };
+
+    const handlePointerDown = (e) => {
+        if (e.target.closest('article') || e.target.closest('aside') || e.target.closest('.cascading-nav')) return;
+        isDragging.current = true;
+        startPoint.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handlePointerMove = (e) => {
+        if (!isDragging.current) return;
+        const dx = e.clientX - startPoint.current.x;
+        const dy = e.clientY - startPoint.current.y;
+        setCameraPos(p => ({ ...p, tx: p.tx + dx, ty: p.ty + dy }));
+        startPoint.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handlePointerUp = () => {
+        isDragging.current = false;
+    };
 
     // Escape key to close secondary panel
     useEffect(() => {
@@ -2262,83 +2293,124 @@ const Docs = () => {
                 <main className="flex-1 relative overflow-hidden flex items-center justify-center">
                     
                     {/* THE 3D ISOMETRIC EMPTY STATE */}
-                    <div id="isometric-view" className={`fixed top-0 bottom-0 right-0 z-0 pointer-events-none flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] left-0 ${!showEditor && isSecondaryPanelOpen ? 'md:left-[660px]' : ''} ${showEditor ? 'world-shifted' : ''}`}>
-                        <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
-                            {/* Floor grid */}
-                            <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={handleFloorClick}>
-                                <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
+                    <div id="isometric-view" 
+                        className={`fixed top-0 bottom-0 right-0 z-0 flex items-center justify-center transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] left-0 ${!showEditor && isSecondaryPanelOpen ? 'md:left-[660px]' : ''} ${showEditor ? 'opacity-50' : ''}`}
+                        onWheel={handleWheel}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                    >
+                        <div style={{ 
+                            transform: `translate(${cameraPos.tx}px, ${cameraPos.ty}px) scale(${cameraPos.scale})`,
+                            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+                            transformStyle: 'preserve-3d'
+                        }}>
+                            <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
                                 
-                                {/* Click Ripples */}
-                                {clickEffects.map(effect => (
+                                {/* ==== REGION 1: DOCS (Untouched Original) ==== */}
+                                <div className="absolute top-0 left-0 w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                    {/* Floor grid */}
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={handleFloorClick}>
+                                        <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
+                                        
+                                        {/* Click Ripples */}
+                                        {clickEffects.map(effect => (
+                                            <div 
+                                                key={effect.id} 
+                                                className="absolute pointer-events-none rounded-full"
+                                                style={{
+                                                    left: effect.x - 20,
+                                                    top: effect.y - 20,
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    border: '3px solid #06b6d4',
+                                                    background: 'rgba(6, 182, 212, 0.2)',
+                                                    animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    
+                                    {/* The Archive 3D Model */}
+                                    <div className="iso-archive">
+                                        <model-viewer 
+                                            src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
+                                            alt="3D Archive"
+                                            disable-zoom="true"
+                                            disable-tap="true"
+                                            disable-pan="true"
+                                            interaction-prompt="none"
+                                            shadow-intensity="1">
+                                        </model-viewer>
+                                    </div>
+
+                                    {/* The Bed 3D Model */}
+                                    <div className="iso-bed">
+                                        <model-viewer 
+                                            src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
+                                            alt="3D Bed"
+                                            camera-orbit="135deg 55deg auto"
+                                            field-of-view="10deg"
+                                            disable-zoom="true"
+                                            disable-tap="true"
+                                            disable-pan="true"
+                                            interaction-prompt="none"
+                                            shadow-intensity="1">
+                                        </model-viewer>
+                                    </div>
+
+                                    {/* Chibi Model 2 (Replacing Parrot Agent) */}
                                     <div 
-                                        key={effect.id} 
-                                        className="absolute pointer-events-none rounded-full"
-                                        style={{
-                                            left: effect.x - 20,
-                                            top: effect.y - 20,
-                                            width: '40px',
-                                            height: '40px',
-                                            border: '3px solid #06b6d4',
-                                            background: 'rgba(6, 182, 212, 0.2)',
-                                            animation: 'floor-ripple 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                                        id="chibi-agent" 
+                                        className={`iso-agent ${isAgentRunning ? 'agent-run' : ''} ${isAgentSelected ? 'selected' : ''} cursor-pointer transition-transform`}
+                                        style={{ left: agentPos.left, top: agentPos.top }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsAgentSelected(!isAgentSelected);
                                         }}
-                                    />
-                                ))}
-                            </div>
-                            
-                            {/* The Archive 3D Model */}
-                            <div className="iso-archive">
-                                <model-viewer 
-                                    src="/models/Meshy_AI_The_Lanterned_Archive_0414101610_texture.glb" 
-                                    alt="3D Archive"
-                                    disable-zoom="true"
-                                    disable-tap="true"
-                                    disable-pan="true"
-                                    interaction-prompt="none"
-                                    shadow-intensity="1">
-                                </model-viewer>
-                            </div>
+                                    >
+                                        <model-viewer 
+                                            src={isAgentRunning 
+                                                ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
+                                                : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"}
+                                            alt="3D AI Agent"
+                                            camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                            min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                            max-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
+                                            disable-zoom="true"
+                                            disable-tap="true"
+                                            disable-pan="true"
+                                            interaction-prompt="none"
+                                            shadow-intensity="1"
+                                            autoplay="true">
+                                        </model-viewer>
+                                    </div>
+                                </div>
 
-                            {/* The Bed 3D Model */}
-                            <div className="iso-bed">
-                                <model-viewer 
-                                    src="/models/Meshy_AI_shoddy_bed_0414162740_texture.glb" 
-                                    alt="3D Bed"
-                                    camera-orbit="135deg 55deg auto"
-                                    field-of-view="10deg"
-                                    disable-zoom="true"
-                                    disable-tap="true"
-                                    disable-pan="true"
-                                    interaction-prompt="none"
-                                    shadow-intensity="1">
-                                </model-viewer>
-                            </div>
+                                {/* ==== REGION 2: TOOLS (New Zone) ==== */}
+                                <div className="absolute top-[800px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} onClick={() => navigate('/tools')}>
+                                        <p className="text-emerald-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">CÔNG CỤ & TIỆN ÍCH</p>
+                                    </div>
+                                    
+                                    {/* The Tools Model */}
+                                    <div className="absolute top-[50%] left-[50%] w-[350px] h-[350px]" style={{ transform: 'translate(-50%, -50%) translateZ(40px) rotateZ(45deg) rotateX(-60deg)' }}>
+                                        <model-viewer 
+                                            src="/models/LoRen.glb" 
+                                            alt="3D Tools"
+                                            disable-zoom="true"
+                                            disable-tap="true"
+                                            disable-pan="true"
+                                            interaction-prompt="none"
+                                            shadow-intensity="1"
+                                            camera-orbit="auto auto auto"
+                                            autoplay="true"
+                                            style={{ width: '100%', height: '100%', filter: 'drop-shadow(0px 20px 10px rgba(0,0,0,0.5))' }}>
+                                        </model-viewer>
+                                    </div>
+                                </div>
 
-                            {/* Chibi Model 2 (Replacing Parrot Agent) */}
-                            <div 
-                                id="chibi-agent" 
-                                className={`iso-agent ${isAgentRunning ? 'agent-run' : ''} ${isAgentSelected ? 'selected' : ''} cursor-pointer transition-transform`}
-                                style={{ left: agentPos.left, top: agentPos.top }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsAgentSelected(!isAgentSelected);
-                                }}
-                            >
-                                <model-viewer 
-                                    src={isAgentRunning 
-                                        ? "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb" 
-                                        : "/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"}
-                                    alt="3D AI Agent"
-                                    camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                    min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                    max-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
-                                    disable-zoom="true"
-                                    disable-tap="true"
-                                    disable-pan="true"
-                                    interaction-prompt="none"
-                                    shadow-intensity="1"
-                                    autoplay="true">
-                                </model-viewer>
                             </div>
                         </div>
                     </div>

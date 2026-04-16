@@ -2169,24 +2169,7 @@ const Docs = () => {
                 .iso-bed model-viewer {
                     pointer-events: none;
                 }
-                .iso-cabinet {
-                    position: absolute;
-                    top: 50px;
-                    left: 50px;
-                    width: 100px;
-                    height: 80px;
-                    transform-style: preserve-3d;
-                    transform: translateZ(0);
-                    cursor: pointer;
-                }
-                .cab-face { position: absolute; border: 1px solid rgba(255,255,255,0.5); }
-                .cab-front  { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(0px); background: #0d9488; transform-origin: bottom; bottom: 0;}
-                .cab-back   { width: 100px; height: 120px; transform: rotateX(-90deg) translateZ(-80px); background: #0f766e; transform-origin: bottom; bottom: 0;}
-                .cab-top    { width: 100px; height: 80px;  transform: translateZ(120px); background: #2dd4c2; }
-                .cab-left   { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(-40px) translateX(-40px); background: #115e59; transform-origin: left; left:0; bottom:0;}
-                .cab-right  { width: 80px;  height: 120px; transform: rotateY(90deg) rotateZ(90deg) translateZ(60px) translateX(-40px); background: #14b8a6; transform-origin: left; left:0; bottom:0;}
 
-                .cab-drawer { width: 90px; height: 32px; background: rgba(255,255,255,0.2); margin: 5px auto; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); }
 
                 .iso-agent {
                     position: absolute;
@@ -2619,24 +2602,7 @@ const Docs = () => {
                                         </model-viewer>
                                     </div>
 
-                                    {/* The Cabinet 3D Model */}
-                                    <div 
-                                        className={`iso-cabinet ${isEditMode && selectedMesh === 'cabinet' ? '!ring-4 !ring-teal-500 !bg-teal-500/10 !rounded-xl' : ''}`}
-                                        style={{
-                                            left: `${modelsTransform.cabinet.x}px`,
-                                            top: `${modelsTransform.cabinet.y}px`,
-                                            transform: `translateZ(0px) scale(${modelsTransform.cabinet.scale})`,
-                                            pointerEvents: isEditMode ? 'auto' : 'auto',
-                                            cursor: isEditMode ? 'move' : 'default'
-                                        }}
-                                        onPointerDown={(e) => handleMeshPointerDown(e, 'cabinet')}
-                                    >
-                                        <div className="cab-face cab-front"><div className="cab-drawer"></div><div className="cab-drawer"></div><div className="cab-drawer"></div></div>
-                                        <div className="cab-face cab-back"></div>
-                                        <div className="cab-face cab-top"></div>
-                                        <div className="cab-face cab-left"></div>
-                                        <div className="cab-face cab-right"></div>
-                                    </div>
+
 
                                 </div>
 

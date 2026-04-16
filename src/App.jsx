@@ -8,6 +8,7 @@ import Docs from './pages/Docs';
 import Tools from './pages/Tools';
 import Images from './pages/Images';
 import Login from './pages/Login';
+import { SettingsProvider } from './context/SettingsContext';
 
 // Protected Route Component (Inline for simplicity or could be separate)
 const ProtectedRoute = () => {
@@ -23,7 +24,8 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <Layout>
+        <SettingsProvider>
+          <Layout>
           <Routes>
             <Route path="/" element={<Navigate to="/docs" replace />} />
 
@@ -40,6 +42,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
+        </SettingsProvider>
       </ThemeProvider>
     </AuthProvider>
   );

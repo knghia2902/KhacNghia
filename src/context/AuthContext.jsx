@@ -68,12 +68,66 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const updatePassword = async (newPassword) => {
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating password:', error.message);
+            return { success: false, error };
+        }
+    };
+
+    const uploadAvatar = async (file) => {
+        if (!user) return { success: false, error: new Error('User not authenticated') };
+        
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            let { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            // Update user metadata
+            const { error: updateError } = await supabase.auth.updateUser({
+                data: { avatar_url: publicUrl }
+            });
+
+            if (updateError) throw updateError;
+            
+            // Update local user state
+            setUser(prev => ({
+                 ...prev, 
+                 user_metadata: { ...prev?.user_metadata, avatar_url: publicUrl }
+            }));
+
+            return { success: true, url: publicUrl };
+        } catch (error) {
+            console.error('Error uploading avatar:', error.message);
+            return { success: false, error };
+        }
+    };
+
     const value = {
         isAuthenticated,
         user,
         login,
         logout,
         updateProfile,
+        updatePassword,
+        uploadAvatar,
         loading
     };
 

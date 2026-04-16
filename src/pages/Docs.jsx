@@ -1350,14 +1350,22 @@ const Docs = () => {
             const screenAngle = Math.atan2(screenDy, screenDx) * (180 / Math.PI);
             setAgentFacingAngle(screenAngle - 90);
             setAgentPos({ left: 600, top: 100 }); // Đi về phía tủ ở top vertex
-            setIsAgentRunning(true);
+
+            // Đổi sang Running qua DOM
+            if (modelViewerRef.current) {
+                modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb');
+            }
+
             setIsAgentSelected(false);
             setTimeout(() => {
                 setActiveDocId(docId);
                 setIsEditing(false);
-                setIsAgentRunning(false);
                 setShowEditor(true);
-            }, 800);
+                // Đổi về Walking
+                if (modelViewerRef.current) {
+                    modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb');
+                }
+            }, 1200);
         }
     };
 

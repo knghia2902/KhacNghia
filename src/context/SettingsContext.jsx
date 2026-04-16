@@ -21,29 +21,29 @@ export const SettingsProvider = ({ children }) => {
             }
 
             try {
-                // Fetch world config
+                // Fetch world config securely without single()
                 const { data, error } = await supabase
                     .from('world_config')
                     .select('config')
                     .eq('user_id', user.id)
-                    .single();
+                    .limit(1);
 
-                if (error && error.code !== 'PGRST116') { // PGRST116 is row not found
+                if (error) { 
                     console.error('Error fetching world config:', error.message);
                 }
 
-                if (data) {
-                    setWorldConfig(data.config || {});
+                if (data && data.length > 0) {
+                    setWorldConfig(data[0].config || {});
                 } else {
                     // Create default if not found
                     const { data: newData, error: insertError } = await supabase
                         .from('world_config')
                         .insert([{ user_id: user.id, config: {} }])
                         .select()
-                        .single();
+                        .limit(1);
                         
-                    if (newData && !insertError) {
-                        setWorldConfig(newData.config);
+                    if (newData && newData.length > 0 && !insertError) {
+                        setWorldConfig(newData[0].config);
                     }
                 }
             } catch (err) {
@@ -63,15 +63,32 @@ export const SettingsProvider = ({ children }) => {
             const updatedConfig = { ...worldConfig, ...newConfig };
             setWorldConfig(updatedConfig); // Optimistic UI update
 
-            const { error } = await supabase
+            // Use order and limit(1) to avoid PGRST116 multiple rows error
+            const { data: existingRows, error: selectError } = await supabase
                 .from('world_config')
-                .upsert({ user_id: user.id, config: updatedConfig }, { onConflict: 'user_id' });
+                .select('id')
+                .eq('user_id', user.id)
+                .limit(1);
 
-            if (error) throw error;
+            let error = selectError;
+            
+            if (!error) {
+                if (existingRows && existingRows.length > 0) {
+                    const res = await supabase.from('world_config').update({ config: updatedConfig }).eq('id', existingRows[0].id);
+                    error = res.error;
+                } else {
+                    const res = await supabase.from('world_config').insert([{ user_id: user.id, config: updatedConfig }]);
+                    error = res.error;
+                }
+            }
+
+            if (error) {
+                console.error("Supabase Save Error Details:", error);
+                throw error;
+            }
             return { success: true };
         } catch (error) {
-            console.error('Error updating world config:', error.message);
-            // Optionally revert local state here
+            console.error('Error updating world config:', error.message || error);
             return { success: false, error };
         }
     };

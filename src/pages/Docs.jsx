@@ -800,11 +800,63 @@ const Docs = () => {
         tools: { x: 30, y: 30, scale: 1, rotation: 0 }
     });
 
+    // Zone transforms draft
+    const [zonesTransform, setZonesTransform] = useState({
+        docs: { x: 0, y: 0, w: 700, h: 700 },
+        tools: { x: 800, y: 0, w: 700, h: 700 },
+        gallery: { x: 0, y: 800, w: 700, h: 700 },
+        admin: { x: 800, y: 800, w: 700, h: 700 }
+    });
+
+    const [selectedZone, setSelectedZone] = useState(null);
+    const [draggingZone, setDraggingZone] = useState(null);
+    const [resizingZone, setResizingZone] = useState(null);
+    const [resizeType, setResizeType] = useState(null); // 'w', 'h', 'se'
+
+    // Sync from worldConfig
+    useEffect(() => {
+        if (worldConfig?.modelsTransform) {
+            setModelsTransform(p => ({ ...p, ...worldConfig.modelsTransform }));
+        }
+        if (worldConfig?.zonesTransform) {
+            setZonesTransform(p => ({ ...p, ...worldConfig.zonesTransform }));
+        }
+    }, [worldConfig]);
+
     const handleMeshPointerDown = (e, meshId) => {
         if (!isEditMode) return;
         e.stopPropagation(); // Prevent floor click teleport
         setSelectedMesh(meshId);
+        setSelectedZone(null);
         setDraggingMesh(meshId);
+        setDraggingZone(null);
+        setResizingZone(null);
+        dragOffset.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleZoneSelect = (zoneKey) => {
+        if (!isEditMode) return;
+        setSelectedZone(zoneKey);
+        setSelectedMesh(null);
+    };
+
+    const handleFloorPointerDown = (e, zoneKey) => {
+        if (!isEditMode) return;
+        e.stopPropagation();
+        handleZoneSelect(zoneKey);
+        setDraggingZone(zoneKey);
+        setDraggingMesh(null);
+        setResizingZone(null);
+        dragOffset.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleResizePointerDown = (e, zoneKey, type) => {
+        if (!isEditMode) return;
+        e.stopPropagation();
+        setResizingZone(zoneKey);
+        setResizeType(type);
+        setDraggingMesh(null);
+        setDraggingZone(null);
         dragOffset.current = { x: e.clientX, y: e.clientY };
     };
 
@@ -832,10 +884,10 @@ const Docs = () => {
             setShowEditor(false);
 
             // Center camera precisely on the center of the zone and reset zoom
-            if (zone === 'docs') setCameraPos({ tx: 0, ty: 0, scale: 1 });
-            else if (zone === 'tools') setCameraPos({ tx: -565, ty: 282, scale: 1 });
-            else if (zone === 'gallery') setCameraPos({ tx: -565, ty: -282, scale: 1 });
-            else if (zone === 'admin') setCameraPos({ tx: -1130, ty: 0, scale: 1 });
+            if (zone === 'docs') setCameraPos({ tx: -zonesTransform.docs.x * cameraPos.scale, ty: -zonesTransform.docs.y * cameraPos.scale, scale: 1 });
+            else if (zone === 'tools') setCameraPos({ tx: -zonesTransform.tools.x * cameraPos.scale, ty: -zonesTransform.tools.y * cameraPos.scale, scale: 1 });
+            else if (zone === 'gallery') setCameraPos({ tx: -zonesTransform.gallery.x * cameraPos.scale, ty: -zonesTransform.gallery.y * cameraPos.scale, scale: 1 });
+            else if (zone === 'admin') setCameraPos({ tx: -zonesTransform.admin.x * cameraPos.scale, ty: -zonesTransform.admin.y * cameraPos.scale, scale: 1 });
 
             // Hiện lại
             setTimeout(() => setIsTeleporting(false), 100);
@@ -863,21 +915,58 @@ const Docs = () => {
     };
 
     const handlePointerMove = (e) => {
-        if (draggingMesh) {
-            const dx = e.clientX - dragOffset.current.x;
-            const dy = e.clientY - dragOffset.current.y;
-            // Screen to Isometric floor roughly
-            const isoX = (dx * 1.414 + dy * 1.414 / 0.5) * 0.5;
-            const isoY = (-dx * 1.414 + dy * 1.414 / 0.5) * 0.5;
+        if (draggingMesh || draggingZone || resizingZone) {
+            const dX = e.clientX - dragOffset.current.x;
+            const dY = e.clientY - dragOffset.current.y;
             
-            setModelsTransform(p => ({
-                ...p,
-                [draggingMesh]: {
-                    ...p[draggingMesh],
-                    x: p[draggingMesh].x + isoX / cameraPos.scale,
-                    y: p[draggingMesh].y + isoY / cameraPos.scale
-                }
-            }));
+            // Isometric Coordinate Transformation Logic
+            const scale = cameraPos.scale;
+            
+            // Screen to Isometric (rotated -45, pitched 60)
+            const A = dX / (scale * 0.7071);
+            const B = dY / (scale * 0.7071 * 0.5);
+
+            const dx = (A - B) / 2;
+            const dy = (A + B) / 2;
+
+            if (draggingMesh) {
+                setModelsTransform(p => ({
+                    ...p,
+                    [draggingMesh]: {
+                        ...p[draggingMesh],
+                        x: p[draggingMesh].x + dx,
+                        y: p[draggingMesh].y + dy
+                    }
+                }));
+            } else if (draggingZone) {
+                setZonesTransform(p => ({
+                    ...p,
+                    [draggingZone]: {
+                        ...p[draggingZone],
+                        x: p[draggingZone].x + dx,
+                        y: p[draggingZone].y + dy
+                    }
+                }));
+            } else if (resizingZone) {
+                setZonesTransform(p => {
+                    const zone = p[resizingZone];
+                    let newW = zone.w;
+                    let newH = zone.h;
+                    
+                    if (resizeType === 'w' || resizeType === 'se') newW += dx;
+                    if (resizeType === 'h' || resizeType === 'se') newH += dy;
+
+                    return {
+                        ...p,
+                        [resizingZone]: {
+                            ...zone,
+                            w: Math.max(100, newW),
+                            h: Math.max(100, newH)
+                        }
+                    };
+                });
+            }
+
             dragOffset.current = { x: e.clientX, y: e.clientY };
             return;
         }
@@ -892,6 +981,8 @@ const Docs = () => {
     const handlePointerUp = () => {
         isDragging.current = false;
         setDraggingMesh(null);
+        setDraggingZone(null);
+        setResizingZone(null);
     };
 
     // Escape key to close secondary panel
@@ -1437,8 +1528,16 @@ const Docs = () => {
 
         // Nếu click khác vùng -> Teleport sang vùng đó, xuất hiện đúng chỗ click
         if (activeZone !== zoneName) {
+             if (isEditMode) {
+                 handleZoneSelect(zoneName);
+                 return;
+             }
              navigateToZone(zoneName, targetPos);
              return;
+        }
+        
+        if (isEditMode) {
+            handleZoneSelect(zoneName);
         }
 
         const globalX = localX + zoneOffsetX;
@@ -2021,10 +2120,9 @@ const Docs = () => {
                     transform-style: preserve-3d;
                     transition: transform 1s ease-in-out;
                 }
-                
                 .iso-floor {
-                    width: 700px;
-                    height: 700px;
+                    width: 100%;
+                    height: 100%;
                     background: rgba(13, 148, 136, 0.05);
                     border: 2px dashed rgba(13, 148, 136, 0.2);
                     position: absolute;
@@ -2432,11 +2530,29 @@ const Docs = () => {
                                 ))}
 
                                 {/* ==== REGION 1: DOCS (Untouched Original) ==== */}
-                                <div className="absolute top-0 left-0 w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
+                                <div className={`absolute ${isEditMode && selectedZone === 'docs' ? 'ring-4 ring-cyan-500 shadow-2xl z-30' : ''}`} 
+                                     style={{ 
+                                         top: `${zonesTransform.docs.y}px`, 
+                                         left: `${zonesTransform.docs.x}px`, 
+                                         width: `${zonesTransform.docs.w}px`, 
+                                         height: `${zonesTransform.docs.h}px`,
+                                         transformStyle: 'preserve-3d' 
+                                     }}>
                                     {/* Floor grid */}
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" onClick={(e) => handleFloorClickGlobal(e, 0, 0, 'docs')}>
+                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'docs' ? 'opacity-80' : ''}`} 
+                                         onPointerDown={(e) => handleFloorPointerDown(e, 'docs')}
+                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.docs.x, zonesTransform.docs.y, 'docs')}>
                                         <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
                                     </div>
+                                    
+                                    {/* Resize Handles for selected zone */}
+                                    {isEditMode && selectedZone === 'docs' && (
+                                        <>
+                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'w')} />
+                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'h')} />
+                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'se')} />
+                                        </>
+                                    )}
                                     
                                     {/* Edit Mode Grid (All Zones) */}
                                     {isEditMode && (
@@ -2499,11 +2615,30 @@ const Docs = () => {
                                 </div>
 
                                 {/* ==== REGION 2: TOOLS (Top Right) ==== */}
-                                <div className="absolute top-[0px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 800, 0, 'tools')}>
+                                <div className={`absolute ${isEditMode && selectedZone === 'tools' ? 'ring-4 ring-emerald-500 shadow-2xl z-30' : ''}`} 
+                                     style={{ 
+                                         top: `${zonesTransform.tools.y}px`, 
+                                         left: `${zonesTransform.tools.x}px`, 
+                                         width: `${zonesTransform.tools.w}px`, 
+                                         height: `${zonesTransform.tools.h}px`,
+                                         transformStyle: 'preserve-3d' 
+                                     }}>
+                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'tools' ? 'opacity-80' : ''}`} 
+                                         style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} 
+                                         onPointerDown={(e) => handleFloorPointerDown(e, 'tools')}
+                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.tools.x, zonesTransform.tools.y, 'tools')}>
                                         <p className="text-emerald-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">CÔNG CỤ & TIỆN ÍCH</p>
                                     </div>
                                     
+                                    {/* Resize Handles */}
+                                    {isEditMode && selectedZone === 'tools' && (
+                                        <>
+                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'w')} />
+                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'h')} />
+                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'se')} />
+                                        </>
+                                    )}
+
                                     {/* The Tools Model */}
                                     <div className={`absolute w-[350px] h-[350px] ${isEditMode && selectedMesh === 'tools' ? 'ring-4 ring-amber-500 bg-amber-500/10 rounded-3xl' : ''}`}
                                          style={{ 
@@ -2531,10 +2666,29 @@ const Docs = () => {
                                 </div>
 
                                 {/* ==== REGION 3: GALLERY (Bottom Left) ==== */}
-                                <div className="absolute top-[800px] left-[0px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 0, 800, 'gallery')}>
-                                        <p className="text-purple-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">THƯ VIỆN HÌNH ẢNH</p>
+                                <div className={`absolute ${isEditMode && selectedZone === 'gallery' ? 'ring-4 ring-purple-500 shadow-2xl z-30' : ''}`} 
+                                     style={{ 
+                                         top: `${zonesTransform.gallery.y}px`, 
+                                         left: `${zonesTransform.gallery.x}px`, 
+                                         width: `${zonesTransform.gallery.w}px`, 
+                                         height: `${zonesTransform.gallery.h}px`,
+                                         transformStyle: 'preserve-3d' 
+                                     }}>
+                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'gallery' ? 'opacity-80' : ''}`} 
+                                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} 
+                                         onPointerDown={(e) => handleFloorPointerDown(e, 'gallery')}
+                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.gallery.x, zonesTransform.gallery.y, 'gallery')}>
+                                        <p className="text-purple-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">THƯ VIỆN HÌNH ẢNH</p>
                                     </div>
+                                    
+                                    {/* Resize Handles */}
+                                    {isEditMode && selectedZone === 'gallery' && (
+                                        <>
+                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'w')} />
+                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'h')} />
+                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'se')} />
+                                        </>
+                                    )}
                                     
                                     <div className="absolute top-[50%] left-[50%] w-[120px] h-[120px] flex items-center justify-center" style={{ transform: 'translate(-50%, -50%) translateZ(20px) rotateZ(45deg) rotateX(-60deg)' }}>
                                         <span className="material-symbols-outlined text-6xl animate-bounce" style={{ color: 'rgba(192, 132, 252, 0.9)', filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.8))' }}>imagesmode</span>
@@ -2542,8 +2696,17 @@ const Docs = () => {
                                 </div>
 
                                 {/* ==== REGION 4: ADMIN (Bottom Right) ==== */}
-                                <div className="absolute top-[800px] left-[800px] w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-                                    <div className="iso-floor flex items-center justify-center cursor-pointer" style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} onClick={(e) => handleFloorClickGlobal(e, 800, 800, 'admin')}>
+                                <div className={`absolute ${isEditMode && selectedZone === 'admin' ? 'ring-4 ring-amber-500 shadow-2xl z-30' : ''}`} 
+                                     style={{ 
+                                         top: `${zonesTransform.admin.y}px`, 
+                                         left: `${zonesTransform.admin.x}px`, 
+                                         width: `${zonesTransform.admin.w}px`, 
+                                         height: `${zonesTransform.admin.h}px`,
+                                         transformStyle: 'preserve-3d' 
+                                     }}>
+                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'admin' ? 'opacity-80' : ''}`} 
+                                         style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} 
+                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.admin.x, zonesTransform.admin.y, 'admin')}>
                                         <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
                                     </div>
                                     
@@ -2637,14 +2800,14 @@ const Docs = () => {
                             {selectedMesh ? (
                                 <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X (px)</label>
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X</label>
                                         <input type="number" 
                                             value={Math.round(modelsTransform[selectedMesh].x)} 
                                             onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], x: Number(e.target.value)}}))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y (px)</label>
+                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y</label>
                                         <input type="number" 
                                             value={Math.round(modelsTransform[selectedMesh].y)} 
                                             onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], y: Number(e.target.value)}}))}
@@ -2664,19 +2827,60 @@ const Docs = () => {
                                             onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], scale: Number(e.target.value)}}))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
+                                    <button onClick={() => setSelectedMesh(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                                        <span className="material-symbols-outlined text-[18px]">close</span>
+                                    </button>
+                                </div>
+                            ) : selectedZone ? (
+                                <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Zone X</label>
+                                        <input type="number" 
+                                            value={zonesTransform[selectedZone].x} 
+                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], x: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Zone Y</label>
+                                        <input type="number" 
+                                            value={zonesTransform[selectedZone].y} 
+                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], y: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Width</label>
+                                        <input type="number" 
+                                            value={zonesTransform[selectedZone].w} 
+                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], w: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Height</label>
+                                        <input type="number" 
+                                            value={zonesTransform[selectedZone].h} 
+                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], h: Number(e.target.value)}}))}
+                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
+                                    </div>
+                                    <button onClick={() => setSelectedZone(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                                        <span className="material-symbols-outlined text-[18px]">close</span>
+                                    </button>
                                 </div>
                             ) : (
-                                <div className="text-sm text-slate-400 italic md:w-[320px] text-center">Chọn một model để chỉnh sửa...</div>
+                                <div className="text-sm text-slate-400 italic md:w-[320px] text-center">Chọn Model hoặc Vùng (Sàn) để chỉnh sửa...</div>
                             )}
 
                             <div className="flex gap-2 ml-auto">
-                                <button onClick={() => setIsEditMode(false)} className="px-4 py-2 text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                                <button onClick={() => { setIsEditMode(false); setSelectedMesh(null); setSelectedZone(null); }} className="px-4 py-2 text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                                     Hủy
                                 </button>
-                                <button onClick={() => { 
-                                    setIsEditMode(false); 
-                                    updateWorldConfig({ modelsTransform }); 
-                                    showToast('Đã lưu cấu hình không gian!'); 
+                                <button onClick={async () => {
+                                    setIsEditMode(false);
+                                    const result = await updateWorldConfig({ modelsTransform, zonesTransform });
+                                    if (result.error) {
+                                        showToast('Lỗi lưu Supabase: ' + (result.error.message || 'Xem Console'));
+                                    } else {
+                                        showToast('Đã lưu cấu hình không gian!');
+                                    }
                                 }} className="px-4 py-2 text-xs font-bold bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 shadow-lg shadow-cyan-500/30 transition whitespace-nowrap">
                                     Lưu Thay Đổi
                                 </button>

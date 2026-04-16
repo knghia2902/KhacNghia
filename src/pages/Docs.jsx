@@ -835,13 +835,20 @@ const Docs = () => {
             return;
         }
         const { data: urlData } = supabase.storage.from('models').getPublicUrl(safeName);
+        
+        // Randomize initial position slightly so multiple imports don't overlap completely
+        const randomOffsetX = Math.floor(Math.random() * 150) - 75;
+        const randomOffsetY = Math.floor(Math.random() * 150) - 75;
+
         const newModel = {
             id: `custom-${Date.now()}`,
             name: file.name.replace(`.${ext}`, ''),
             src: urlData.publicUrl,
-            x: 200, y: 200, scale: 1, rotation: 0, rotX: 0, rotY: 0, zone: selectedZone || 'docs'
+            x: 200 + randomOffsetX, y: 200 + randomOffsetY, scale: 1, rotation: 0, rotX: 0, rotY: 0, zone: selectedZone || 'docs'
         };
         setCustomModels(prev => [...prev, newModel]);
+        setSelectedMesh(newModel.id);
+        setSelectedZone(null);
         showToast(`Đã import "${newModel.name}"!`);
         e.target.value = '';
     };
@@ -2808,6 +2815,7 @@ const Docs = () => {
                                         <model-viewer
                                             src={model.src}
                                             alt={model.name}
+                                            orientation={`${model.rotX || 0}deg ${model.rotY || 0}deg 0deg`}
                                             disable-zoom="true"
                                             disable-tap="true"
                                             disable-pan="true"

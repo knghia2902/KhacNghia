@@ -797,7 +797,6 @@ const Docs = () => {
     const [modelsTransform, setModelsTransform] = useState({
         archive: { x: 450, y: -140, scale: 1, rotation: 0 },
         bed: { x: 460, y: 460, scale: 1, rotation: 0 },
-        cabinet: { x: 50, y: 50, scale: 1, rotation: 0 },
         tools: { x: 30, y: 30, scale: 1, rotation: 0 }
     });
 
@@ -884,12 +883,11 @@ const Docs = () => {
             }
             setShowEditor(false);
 
-            // Center camera precisely on the center of the zone and reset zoom
-            if (zone === 'docs') setCameraPos({ tx: -zonesTransform.docs.x * cameraPos.scale, ty: -zonesTransform.docs.y * cameraPos.scale, scale: 1 });
-            else if (zone === 'tools') setCameraPos({ tx: -zonesTransform.tools.x * cameraPos.scale, ty: -zonesTransform.tools.y * cameraPos.scale, scale: 1 });
-            else if (zone === 'gallery') setCameraPos({ tx: -zonesTransform.gallery.x * cameraPos.scale, ty: -zonesTransform.gallery.y * cameraPos.scale, scale: 1 });
-            else if (zone === 'admin') setCameraPos({ tx: -zonesTransform.admin.x * cameraPos.scale, ty: -zonesTransform.admin.y * cameraPos.scale, scale: 1 });
-
+            // Center camera on the CENTER of the zone (not top-left corner)
+            const zoneData = zonesTransform[zone];
+            const centerOffsetX = zoneData.x + zoneData.w / 2;
+            const centerOffsetY = zoneData.y + zoneData.h / 2;
+            setCameraPos({ tx: -centerOffsetX + window.innerWidth / 2 / 1, ty: -centerOffsetY + window.innerHeight / 2 / 1, scale: 1 });
             // Hiện lại
             setTimeout(() => setIsTeleporting(false), 100);
         }, 400);

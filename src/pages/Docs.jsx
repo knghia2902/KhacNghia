@@ -813,6 +813,44 @@ const Docs = () => {
     const [resizingZone, setResizingZone] = useState(null);
     const [resizeType, setResizeType] = useState(null); // 'w', 'h', 'se'
 
+    // Custom imported models
+    const [customModels, setCustomModels] = useState([]);
+    const modelFileInputRef = useRef(null);
+
+    const handleImportModel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['glb', 'gltf'].includes(ext)) {
+            showToast('Chỉ hỗ trợ file .glb hoặc .gltf');
+            return;
+        }
+        const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        showToast('Đang tải lên mô hình...');
+        const { error: uploadError } = await supabase.storage
+            .from('models')
+            .upload(safeName, file, { contentType: 'application/octet-stream', upsert: true });
+        if (uploadError) {
+            showToast('Lỗi upload: ' + uploadError.message);
+            return;
+        }
+        const { data: urlData } = supabase.storage.from('models').getPublicUrl(safeName);
+        const newModel = {
+            id: `custom-${Date.now()}`,
+            name: file.name.replace(`.${ext}`, ''),
+            src: urlData.publicUrl,
+            x: 200, y: 200, scale: 1, rotation: 0, zone: selectedZone || 'docs'
+        };
+        setCustomModels(prev => [...prev, newModel]);
+        showToast(`Đã import "${newModel.name}"!`);
+        e.target.value = '';
+    };
+
+    const handleDeleteCustomModel = (modelId) => {
+        setCustomModels(prev => prev.filter(m => m.id !== modelId));
+        if (selectedMesh === modelId) setSelectedMesh(null);
+    };
+
     // Sync from worldConfig
     useEffect(() => {
         if (worldConfig?.modelsTransform) {
@@ -820,6 +858,9 @@ const Docs = () => {
         }
         if (worldConfig?.zonesTransform) {
             setZonesTransform(p => ({ ...p, ...worldConfig.zonesTransform }));
+        }
+        if (worldConfig?.customModels) {
+            setCustomModels(worldConfig.customModels);
         }
     }, [worldConfig]);
 
@@ -929,14 +970,21 @@ const Docs = () => {
             const dy = (A + B) / 2;
 
             if (draggingMesh) {
-                setModelsTransform(p => ({
-                    ...p,
-                    [draggingMesh]: {
-                        ...p[draggingMesh],
-                        x: p[draggingMesh].x + dx,
-                        y: p[draggingMesh].y + dy
-                    }
-                }));
+                // Check if it's a custom model
+                if (draggingMesh.startsWith('custom-')) {
+                    setCustomModels(prev => prev.map(m => 
+                        m.id === draggingMesh ? { ...m, x: m.x + dx, y: m.y + dy } : m
+                    ));
+                } else {
+                    setModelsTransform(p => ({
+                        ...p,
+                        [draggingMesh]: {
+                            ...p[draggingMesh],
+                            x: p[draggingMesh].x + dx,
+                            y: p[draggingMesh].y + dy
+                        }
+                    }));
+                }
             } else if (draggingZone) {
                 setZonesTransform(p => ({
                     ...p,
@@ -2746,6 +2794,55 @@ const Docs = () => {
 
                                 </div>
 
+                                {/* ==== CUSTOM IMPORTED MODELS ==== */}
+                                {customModels.map(model => (
+                                    <div
+                                        key={model.id}
+                                        className={`absolute ${isEditMode && selectedMesh === model.id ? 'ring-4 ring-purple-500 shadow-2xl rounded-3xl bg-purple-500/10' : ''}`}
+                                        style={{
+                                            left: `${model.x}px`,
+                                            top: `${model.y}px`,
+                                            width: '300px',
+                                            height: '300px',
+                                            transform: `translateZ(40px) rotateZ(${45 + (model.rotation || 0)}deg) rotateX(-60deg) scale(${model.scale || 1})`,
+                                            transformStyle: 'preserve-3d',
+                                            pointerEvents: isEditMode ? 'auto' : 'none',
+                                            cursor: isEditMode ? 'move' : 'default'
+                                        }}
+                                        onPointerDown={(e) => {
+                                            if (!isEditMode) return;
+                                            e.stopPropagation();
+                                            setSelectedMesh(model.id);
+                                            setSelectedZone(null);
+                                            setDraggingMesh(model.id);
+                                            setDraggingZone(null);
+                                            setResizingZone(null);
+                                            dragOffset.current = { x: e.clientX, y: e.clientY };
+                                        }}
+                                    >
+                                        <model-viewer
+                                            src={model.src}
+                                            alt={model.name}
+                                            disable-zoom="true"
+                                            disable-tap="true"
+                                            disable-pan="true"
+                                            interaction-prompt="none"
+                                            shadow-intensity="1"
+                                            autoplay="true"
+                                            style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                                        </model-viewer>
+                                        {isEditMode && selectedMesh === model.id && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }}
+                                                className="absolute -top-3 -right-3 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg hover:bg-rose-600 z-50"
+                                                style={{ transform: 'rotateX(60deg) rotateZ(-45deg)' }}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+
                                 {/* ==== THE RUNNING AGENT (Hoisted to global map coordinates) ==== */}
                                 <div 
                                     id="chibi-agent" 
@@ -2799,41 +2896,59 @@ const Docs = () => {
                                 <p className="text-xs text-slate-500 dark:text-slate-400">Kéo thả object, nhập thông số.</p>
                             </div>
 
-                            {selectedMesh ? (
+                            {selectedMesh ? (() => {
+                                const isCustom = selectedMesh.startsWith('custom-');
+                                const cm = isCustom ? customModels.find(m => m.id === selectedMesh) : null;
+                                const getVal = (prop) => isCustom ? (cm?.[prop] ?? 0) : (modelsTransform[selectedMesh]?.[prop] ?? 0);
+                                const setVal = (prop, val) => {
+                                    if (isCustom) {
+                                        setCustomModels(prev => prev.map(m => m.id === selectedMesh ? { ...m, [prop]: val } : m));
+                                    } else {
+                                        setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], [prop]: val}}));
+                                    }
+                                };
+                                return (
                                 <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
+                                    {isCustom && <span className="text-[10px] text-purple-500 font-bold uppercase">{cm?.name}</span>}
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X</label>
                                         <input type="number" 
-                                            value={Math.round(modelsTransform[selectedMesh].x)} 
-                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], x: Number(e.target.value)}}))}
+                                            value={Math.round(getVal('x'))} 
+                                            onChange={(e) => setVal('x', Number(e.target.value))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y</label>
                                         <input type="number" 
-                                            value={Math.round(modelsTransform[selectedMesh].y)} 
-                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], y: Number(e.target.value)}}))}
+                                            value={Math.round(getVal('y'))} 
+                                            onChange={(e) => setVal('y', Number(e.target.value))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot (°)</label>
                                         <input type="number" 
-                                            value={modelsTransform[selectedMesh].rotation} 
-                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], rotation: Number(e.target.value)}}))}
+                                            value={getVal('rotation')} 
+                                            onChange={(e) => setVal('rotation', Number(e.target.value))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Scale</label>
                                         <input type="number" step="0.1" 
-                                            value={modelsTransform[selectedMesh].scale} 
-                                            onChange={(e) => setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], scale: Number(e.target.value)}}))}
+                                            value={getVal('scale')} 
+                                            onChange={(e) => setVal('scale', Number(e.target.value))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                     </div>
+                                    {isCustom && (
+                                        <button onClick={() => handleDeleteCustomModel(selectedMesh)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Xóa model">
+                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                        </button>
+                                    )}
                                     <button onClick={() => setSelectedMesh(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
                                         <span className="material-symbols-outlined text-[18px]">close</span>
                                     </button>
                                 </div>
-                            ) : selectedZone ? (
+                                );
+                            })() : selectedZone ? (
                                 <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Zone X</label>
@@ -2872,12 +2987,18 @@ const Docs = () => {
                             )}
 
                             <div className="flex gap-2 ml-auto">
+                                {/* Import Model Button */}
+                                <input type="file" ref={modelFileInputRef} accept=".glb,.gltf" className="hidden" onChange={handleImportModel} />
+                                <button onClick={() => modelFileInputRef.current?.click()} className="px-3 py-2 text-xs font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-500 shadow-lg shadow-purple-500/30 transition whitespace-nowrap flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                                    Import Model
+                                </button>
                                 <button onClick={() => { setIsEditMode(false); setSelectedMesh(null); setSelectedZone(null); }} className="px-4 py-2 text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                                     Hủy
                                 </button>
                                 <button onClick={async () => {
                                     setIsEditMode(false);
-                                    const result = await updateWorldConfig({ modelsTransform, zonesTransform });
+                                    const result = await updateWorldConfig({ modelsTransform, zonesTransform, customModels });
                                     if (result.error) {
                                         showToast('Lỗi lưu Supabase: ' + (result.error.message || 'Xem Console'));
                                     } else {

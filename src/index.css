@@ -51,6 +51,15 @@
 
     --animate-gradient-slow: gradient 15s ease infinite;
     --animate-float: float 6s ease-in-out infinite;
+
+    /* Zone Colors RGB */
+    --color-cyan-rgb: 6, 182, 212;
+    --color-emerald-rgb: 16, 185, 129;
+    --color-purple-rgb: 168, 85, 247;
+    --color-amber-rgb: 245, 158, 11;
+    --color-rose-rgb: 244, 63, 94;
+    --color-indigo-rgb: 79, 70, 229;
+    --color-orange-rgb: 249, 115, 22;
 }
 
 @utility no-scrollbar {

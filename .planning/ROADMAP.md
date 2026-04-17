@@ -9,6 +9,17 @@
 - Implement Skeleton Loaders để che giấu độ trễ mạng phía client.
 
 ## Phase 3: Profiling & Database Indexing
+
+### Phase 03.5: Quản lý vùng tùy chỉnh và hình dạng (INSERTED)
+
+**Goal:** Triển khai cơ chế tạo vùng động và tùy chọn hình dạng (Chữ nhật/Tròn) thông qua Admin Panel.
+**Requirements**: Refactor `zonesTransform`, cập nhật AdminPanel UI, lưu trữ vào `world_config`.
+**Depends on:** Phase 3
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.5 to break down)
+
 - Cấu hình PostgreSQL Indexes trên các bảng cấu trúc hệ thống nếu cần.
 - Kiểm thử và đo lường sự cải thiện qua Vercel.
 

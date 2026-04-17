@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 const ZONE_TABS = [
-    { id: 'dashboard', label: 'Dashboard', zone: null, path: '/dashboard' },
+    { id: 'dashboard', label: 'Dashboard', zone: null },
     { id: 'docs', label: 'Docs', zone: 'docs' },
     { id: 'tools', label: 'Tools', zone: 'tools' },
     { id: 'images', label: 'Images', zone: 'gallery' },
@@ -13,22 +13,26 @@ const Header = () => {
     const location = useLocation();
     const [searchParams] = useSearchParams();
 
-    const currentZone = searchParams.get('zone') || 'docs';
+    const currentZone = searchParams.get('zone'); // Remove default 'docs'
     const isDocsPage = location.pathname === '/docs';
 
     const handleTabClick = (tab) => {
-        if (tab.path) {
-            // External route (Dashboard)
-            navigate(tab.path);
-        } else {
-            // Zone navigation within one-map
+        if (tab.id === 'dashboard') {
+            navigate('/docs');
+        } else if (tab.zone) {
             navigate(`/docs?zone=${tab.zone}`);
+        } else if (tab.path) {
+            navigate(tab.path);
         }
     };
 
     const isActive = (tab) => {
         if (tab.path) {
             return location.pathname === tab.path;
+        }
+        // Dashboard is active if on /docs and no zone param is present
+        if (tab.id === 'dashboard') {
+            return isDocsPage && !currentZone;
         }
         return isDocsPage && currentZone === tab.zone;
     };

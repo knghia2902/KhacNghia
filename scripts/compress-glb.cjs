@@ -15,7 +15,7 @@ files.forEach(file => {
     console.log(`Optimizing ${file}...`);
     try {
         // Run gltf-transform to compress geometry and textures
-        execSync(`npx @gltf-transform/cli optimize "${input}" "${output}" --texture-compress webp`, { stdio: 'inherit' });
+        execSync(`npx @gltf-transform/cli optimize "${input}" "${output}" --compress draco --texture-compress webp`, { stdio: 'inherit' });
         
         const oldSize = (fs.statSync(input).size / 1024 / 1024).toFixed(2);
         const newSize = (fs.statSync(output).size / 1024 / 1024).toFixed(2);

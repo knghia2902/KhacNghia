@@ -44,7 +44,7 @@ async function run() {
         // 2. Compress
         console.log(`Compressing... this may take a moment.`);
         try {
-            execSync(`npx @gltf-transform/cli optimize "${localRawPath}" "${localOptPath}" --texture-compress webp`, { stdio: 'inherit' });
+            execSync(`npx @gltf-transform/cli optimize "${localRawPath}" "${localOptPath}" --compress draco --texture-compress webp`, { stdio: 'inherit' });
             const oldSize = fs.statSync(localRawPath).size;
             const newSize = fs.statSync(localOptPath).size;
             console.log(`Compression ratio: ${(newSize / oldSize * 100).toFixed(1)}%`);

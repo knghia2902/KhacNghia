@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import mammoth from 'mammoth';
 // import htmlDocx from 'html-docx-js/dist/html-docx';
@@ -725,7 +725,7 @@ const Docs = () => {
     console.log('[Docs] Component rendering - AUTO SAVE VERSION 2.0');
 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // --- State ---
     const [folders, setFolders] = useState(() => {
@@ -778,9 +778,9 @@ const Docs = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isFocusMode, setIsFocusMode] = useState(false);
     const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = useState(false);
-    
+
     // --- Unified SPA State ---
-    const [activeZone, setActiveZoneInternal] = useState('docs'); // docs | tools | gallery | admin
+    const [activeZone, setActiveZoneInternal] = useState(null); // docs | tools | gallery | admin | null (Dashboard)
     const [isAgentSelected, setIsAgentSelected] = useState(false);
     const [agentPos, setAgentPos] = useState({ left: 300, top: 310 });
     const [agentFacingAngle, setAgentFacingAngle] = useState(0);
@@ -789,8 +789,13 @@ const Docs = () => {
     const [isTeleporting, setIsTeleporting] = useState(false);
 
     // Wrapper: set zone + sync URL
+    // Wrapper: set zone search param (Single Source of Truth)
     const setActiveZone = (zone) => {
-        setActiveZoneInternal(zone);
+        if (zone) {
+            setSearchParams({ zone });
+        } else {
+            setSearchParams({});
+        }
     };
 
 
@@ -800,7 +805,8 @@ const Docs = () => {
     const [selectedMesh, setSelectedMesh] = useState(null);
     const [draggingMesh, setDraggingMesh] = useState(null);
     const dragOffset = useRef({ x: 0, y: 0 });
-    
+    const isInitializedRef = useRef(false);
+
     // Model transforms draft
     const [modelsTransform, setModelsTransform] = useState({
         archive: { x: 450, y: -140, scale: 1, rotation: 0, rotX: 0, rotY: 0 },
@@ -810,10 +816,10 @@ const Docs = () => {
 
     // Zone transforms draft
     const [zonesTransform, setZonesTransform] = useState({
-        docs: { x: 0, y: 0, w: 700, h: 700 },
-        tools: { x: 800, y: 0, w: 700, h: 700 },
-        gallery: { x: 0, y: 800, w: 700, h: 700 },
-        admin: { x: 800, y: 800, w: 700, h: 700 }
+        docs: { x: 0, y: 0, w: 700, h: 700, label: 'KHU VỰC TÀI LIỆU', shape: 'rect', color: 'cyan' },
+        tools: { x: 800, y: 0, w: 700, h: 700, label: 'CÔNG CỤ & TIỆN ÍCH', shape: 'rect', color: 'emerald' },
+        gallery: { x: 0, y: 800, w: 700, h: 700, label: 'THƯ VIỆN HÌNH ẢNH', shape: 'rect', color: 'purple' },
+        admin: { x: 800, y: 800, w: 700, h: 700, label: 'QUẢN TRỊ HỆ THỐNG', shape: 'rect', color: 'amber' }
     });
 
     const [selectedZone, setSelectedZone] = useState(null);
@@ -844,7 +850,7 @@ const Docs = () => {
             return;
         }
         const { data: urlData } = supabase.storage.from('models').getPublicUrl(safeName);
-        
+
         // Randomize initial position slightly so multiple imports don't overlap completely
         const randomOffsetX = Math.floor(Math.random() * 150) - 75;
         const randomOffsetY = Math.floor(Math.random() * 150) - 75;
@@ -869,16 +875,47 @@ const Docs = () => {
 
     // Sync from worldConfig
     useEffect(() => {
-        if (worldConfig?.modelsTransform) {
+        if (!worldConfig || Object.keys(worldConfig).length === 0) return;
+
+        if (worldConfig.modelsTransform) {
             setModelsTransform(p => ({ ...p, ...worldConfig.modelsTransform }));
         }
-        if (worldConfig?.zonesTransform) {
+        if (worldConfig.zonesTransform) {
             setZonesTransform(p => ({ ...p, ...worldConfig.zonesTransform }));
         }
-        if (worldConfig?.customModels) {
+        if (worldConfig.customModels) {
             setCustomModels(worldConfig.customModels);
         }
+        
+        // Mark as initialized once we've loaded data from Supabase
+        isInitializedRef.current = true;
     }, [worldConfig]);
+
+    // Save worldConfig
+    useEffect(() => {
+        if (!isEditMode || !isInitializedRef.current) return; 
+
+        const saveTimer = setTimeout(() => {
+            updateWorldConfig({
+                zonesTransform,
+                modelsTransform,
+                customModels
+            });
+        }, 5000);
+
+        return () => clearTimeout(saveTimer);
+    }, [zonesTransform, modelsTransform, customModels, isEditMode, updateWorldConfig]);
+
+    // Force save when exiting edit mode
+    useEffect(() => {
+        if (!isEditMode && isInitializedRef.current) {
+            updateWorldConfig({
+                zonesTransform,
+                modelsTransform,
+                customModels
+            });
+        }
+    }, [isEditMode]);
 
     const handleMeshPointerDown = (e, meshId) => {
         if (!isEditMode) return;
@@ -925,6 +962,69 @@ const Docs = () => {
         handleFloorClickGlobal(e, targetX, targetY, 'admin');
     };
 
+    // --- Smart Camera Calculations ---
+    const calculateDashboardCamera = useCallback(() => {
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+
+        const allZones = Object.values(zonesTransform);
+        if (allZones.length === 0) return { tx: 0, ty: 0, scale: 0.8 };
+
+        // Find logical grid bounding box
+        const minX = Math.min(...allZones.map(z => z.x));
+        const minY = Math.min(...allZones.map(z => z.y));
+        const maxX = Math.max(...allZones.map(z => z.x + z.w));
+        const maxY = Math.max(...allZones.map(z => z.y + z.h));
+
+        const worldWidth = maxX - minX;
+        const worldHeight = maxY - minY;
+
+        // Base screen bounds at scale 1 (Approximate rhombic projection)
+        // Projected width: (W+H) * cos(45)
+        const baseWidth = (worldWidth + worldHeight) * 0.7071;
+        const baseHeight = (worldWidth + worldHeight) * 0.3535;
+
+        // Dynamic scale to fit viewport with safety margin
+        const margin = 160;
+        const autoScale = Math.min(
+            (W - margin) / baseWidth,
+            (H - margin) / baseHeight,
+            0.8 // Max dashboard scale
+        );
+
+        // Center point in grid coordinates
+        const midX = (minX + maxX) / 2;
+        const midY = (minY + maxY) / 2;
+        
+        // Offset from grid origin (centered at 350,350 in the base math)
+        const dx = midX - 350;
+        const dy = midY - 350;
+
+        // Project grid offset to screen coordinates
+        const tx = - (dx + dy) * 0.7071 * autoScale;
+        const ty = - (-dx + dy) * 0.3535 * autoScale;
+
+        return { tx, ty, scale: autoScale };
+    }, [zonesTransform]);
+
+    // Handle initial load and window resize for dashboard
+    useEffect(() => {
+        const handleResize = () => {
+            if (activeZone === null) {
+                setCameraPos(calculateDashboardCamera());
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        
+        // If we are already in dashboard mode, ensure it's centered
+        if (activeZone === null) {
+            setCameraPos(calculateDashboardCamera());
+        }
+
+        return () => window.removeEventListener('resize', handleResize);
+    }, [activeZone, calculateDashboardCamera]);
+
     // Teleport logic
     const navigateToZone = (zone, targetPos) => {
         // Biến mất (Blink Teleport)
@@ -933,15 +1033,19 @@ const Docs = () => {
         // Sau khi mờ đi (400ms), dịch chuyển tọa độ và Camera
         setTimeout(() => {
             setAgentPos(targetPos);
-            setActiveZone(zone);
+            setActiveZoneInternal(zone); // Update state only, URL was already updated to trigger this
             
+            const zoneData = zonesTransform[zone];
+            if (!zoneData) {
+                console.warn(`Zone ${zone} not found in transforms:`, zonesTransform);
+                return;
+            }
+
             if (zone !== 'docs') {
                 setIsSecondaryPanelOpen(false);
             }
             setShowEditor(false);
 
-            // Center camera on the CENTER of the zone
-            const zoneData = zonesTransform[zone];
             const cx = zoneData.x + zoneData.w / 2;
             const cy = zoneData.y + zoneData.h / 2;
 
@@ -964,16 +1068,23 @@ const Docs = () => {
     // Sync zone from URL search params (Header tabs)
     useEffect(() => {
         const zoneFromUrl = searchParams.get('zone');
-        if (zoneFromUrl && zoneFromUrl !== activeZone && ['docs', 'tools', 'gallery', 'admin'].includes(zoneFromUrl)) {
+        // Accept any zone that exists in our dynamic zonesTransform
+        if (zoneFromUrl && zoneFromUrl !== activeZone && zonesTransform[zoneFromUrl]) {
             const zoneData = zonesTransform[zoneFromUrl];
             const targetX = zoneData.x + zoneData.w / 2 - 50;
             const targetY = zoneData.y + zoneData.h / 2 - 50;
             navigateToZone(zoneFromUrl, { left: targetX, top: targetY });
+        } else if (!zoneFromUrl && activeZone !== null) {
+            // Return to dashboard view if zone is cleared from URL
+            setActiveZone(null);
+            setCameraPos(calculateDashboardCamera());
+            setIsSecondaryPanelOpen(false);
+            setShowEditor(false);
         }
-    }, [searchParams]);
+    }, [searchParams, activeZone, calculateDashboardCamera]);
 
     // --- One-Map Camera State ---
-    const [cameraPos, setCameraPos] = useState({ tx: 0, ty: 0, scale: 1 });
+    const [cameraPos, setCameraPos] = useState({ tx: -750, ty: 130, scale: 0.8 });
     const isDragging = useRef(false);
     const startPoint = useRef({ x: 0, y: 0 });
     const modelViewerRef = useRef(null);
@@ -981,7 +1092,7 @@ const Docs = () => {
     const handleWheel = (e) => {
         // Prevent default only if hovering the canvas
         if (e.target.closest('article') || e.target.closest('aside') || e.target.closest('.cascading-nav')) return;
-        
+
         const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
         setCameraPos(p => ({ ...p, scale: Math.max(0.3, Math.min(3, p.scale * zoomDelta)) }));
     };
@@ -996,10 +1107,10 @@ const Docs = () => {
         if (draggingMesh || draggingZone || resizingZone) {
             const dX = e.clientX - dragOffset.current.x;
             const dY = e.clientY - dragOffset.current.y;
-            
+
             // Isometric Coordinate Transformation Logic
             const scale = cameraPos.scale;
-            
+
             // Screen to Isometric (rotated -45, pitched 60)
             const A = dX / (scale * 0.7071);
             const B = dY / (scale * 0.7071 * 0.5);
@@ -1010,7 +1121,7 @@ const Docs = () => {
             if (draggingMesh) {
                 // Check if it's a custom model
                 if (draggingMesh.startsWith('custom-')) {
-                    setCustomModels(prev => prev.map(m => 
+                    setCustomModels(prev => prev.map(m =>
                         m.id === draggingMesh ? { ...m, x: m.x + dx, y: m.y + dy } : m
                     ));
                 } else {
@@ -1037,7 +1148,7 @@ const Docs = () => {
                     const zone = p[resizingZone];
                     let newW = zone.w;
                     let newH = zone.h;
-                    
+
                     if (resizeType === 'w' || resizeType === 'se') newW += dx;
                     if (resizeType === 'h' || resizeType === 'se') newH += dy;
 
@@ -1496,8 +1607,8 @@ const Docs = () => {
                 if (error) throw error;
 
                 // Update docs with fetched content
-                setDocs(prev => prev.map(d => 
-                    d.id === activeDocId 
+                setDocs(prev => prev.map(d =>
+                    d.id === activeDocId
                         ? { ...d, content: data.content || '', attachments: data.attachments || [] }
                         : d
                 ));
@@ -1620,14 +1731,15 @@ const Docs = () => {
 
         // Nếu click khác vùng -> Teleport sang vùng đó, xuất hiện đúng chỗ click
         if (activeZone !== zoneName) {
-             if (isEditMode) {
-                 handleZoneSelect(zoneName);
-                 return;
-             }
-             navigateToZone(zoneName, targetPos);
-             return;
+            if (isEditMode) {
+                handleZoneSelect(zoneName);
+                return;
+            }
+            // Update URL only - useEffect will handle the rest
+            setActiveZone(zoneName);
+            return;
         }
-        
+
         if (isEditMode) {
             handleZoneSelect(zoneName);
         }
@@ -1715,7 +1827,7 @@ const Docs = () => {
 
     const startEditing = async () => {
         if (!activeDoc) return;
-        
+
         let contentToEdit = activeDoc.content;
         let attachmentsToEdit = activeDoc.attachments;
 
@@ -2474,7 +2586,8 @@ const Docs = () => {
                 <aside className={`
                     w-[240px] h-full flex flex-col py-6 px-3 z-20 glass-panel dark:bg-black/30 dark:border-white/10 rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
                     ${isFocusMode ? 'md:hidden' : ''}
-                    ${isSidebarOpen ? 'translate-x-0 fixed inset-y-0 left-0' : 'hidden md:flex'}
+                    ${activeZone && !isFocusMode ? 'md:flex' : 'md:hidden'}
+                    ${isSidebarOpen ? 'translate-x-0 fixed inset-y-0 left-0 flex' : 'hidden'}
                 `}>
                     {/* Mobile Close Button */}
                     <button
@@ -2540,17 +2653,21 @@ const Docs = () => {
                                 )}
                             </>
                         )}
-                        
+
                         {activeZone === 'tools' && (
                             <ToolsPanel />
                         )}
-                        
+
                         {activeZone === 'gallery' && (
                             <GalleryPanel />
                         )}
-                        
+
                         {activeZone === 'admin' && (
-                            <AdminPanel activeSettingGroup={activeSettingGroup} />
+                            <AdminPanel 
+                                activeSettingGroup={activeSettingGroup} 
+                                zones={zonesTransform}
+                                setZones={setZonesTransform}
+                            />
                         )}
                     </div>
                 </aside>
@@ -2574,9 +2691,9 @@ const Docs = () => {
 
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex items-center justify-center">
-                    
+
                     {/* THE 3D ISOMETRIC EMPTY STATE */}
-                    <div id="isometric-view" 
+                    <div id="isometric-view"
                         className={`fixed top-0 bottom-0 right-0 z-0 flex items-center justify-center transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] left-0 ${!showEditor && isSecondaryPanelOpen ? 'md:left-[660px]' : ''} ${showEditor ? 'opacity-50' : ''}`}
                         onWheel={handleWheel}
                         onPointerDown={handlePointerDown}
@@ -2584,27 +2701,27 @@ const Docs = () => {
                         onPointerUp={handlePointerUp}
                         onPointerLeave={handlePointerUp}
                     >
-                        <div style={{ 
+                        <div style={{
                             transform: `translate(${cameraPos.tx}px, ${cameraPos.ty}px) scale(${cameraPos.scale})`,
                             transition: isDragging.current ? 'none' : (isTeleporting ? 'transform 1.2s cubic-bezier(0.16,1,0.3,1)' : 'transform 0.1s ease-out'),
                             transformStyle: 'preserve-3d'
                         }}>
                             <div id="isometric-world" className="isometric-world w-[700px] h-[700px] relative pointer-events-auto">
-                                
+
                                 {/* Edit Mode Grid (Global - fixed position) */}
                                 {isEditMode && (
                                     <div className="absolute top-[-500px] left-[-500px] w-[3000px] h-[3000px] pointer-events-none opacity-40 z-[-1]"
-                                         style={{
-                                             backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.4) 2px, transparent 2px), linear-gradient(90deg, rgba(6, 182, 212, 0.4) 2px, transparent 2px)',
-                                             backgroundSize: '100px 100px'
-                                         }}>
+                                        style={{
+                                            backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.4) 2px, transparent 2px), linear-gradient(90deg, rgba(6, 182, 212, 0.4) 2px, transparent 2px)',
+                                            backgroundSize: '100px 100px'
+                                        }}>
                                     </div>
                                 )}
 
                                 {/* Global Click Ripples */}
                                 {clickEffects.map(effect => (
-                                    <div 
-                                        key={effect.id} 
+                                    <div
+                                        key={effect.id}
                                         className="absolute pointer-events-none rounded-full"
                                         style={{
                                             left: effect.x - 20,
@@ -2620,118 +2737,50 @@ const Docs = () => {
                                     />
                                 ))}
 
-                                {/* ==== REGION 1: DOCS (Untouched Original) ==== */}
-                                <div className={`absolute ${isEditMode && selectedZone === 'docs' ? 'ring-4 ring-cyan-500 shadow-2xl z-30' : ''}`} 
-                                     style={{ 
-                                         top: `${zonesTransform.docs.y}px`, 
-                                         left: `${zonesTransform.docs.x}px`, 
-                                         width: `${zonesTransform.docs.w}px`, 
-                                         height: `${zonesTransform.docs.h}px`,
-                                         transformStyle: 'preserve-3d' 
-                                     }}>
-                                    {/* Floor grid */}
-                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'docs' ? 'opacity-80' : ''}`} 
-                                         onPointerDown={(e) => handleFloorPointerDown(e, 'docs')}
-                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.docs.x, zonesTransform.docs.y, 'docs')}>
-                                        <p className="text-cyan-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">KHU VỰC TÀI LIỆU</p>
-                                    </div>
-                                    
-                                    {/* Resize Handles for selected zone */}
-                                    {isEditMode && selectedZone === 'docs' && (
-                                        <>
-                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'w')} />
-                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'h')} />
-                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'docs', 'se')} />
-                                        </>
-                                    )}
-                                    
+                                {Object.entries(zonesTransform).map(([zoneName, zone]) => {
+                                    const isSelected = selectedZone === zoneName;
+                                    const isCircle = zone.shape === 'circle';
+                                    const zoneColor = zone.color || 'cyan';
 
+                                    return (
+                                        <div 
+                                            key={zoneName}
+                                            className={`absolute transition-all duration-300 ${isEditMode && isSelected ? `ring-4 ring-${zoneColor}-500 shadow-2xl z-30` : ''}`}
+                                            style={{
+                                                top: `${zone.y}px`,
+                                                left: `${zone.x}px`,
+                                                width: `${zone.w}px`,
+                                                height: `${zone.h}px`,
+                                                transformStyle: 'preserve-3d',
+                                                zIndex: isSelected ? 30 : 1
+                                            }}
+                                        >
+                                            <div 
+                                                className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === zoneName ? 'opacity-80' : ''}`}
+                                                style={{ 
+                                                    backgroundColor: `rgba(var(--color-${zoneColor}-rgb, 6, 182, 212), 0.05)`, 
+                                                    borderColor: `rgba(var(--color-${zoneColor}-rgb, 6, 182, 212), 0.3)`,
+                                                    borderRadius: isCircle ? '50%' : '20px'
+                                                }}
+                                                onPointerDown={(e) => handleFloorPointerDown(e, zoneName)}
+                                                onClick={(e) => handleFloorClickGlobal(e, zone.x, zone.y, zoneName)}
+                                            >
+                                                <p className={`text-${zoneColor}-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none uppercase`}>
+                                                    {zone.label || zoneName}
+                                                </p>
+                                            </div>
 
-                                </div>
-
-                                {/* ==== REGION 2: TOOLS (Top Right) ==== */}
-                                <div className={`absolute ${isEditMode && selectedZone === 'tools' ? 'ring-4 ring-emerald-500 shadow-2xl z-30' : ''}`} 
-                                     style={{ 
-                                         top: `${zonesTransform.tools.y}px`, 
-                                         left: `${zonesTransform.tools.x}px`, 
-                                         width: `${zonesTransform.tools.w}px`, 
-                                         height: `${zonesTransform.tools.h}px`,
-                                         transformStyle: 'preserve-3d' 
-                                     }}>
-                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'tools' ? 'opacity-80' : ''}`} 
-                                         style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.3)' }} 
-                                         onPointerDown={(e) => handleFloorPointerDown(e, 'tools')}
-                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.tools.x, zonesTransform.tools.y, 'tools')}>
-                                        <p className="text-emerald-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">CÔNG CỤ & TIỆN ÍCH</p>
-                                    </div>
-                                    
-                                    {/* Resize Handles */}
-                                    {isEditMode && selectedZone === 'tools' && (
-                                        <>
-                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'w')} />
-                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'h')} />
-                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'tools', 'se')} />
-                                        </>
-                                    )}
-
-                                </div>
-
-                                {/* ==== REGION 3: GALLERY (Bottom Left) ==== */}
-                                <div className={`absolute ${isEditMode && selectedZone === 'gallery' ? 'ring-4 ring-purple-500 shadow-2xl z-30' : ''}`} 
-                                     style={{ 
-                                         top: `${zonesTransform.gallery.y}px`, 
-                                         left: `${zonesTransform.gallery.x}px`, 
-                                         width: `${zonesTransform.gallery.w}px`, 
-                                         height: `${zonesTransform.gallery.h}px`,
-                                         transformStyle: 'preserve-3d' 
-                                     }}>
-                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'gallery' ? 'opacity-80' : ''}`} 
-                                         style={{ backgroundColor: 'rgba(168, 85, 247, 0.05)', borderColor: 'rgba(168, 85, 247, 0.3)' }} 
-                                         onPointerDown={(e) => handleFloorPointerDown(e, 'gallery')}
-                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.gallery.x, zonesTransform.gallery.y, 'gallery')}>
-                                        <p className="text-purple-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">THƯ VIỆN HÌNH ẢNH</p>
-                                    </div>
-                                    
-                                    {/* Resize Handles */}
-                                    {isEditMode && selectedZone === 'gallery' && (
-                                        <>
-                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'w')} />
-                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'h')} />
-                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'gallery', 'se')} />
-                                        </>
-                                    )}
-                                    
-
-                                </div>
-
-                                {/* ==== REGION 4: ADMIN (Bottom Right) ==== */}
-                                <div className={`absolute ${isEditMode && selectedZone === 'admin' ? 'ring-4 ring-amber-500 shadow-2xl z-30' : ''}`} 
-                                     style={{ 
-                                         top: `${zonesTransform.admin.y}px`, 
-                                         left: `${zonesTransform.admin.x}px`, 
-                                         width: `${zonesTransform.admin.w}px`, 
-                                         height: `${zonesTransform.admin.h}px`,
-                                         transformStyle: 'preserve-3d' 
-                                     }}>
-                                    <div className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === 'admin' ? 'opacity-80' : ''}`} 
-                                         style={{ backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.3)' }} 
-                                         onPointerDown={(e) => handleFloorPointerDown(e, 'admin')}
-                                         onClick={(e) => handleFloorClickGlobal(e, zonesTransform.admin.x, zonesTransform.admin.y, 'admin')}>
-                                        <p className="text-amber-700/30 font-display font-bold text-2xl transform rotate-90 -translate-x-12 opacity-50 pointer-events-none">QUẢN TRỊ HỆ THỐNG</p>
-                                    </div>
-                                    
-                                    {/* Resize Handles */}
-                                    {isEditMode && selectedZone === 'admin' && (
-                                        <>
-                                            <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'w')} />
-                                            <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'h')} />
-                                            <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, 'admin', 'se')} />
-                                        </>
-                                    )}
-                                    
-
-
-                                </div>
+                                            {/* Resize Handles for selected zone */}
+                                            {isEditMode && isSelected && (
+                                                <>
+                                                    <div className="zone-resize-handle handle-right" onPointerDown={(e) => handleResizePointerDown(e, zoneName, 'w')} />
+                                                    <div className="zone-resize-handle handle-bottom" onPointerDown={(e) => handleResizePointerDown(e, zoneName, 'h')} />
+                                                    <div className="zone-resize-handle handle-corner" onPointerDown={(e) => handleResizePointerDown(e, zoneName, 'se')} />
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
 
                                 {/* ==== CUSTOM IMPORTED MODELS ==== */}
                                 {customModels.map(model => (
@@ -2792,17 +2841,17 @@ const Docs = () => {
                                 ))}
 
                                 {/* ==== THE RUNNING AGENT (Hoisted to global map coordinates) ==== */}
-                                <div 
-                                    id="chibi-agent" 
+                                <div
+                                    id="chibi-agent"
                                     className={`iso-agent ${isAgentSelected ? 'selected' : ''} cursor-pointer`}
-                                    style={{ 
-                                        left: agentPos.left, 
-                                        top: agentPos.top, 
+                                    style={{
+                                        left: agentPos.left,
+                                        top: agentPos.top,
                                         position: 'absolute',
                                         willChange: 'left, top',
                                         opacity: isTeleporting ? 0 : 1,
-                                        transition: isTeleporting 
-                                            ? 'opacity 0.4s ease-in-out' 
+                                        transition: isTeleporting
+                                            ? 'opacity 0.4s ease-in-out'
                                             : 'left 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease-in-out'
                                     }}
                                     onTransitionEnd={(e) => {
@@ -2816,7 +2865,7 @@ const Docs = () => {
                                         setIsAgentSelected(!isAgentSelected);
                                     }}
                                 >
-                                    <model-viewer 
+                                    <model-viewer
                                         ref={modelViewerRef}
                                         src="/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"
                                         alt="3D AI Agent"
@@ -2855,92 +2904,92 @@ const Docs = () => {
                                     if (isCustom) {
                                         setCustomModels(prev => prev.map(m => m.id === selectedMesh ? { ...m, [prop]: val } : m));
                                     } else {
-                                        setModelsTransform(p => ({...p, [selectedMesh]: {...p[selectedMesh], [prop]: val}}));
+                                        setModelsTransform(p => ({ ...p, [selectedMesh]: { ...p[selectedMesh], [prop]: val } }));
                                     }
                                 };
                                 return (
-                                <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
-                                    {isCustom && <span className="text-[10px] text-purple-500 font-bold uppercase">{cm?.name}</span>}
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X</label>
-                                        <input type="number" 
-                                            value={Math.round(getVal('x'))} 
-                                            onChange={(e) => setVal('x', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y</label>
-                                        <input type="number" 
-                                            value={Math.round(getVal('y'))} 
-                                            onChange={(e) => setVal('y', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Z</label>
-                                        <input type="number" 
-                                            value={getVal('rotation')} 
-                                            onChange={(e) => setVal('rotation', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot X</label>
-                                        <input type="number" 
-                                            value={getVal('rotX')} 
-                                            onChange={(e) => setVal('rotX', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Y</label>
-                                        <input type="number" 
-                                            value={getVal('rotY')} 
-                                            onChange={(e) => setVal('rotY', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Scale</label>
-                                        <input type="number" step="0.1" 
-                                            value={getVal('scale')} 
-                                            onChange={(e) => setVal('scale', Number(e.target.value))}
-                                            className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
-                                    </div>
-                                    {isCustom && (
-                                        <button onClick={() => handleDeleteCustomModel(selectedMesh)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Xóa model">
-                                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                                    <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
+                                        {isCustom && <span className="text-[10px] text-purple-500 font-bold uppercase">{cm?.name}</span>}
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">X</label>
+                                            <input type="number"
+                                                value={Math.round(getVal('x'))}
+                                                onChange={(e) => setVal('x', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Y</label>
+                                            <input type="number"
+                                                value={Math.round(getVal('y'))}
+                                                onChange={(e) => setVal('y', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Z</label>
+                                            <input type="number"
+                                                value={getVal('rotation')}
+                                                onChange={(e) => setVal('rotation', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot X</label>
+                                            <input type="number"
+                                                value={getVal('rotX')}
+                                                onChange={(e) => setVal('rotX', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Y</label>
+                                            <input type="number"
+                                                value={getVal('rotY')}
+                                                onChange={(e) => setVal('rotY', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Scale</label>
+                                            <input type="number" step="0.1"
+                                                value={getVal('scale')}
+                                                onChange={(e) => setVal('scale', Number(e.target.value))}
+                                                className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
+                                        </div>
+                                        {isCustom && (
+                                            <button onClick={() => handleDeleteCustomModel(selectedMesh)} className="text-slate-400 hover:text-rose-500 transition-colors" title="Xóa model">
+                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                            </button>
+                                        )}
+                                        <button onClick={() => setSelectedMesh(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                                            <span className="material-symbols-outlined text-[18px]">close</span>
                                         </button>
-                                    )}
-                                    <button onClick={() => setSelectedMesh(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
-                                        <span className="material-symbols-outlined text-[18px]">close</span>
-                                    </button>
-                                </div>
+                                    </div>
                                 );
                             })() : selectedZone ? (
                                 <div className="flex gap-4 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Zone X</label>
-                                        <input type="number" 
-                                            value={zonesTransform[selectedZone].x} 
-                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], x: Number(e.target.value)}}))}
+                                        <input type="number"
+                                            value={zonesTransform[selectedZone].x}
+                                            onChange={(e) => setZonesTransform(p => ({ ...p, [selectedZone]: { ...p[selectedZone], x: Number(e.target.value) } }))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Zone Y</label>
-                                        <input type="number" 
-                                            value={zonesTransform[selectedZone].y} 
-                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], y: Number(e.target.value)}}))}
+                                        <input type="number"
+                                            value={zonesTransform[selectedZone].y}
+                                            onChange={(e) => setZonesTransform(p => ({ ...p, [selectedZone]: { ...p[selectedZone], y: Number(e.target.value) } }))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Width</label>
-                                        <input type="number" 
-                                            value={zonesTransform[selectedZone].w} 
-                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], w: Number(e.target.value)}}))}
+                                        <input type="number"
+                                            value={zonesTransform[selectedZone].w}
+                                            onChange={(e) => setZonesTransform(p => ({ ...p, [selectedZone]: { ...p[selectedZone], w: Number(e.target.value) } }))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
                                     </div>
                                     <div className="flex flex-col">
                                         <label className="text-[10px] text-emerald-500 uppercase font-bold mb-1">Height</label>
-                                        <input type="number" 
-                                            value={zonesTransform[selectedZone].h} 
-                                            onChange={(e) => setZonesTransform(p => ({...p, [selectedZone]: {...p[selectedZone], h: Number(e.target.value)}}))}
+                                        <input type="number"
+                                            value={zonesTransform[selectedZone].h}
+                                            onChange={(e) => setZonesTransform(p => ({ ...p, [selectedZone]: { ...p[selectedZone], h: Number(e.target.value) } }))}
                                             className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none dark:text-slate-200" />
                                     </div>
                                     <button onClick={() => setSelectedZone(null)} className="text-slate-400 hover:text-rose-500 transition-colors">
@@ -2986,28 +3035,27 @@ const Docs = () => {
                             <div className="space-y-2 overflow-y-auto custom-scrollbar pr-1 flex-1">
                                 {customModels.length === 0 ? (
                                     <div className="text-[11px] text-slate-400 italic text-center py-4 bg-black/5 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                        Chưa có mô hình nào.<br/>Nhấn "Import Model" để thêm.
+                                        Chưa có mô hình nào.<br />Nhấn "Import Model" để thêm.
                                     </div>
                                 ) : customModels.map(model => (
-                                    <div 
+                                    <div
                                         key={model.id}
                                         onClick={() => {
                                             setSelectedMesh(model.id);
                                             setSelectedZone(null);
                                         }}
-                                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer text-xs font-medium transition-all ${
-                                            selectedMesh === model.id 
-                                                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30' 
-                                                : 'bg-slate-100 dark:bg-black/30 hover:bg-slate-200 dark:hover:bg-black/50 text-slate-700 dark:text-slate-300'
-                                        }`}
+                                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer text-xs font-medium transition-all ${selectedMesh === model.id
+                                            ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                                            : 'bg-slate-100 dark:bg-black/30 hover:bg-slate-200 dark:hover:bg-black/50 text-slate-700 dark:text-slate-300'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-2 truncate">
                                             <span className="material-symbols-outlined text-[16px] opacity-70">view_in_ar</span>
                                             <span className="truncate">{model.name}</span>
                                         </div>
                                         {selectedMesh === model.id && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }} 
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }}
                                                 className="text-white hover:text-rose-200 opacity-80 hover:opacity-100 flex-shrink-0"
                                                 title="Xóa"
                                             >
@@ -3022,7 +3070,7 @@ const Docs = () => {
 
                     {/* ACTUAL EDITOR CONTENT */}
                     <article id="editor-content" className={`max-w-5xl w-full mx-auto p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-none relative z-20 overflow-y-auto h-full border border-white/60 dark:border-white/5 bg-gradient-to-br from-white/95 to-slate-50/80 dark:from-[#131b19]/90 dark:to-[#0f1412]/95 backdrop-blur-3xl flex flex-col transition-colors duration-500 delay-100 ${showEditor ? 'active' : ''}`}>
-                        
+
                         {/* Header actions */}
                         <div className="flex justify-between items-center mb-6 shrink-0">
                             <div className="inline-block px-3 py-1 rounded-full bg-cyan-100/80 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 text-[0.65rem] font-bold tracking-widest uppercase border border-cyan-200 dark:border-cyan-800/50">
@@ -3069,7 +3117,7 @@ const Docs = () => {
                                 </button>
                             </div>
                         </div>
-                        
+
                         {/* Document Content */}
                         {activeDoc ? (
                             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
@@ -3112,7 +3160,7 @@ const Docs = () => {
                                     <div className="flex-1 overflow-y-auto custom-scrollbar relative pr-2">
                                         <h1 id="doc-title" className="font-display text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-700 to-teal-500 dark:from-cyan-400 dark:via-teal-300 dark:to-cyan-200 mb-4 tracking-tight drop-shadow-sm">{activeDoc.title}</h1>
                                         <div className="w-20 h-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 dark:from-cyan-500 dark:to-teal-400 mb-8 shadow-sm"></div>
-                                        
+
                                         {activeDoc.content === undefined ? (
                                             <div className="animate-pulse space-y-4 mt-8">
                                                 <div className="h-4 bg-slate-200/60 dark:bg-white/10 rounded w-3/4"></div>

@@ -63,24 +63,12 @@ export const SettingsProvider = ({ children }) => {
             const updatedConfig = { ...worldConfig, ...newConfig };
             setWorldConfig(updatedConfig); // Optimistic UI update
 
-            // Use order and limit(1) to avoid PGRST116 multiple rows error
-            const { data: existingRows, error: selectError } = await supabase
+            const { data, error } = await supabase
                 .from('world_config')
-                .select('id')
-                .eq('user_id', user.id)
-                .limit(1);
-
-            let error = selectError;
-            
-            if (!error) {
-                if (existingRows && existingRows.length > 0) {
-                    const res = await supabase.from('world_config').update({ config: updatedConfig }).eq('id', existingRows[0].id);
-                    error = res.error;
-                } else {
-                    const res = await supabase.from('world_config').insert([{ user_id: user.id, config: updatedConfig }]);
-                    error = res.error;
-                }
-            }
+                .upsert(
+                    { user_id: user.id, config: updatedConfig },
+                    { onConflict: 'user_id' }
+                );
 
             if (error) {
                 console.error("Supabase Save Error Details:", error);

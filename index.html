@@ -15,9 +15,9 @@
     rel="stylesheet" />
   <!-- Import Model Viewer -->
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-  <script src="https://unpkg.com/meshoptimizer/meshopt_decoder.js"></script>
   <script type="module">
     import { ModelViewerElement } from "https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js";
+    import { MeshoptDecoder } from "https://unpkg.com/three@0.160.0/examples/jsm/libs/meshopt_decoder.module.js";
     ModelViewerElement.meshoptDecoder = MeshoptDecoder;
   </script>
 </head>

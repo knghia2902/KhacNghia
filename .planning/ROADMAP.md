@@ -10,12 +10,12 @@
 
 ## Phase 3: Profiling & Database Indexing
 
-### Phase 03.5: Quản lý vùng tùy chỉnh và hình dạng (INSERTED)
+### Phase 03.5: Quản lý vùng tùy chỉnh và hình dạng [DONE]
 
 **Goal:** Triển khai cơ chế tạo vùng động và tùy chọn hình dạng (Chữ nhật/Tròn) thông qua Admin Panel.
 **Requirements**: Refactor `zonesTransform`, cập nhật AdminPanel UI, lưu trữ vào `world_config`.
 **Depends on:** Phase 3
-**Plans:** 0 plans
+**Plans:** 1/1 plans executed
 
 Plans:
 - [ ] TBD (run /gsd-plan-phase 03.5 to break down)

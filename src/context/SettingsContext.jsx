@@ -14,19 +14,15 @@ export const SettingsProvider = ({ children }) => {
 
     useEffect(() => {
         const fetchSettings = async () => {
-            if (!user) {
-                setWorldConfig({});
-                setLoadingSettings(false);
-                return;
-            }
-
             try {
                 // Fetch world config securely without single()
-                const { data, error } = await supabase
-                    .from('world_config')
-                    .select('config')
-                    .eq('user_id', user.id)
-                    .limit(1);
+                let query = supabase.from('world_config').select('config').limit(1);
+                
+                if (user) {
+                    query = query.eq('user_id', user.id);
+                }
+
+                const { data, error } = await query;
 
                 if (error) { 
                     console.error('Error fetching world config:', error.message);
@@ -35,15 +31,19 @@ export const SettingsProvider = ({ children }) => {
                 if (data && data.length > 0) {
                     setWorldConfig(data[0].config || {});
                 } else {
-                    // Create default if not found
-                    const { data: newData, error: insertError } = await supabase
-                        .from('world_config')
-                        .insert([{ user_id: user.id, config: {} }])
-                        .select()
-                        .limit(1);
-                        
-                    if (newData && newData.length > 0 && !insertError) {
-                        setWorldConfig(newData[0].config);
+                    // Create default if not found AND user is logged in
+                    if (user) {
+                        const { data: newData, error: insertError } = await supabase
+                            .from('world_config')
+                            .insert([{ user_id: user.id, config: {} }])
+                            .select()
+                            .limit(1);
+                            
+                        if (newData && newData.length > 0 && !insertError) {
+                            setWorldConfig(newData[0].config);
+                        }
+                    } else {
+                        setWorldConfig({});
                     }
                 }
             } catch (err) {

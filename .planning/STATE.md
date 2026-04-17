@@ -42,3 +42,5 @@ Plan: 2 of 3
 - Phase 03.1 inserted after Phase 3: Redesign Dashboard 3D (URGENT)
 - Phase 03.2 inserted after Phase 3: Chia 4 vùng lưới Dashboard và Zoom Navigation (URGENT)
 - Phase 03.3 inserted after Phase 3: Trang Settings va Cai dat he thong (URGENT)
+- Phase 03.4 inserted after Phase 3: Migrate Docs and Folders to Supabase and optimize 3D model loading (URGENT)
+

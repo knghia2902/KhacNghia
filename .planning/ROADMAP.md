@@ -12,6 +12,16 @@
 - Cấu hình PostgreSQL Indexes trên các bảng cấu trúc hệ thống nếu cần.
 - Kiểm thử và đo lường sự cải thiện qua Vercel.
 
+### Phase 03.4: Migrate Docs and Folders to Supabase and optimize 3D model loading (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 3
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.4 to break down)
+
 ### Phase 03.3: Trang Settings va Cai dat he thong (INSERTED)
 
 **Goal:** [Urgent work - to be planned]

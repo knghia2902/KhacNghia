@@ -1125,14 +1125,23 @@ const Docs = () => {
 
     // Landing Logic: Redirect to defaultLandingZone if no zone is specified
     useEffect(() => {
-        if (!loadingSettings && !searchParams.get('zone') && !hasAutoNavigated.current && worldConfig?.defaultLandingZone) {
+        // Only attempt auto-navigation if we haven't already and settings are done loading
+        if (loadingSettings || hasAutoNavigated.current) return;
+
+        const zoneFromUrl = searchParams.get('zone');
+        // If user arrived with a specific zone, don't auto-redirect
+        if (zoneFromUrl) {
             hasAutoNavigated.current = true;
-            // Use setTimeout to ensure all systems are ready
-            setTimeout(() => {
-                setSearchParams({ zone: worldConfig.defaultLandingZone });
-            }, 500);
+            return;
         }
-    }, [loadingSettings, searchParams, worldConfig, setSearchParams]);
+
+        const landingZone = worldConfig?.defaultLandingZone;
+        // CRITICAL: Wait until the target zone exists in the transforms before triggering redirect
+        if (landingZone && zonesTransform[landingZone]) {
+            hasAutoNavigated.current = true;
+            setSearchParams({ zone: landingZone });
+        }
+    }, [loadingSettings, searchParams, worldConfig, zonesTransform, setSearchParams]);
 
     // Sync zone from URL search params (Header tabs)
     useEffect(() => {

@@ -27,7 +27,7 @@ function App() {
         <SettingsProvider>
           <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/docs" replace />} />
+            <Route path="/" element={<Docs />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

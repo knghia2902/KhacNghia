@@ -15,6 +15,7 @@ import CascadingNav from '../components/layout/CascadingNav';
 import ToolsPanel from '../components/panels/ToolsPanel';
 import GalleryPanel from '../components/panels/GalleryPanel';
 import AdminPanel from '../components/panels/AdminPanel';
+import AdminSecondaryPanel from '../components/panels/AdminSecondaryPanel';
 
 // --- Initial Data (Seed) ---
 const SEED_FOLDERS = [
@@ -722,7 +723,6 @@ const SortableFolderItem = ({ folder, children, isAuthenticated }) => {
 
 const Docs = () => {
     const { isAuthenticated } = useAuth();
-    console.log('[Docs] Component rendering - AUTO SAVE VERSION 2.0');
 
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -787,10 +787,20 @@ const Docs = () => {
     const [showEditor, setShowEditor] = useState(false);
     const [clickEffects, setClickEffects] = useState([]);
     const [isTeleporting, setIsTeleporting] = useState(false);
+    const [hasShownAdminWarning, setHasShownAdminWarning] = useState(false);
+    const hasAutoNavigated = useRef(false);
+
+    const CORE_ZONES_WITH_PANELS = ['docs', 'tools', 'gallery', 'admin'];
 
     // Wrapper: set zone + sync URL
     // Wrapper: set zone search param (Single Source of Truth)
     const setActiveZone = (zone) => {
+        // One-time Auth Warning for Admin Zone
+        if (zone === 'admin' && !isAuthenticated && !hasShownAdminWarning) {
+            showToast('Bạn đang ở vùng quản trị. Vui lòng đăng nhập để thực hiện thay đổi!');
+            setHasShownAdminWarning(true);
+        }
+
         if (zone) {
             setSearchParams({ zone });
         } else {
@@ -801,18 +811,28 @@ const Docs = () => {
 
 
     // Edit mode drag state
-    const { isEditMode, setIsEditMode, updateWorldConfig, worldConfig } = useSettings();
+    const { 
+        isEditMode, 
+        setIsEditMode, 
+        updateWorldConfig, 
+        worldConfig, 
+        worldZones,
+        updateWorldZone,
+        addWorldZone,
+        deleteWorldZone,
+        worldObjects, 
+        updateWorldObject, 
+        deleteWorldObject,
+        isAdmin,
+        loadingSettings
+    } = useSettings();
     const [selectedMesh, setSelectedMesh] = useState(null);
     const [draggingMesh, setDraggingMesh] = useState(null);
     const dragOffset = useRef({ x: 0, y: 0 });
     const isInitializedRef = useRef(false);
 
     // Model transforms draft
-    const [modelsTransform, setModelsTransform] = useState({
-        archive: { x: 450, y: -140, scale: 1, rotation: 0, rotX: 0, rotY: 0 },
-        bed: { x: 460, y: 460, scale: 1, rotation: 0, rotX: 0, rotY: 0 },
-        tools: { x: 30, y: 30, scale: 1, rotation: 0, rotX: 0, rotY: 0 }
-    });
+    const [modelsTransform, setModelsTransform] = useState({});
 
     // Zone transforms draft
     const [zonesTransform, setZonesTransform] = useState({
@@ -832,6 +852,12 @@ const Docs = () => {
     const modelFileInputRef = useRef(null);
 
     const handleImportModel = async (e) => {
+        if (!selectedZone) {
+            showToast('Lỗi: Bạn phải click chọn 1 vùng (Zone) trên bản đồ để đưa mô hình vào!');
+            e.target.value = '';
+            return;
+        }
+
         const file = e.target.files[0];
         if (!file) return;
         const ext = file.name.split('.').pop().toLowerCase();
@@ -856,69 +882,101 @@ const Docs = () => {
         const randomOffsetY = Math.floor(Math.random() * 150) - 75;
 
         const newModel = {
-            id: `custom-${Date.now()}`,
+            object_key: `custom-${Date.now()}`,
             name: file.name.replace(`.${ext}`, ''),
             src: urlData.publicUrl,
-            x: 200 + randomOffsetX, y: 200 + randomOffsetY, scale: 1, rotation: 0, rotX: 0, rotY: 0, zone: selectedZone || 'docs'
+            type: 'custom',
+            x: zonesTransform[selectedZone]?.x + 50 + randomOffsetX || 200 + randomOffsetX, 
+            y: zonesTransform[selectedZone]?.y + 50 + randomOffsetY || 200 + randomOffsetY, 
+            scale: 1, rotation: 0, rot_x: 0, rot_y: 0, zone: selectedZone
         };
-        setCustomModels(prev => [...prev, newModel]);
-        setSelectedMesh(newModel.id);
+
+        const res = await updateWorldObject(newModel);
+        if (res.success) {
+            setSelectedMesh(res.data.id);
+            showToast(`Đã import "${newModel.name}"!`);
+        } else {
+            showToast('Lỗi lưu model mới');
+        }
         setSelectedZone(null);
-        showToast(`Đã import "${newModel.name}"!`);
         e.target.value = '';
     };
 
-    const handleDeleteCustomModel = (modelId) => {
-        setCustomModels(prev => prev.filter(m => m.id !== modelId));
-        if (selectedMesh === modelId) setSelectedMesh(null);
+    const handleDeleteCustomModel = async (modelId) => {
+        // In the new system, modelId is the UUID from DB
+        const res = await deleteWorldObject(modelId);
+        if (res.success) {
+            if (selectedMesh === modelId) setSelectedMesh(null);
+            showToast('Đã xóa mô hình');
+        }
     };
 
-    // Sync from worldConfig
+    // Sync from worldZones
     useEffect(() => {
-        if (!worldConfig || Object.keys(worldConfig).length === 0) return;
+        if (!worldZones || worldZones.length === 0) return;
+        
+        const mappedZones = {};
+        worldZones.forEach(zone => {
+            mappedZones[zone.zone_key] = {
+                id: zone.id,
+                x: zone.x,
+                y: zone.y,
+                w: zone.w,
+                h: zone.h,
+                label: zone.label,
+                color: zone.color,
+                shape: zone.shape
+            };
+        });
 
-        if (worldConfig.modelsTransform) {
-            setModelsTransform(p => ({ ...p, ...worldConfig.modelsTransform }));
+        setZonesTransform(p => ({ ...p, ...mappedZones }));
+    }, [worldZones]);
+
+    // Sync from worldObjects (Models)
+    useEffect(() => {
+        if (!worldObjects || worldObjects.length === 0) return;
+
+        const systemModels = {};
+        const userModels = [];
+
+        worldObjects.forEach(obj => {
+            const transform = {
+                ...obj, // Preserve all DB fields including object_key, type, etc.
+                x: obj.x || 0,
+                y: obj.y || 0,
+                scale: obj.scale || 1,
+                rotation: obj.rotation || 0,
+                rot_x: obj.rot_x || 0,
+                rot_y: obj.rot_y || 0,
+                zone: obj.zone || 'docs'
+            };
+
+            // Move ALL models from DB into the manageable list (customModels)
+            // We no longer duplicate them in systemModels to avoid double rendering and ID confusion
+            userModels.push(transform);
+        });
+
+        if (Object.keys(systemModels).length > 0) {
+            setModelsTransform(p => ({ ...p, ...systemModels }));
         }
-        if (worldConfig.zonesTransform) {
-            setZonesTransform(p => ({ ...p, ...worldConfig.zonesTransform }));
-        }
-        if (worldConfig.customModels) {
-            setCustomModels(worldConfig.customModels);
-        }
+        setCustomModels(userModels);
         
         // Mark as initialized once we've loaded data from Supabase
         isInitializedRef.current = true;
-    }, [worldConfig]);
+    }, [worldObjects]);
 
-    // Save worldConfig
+    // Auto-save removed as per user request to disable auto-save
+
+
+    // Force save zones when exiting edit mode
     useEffect(() => {
-        if (!isEditMode || !isInitializedRef.current) return; 
-
-        const saveTimer = setTimeout(() => {
-            updateWorldConfig({
-                zonesTransform,
-                modelsTransform,
-                customModels
-            });
-        }, 5000);
-
-        return () => clearTimeout(saveTimer);
-    }, [zonesTransform, modelsTransform, customModels, isEditMode, updateWorldConfig]);
-
-    // Force save when exiting edit mode
-    useEffect(() => {
-        if (!isEditMode && isInitializedRef.current) {
-            updateWorldConfig({
-                zonesTransform,
-                modelsTransform,
-                customModels
-            });
+        if (!isEditMode && isInitializedRef.current && isAdmin) {
+            updateWorldConfig({ zonesTransform });
         }
-    }, [isEditMode]);
+    }, [isEditMode, isAdmin]);
 
     const handleMeshPointerDown = (e, meshId) => {
-        if (!isEditMode) return;
+        if (isEditMode !== 'models') return;
         e.stopPropagation(); // Prevent floor click teleport
         setSelectedMesh(meshId);
         setSelectedZone(null);
@@ -929,13 +987,13 @@ const Docs = () => {
     };
 
     const handleZoneSelect = (zoneKey) => {
-        if (!isEditMode) return;
+        if (isEditMode !== 'zones') return;
         setSelectedZone(zoneKey);
         setSelectedMesh(null);
     };
 
     const handleFloorPointerDown = (e, zoneKey) => {
-        if (!isEditMode) return;
+        if (isEditMode !== 'zones') return;
         e.stopPropagation();
         handleZoneSelect(zoneKey);
         setDraggingZone(zoneKey);
@@ -945,7 +1003,7 @@ const Docs = () => {
     };
 
     const handleResizePointerDown = (e, zoneKey, type) => {
-        if (!isEditMode) return;
+        if (isEditMode !== 'zones') return;
         e.stopPropagation();
         setResizingZone(zoneKey);
         setResizeType(type);
@@ -1065,9 +1123,31 @@ const Docs = () => {
         }, 400);
     };
 
+    // Landing Logic: Redirect to defaultLandingZone if no zone is specified
+    useEffect(() => {
+        if (!loadingSettings && !searchParams.get('zone') && !hasAutoNavigated.current && worldConfig?.defaultLandingZone) {
+            hasAutoNavigated.current = true;
+            // Use setTimeout to ensure all systems are ready
+            setTimeout(() => {
+                setSearchParams({ zone: worldConfig.defaultLandingZone });
+            }, 500);
+        }
+    }, [loadingSettings, searchParams, worldConfig, setSearchParams]);
+
     // Sync zone from URL search params (Header tabs)
     useEffect(() => {
         const zoneFromUrl = searchParams.get('zone');
+        
+        if (zoneFromUrl) {
+            hasAutoNavigated.current = true; // If user arrives with a direct link, don't auto-redirect later
+        }
+
+        // One-time Auth Warning for direct URL access
+        if (zoneFromUrl === 'admin' && !isAuthenticated && !hasShownAdminWarning) {
+            showToast('Bạn đang ở vùng quản trị. Vui lòng đăng nhập để thực hiện thay đổi!');
+            setHasShownAdminWarning(true);
+        }
+
         // Accept any zone that exists in our dynamic zonesTransform
         if (zoneFromUrl && zoneFromUrl !== activeZone && zonesTransform[zoneFromUrl]) {
             const zoneData = zonesTransform[zoneFromUrl];
@@ -1076,12 +1156,12 @@ const Docs = () => {
             navigateToZone(zoneFromUrl, { left: targetX, top: targetY });
         } else if (!zoneFromUrl && activeZone !== null) {
             // Return to dashboard view if zone is cleared from URL
-            setActiveZone(null);
+            setActiveZoneInternal(null);
             setCameraPos(calculateDashboardCamera());
             setIsSecondaryPanelOpen(false);
             setShowEditor(false);
         }
-    }, [searchParams, activeZone, calculateDashboardCamera]);
+    }, [searchParams, activeZone, isAuthenticated, hasShownAdminWarning, calculateDashboardCamera]);
 
     // --- One-Map Camera State ---
     const [cameraPos, setCameraPos] = useState({ tx: -750, ty: 130, scale: 0.8 });
@@ -1119,20 +1199,41 @@ const Docs = () => {
             const dy = (A + B) / 2;
 
             if (draggingMesh) {
-                // Check if it's a custom model
-                if (draggingMesh.startsWith('custom-')) {
-                    setCustomModels(prev => prev.map(m =>
-                        m.id === draggingMesh ? { ...m, x: m.x + dx, y: m.y + dy } : m
-                    ));
-                } else {
-                    setModelsTransform(p => ({
-                        ...p,
-                        [draggingMesh]: {
-                            ...p[draggingMesh],
-                            x: p[draggingMesh].x + dx,
-                            y: p[draggingMesh].y + dy
+                const calculateConstrainedCoords = (cx, cy, zoneKey) => {
+                    const zData = zonesTransform[zoneKey];
+                    if (!zData || !zData.w) return { x: cx, y: cy };
+                    // Subtract a safe approximate bounding size for the model to prevent edge overflow
+                    const safeMarginX = 300; 
+                    const safeMarginY = 300; 
+                    return { 
+                        x: Math.max(zData.x - 100, Math.min(cx, zData.x + zData.w - safeMarginX + 100)),
+                        y: Math.max(zData.y - 100, Math.min(cy, zData.y + zData.h - safeMarginY + 100))
+                    };
+                };
+
+                // Check if it's a custom model (has hyphen or starts with custom-)
+                if (draggingMesh.startsWith('custom-') || draggingMesh.includes('-')) {
+                    setCustomModels(prev => prev.map(m => {
+                        if (m.id === draggingMesh) {
+                            const newX = m.x + dx;
+                            const newY = m.y + dy;
+                            const coords = calculateConstrainedCoords(newX, newY, m.zone);
+                            return { ...m, x: coords.x, y: coords.y };
                         }
+                        return m;
                     }));
+                } else {
+                    setModelsTransform(p => {
+                        const m = p[draggingMesh];
+                        if (!m) return p;
+                        const newX = m.x + dx;
+                        const newY = m.y + dy;
+                        const coords = calculateConstrainedCoords(newX, newY, m.zone);
+                        return {
+                            ...p,
+                            [draggingMesh]: { ...m, x: coords.x, y: coords.y }
+                        };
+                    });
                 }
             } else if (draggingZone) {
                 setZonesTransform(p => ({
@@ -1143,6 +1244,11 @@ const Docs = () => {
                         y: p[draggingZone].y + dy
                     }
                 }));
+                
+                // Cascade update models in this dragged zone
+                setCustomModels(prev => prev.map(m => 
+                    m.zone === draggingZone ? { ...m, x: m.x + dx, y: m.y + dy } : m
+                ));
             } else if (resizingZone) {
                 setZonesTransform(p => {
                     const zone = p[resizingZone];
@@ -1174,7 +1280,39 @@ const Docs = () => {
         startPoint.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = async () => {
+        if (draggingMesh && isEditMode) {
+            // Find the object being dragged
+            let draggedData = null;
+            if (draggingMesh.startsWith('custom-') || draggingMesh.includes('-')) {
+                // Check if it's a UUID (DB ID) or starts with custom-
+                draggedData = customModels.find(m => m.id === draggingMesh);
+            } else {
+                draggedData = { ...modelsTransform[draggingMesh], object_key: draggingMesh, type: 'system' };
+            }
+
+            // Auto-save removed as per user request to disable auto-save
+            /*
+            if (draggedData) {
+                // Save specific object to DB
+                updateWorldObject({
+                    id: draggedData.id,
+                    object_key: draggedData.object_key,
+                    x: draggedData.x,
+                    y: draggedData.y,
+                    scale: draggedData.scale,
+                    rotation: draggedData.rotation,
+                    rot_x: draggedData.rot_x,
+                    rot_y: draggedData.rot_y,
+                    zone: draggedData.zone,
+                    name: draggedData.name,
+                    src: draggedData.src,
+                    type: draggedData.type || 'system'
+                });
+            }
+            */
+        }
+
         isDragging.current = false;
         setDraggingMesh(null);
         setDraggingZone(null);
@@ -1695,7 +1833,7 @@ const Docs = () => {
 
             // Đổi sang Running qua DOM
             if (modelViewerRef.current) {
-                modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb');
+                modelViewerRef.current.setAttribute('src', '/models/Agent_Running.glb');
             }
 
             setIsAgentSelected(false);
@@ -1705,7 +1843,7 @@ const Docs = () => {
                 setShowEditor(true);
                 // Đổi về Walking
                 if (modelViewerRef.current) {
-                    modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb');
+                    modelViewerRef.current.setAttribute('src', '/models/Agent_Walking.glb');
                 }
             }, 1200);
         }
@@ -1736,7 +1874,7 @@ const Docs = () => {
                 return;
             }
             // Update URL only - useEffect will handle the rest
-            setActiveZone(zoneName);
+            setSearchParams({ zone: zoneName });
             return;
         }
 
@@ -1763,7 +1901,7 @@ const Docs = () => {
 
         // Đổi sang model Running qua DOM (không re-render React)
         if (modelViewerRef.current) {
-            modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Running_withSkin.glb');
+            modelViewerRef.current.setAttribute('src', '/models/Agent_Running.glb');
         }
 
         setAgentPos(targetPos);
@@ -2584,9 +2722,9 @@ const Docs = () => {
             <div className="flex-1 flex overflow-hidden relative px-8 pb-8 gap-6">
                 {/* Sidebar (Folders) - Hides when not in docs zone */}
                 <aside className={`
-                    w-[240px] h-full flex flex-col py-6 px-3 z-20 glass-panel dark:bg-black/30 dark:border-white/10 rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
+                    w-[320px] h-full flex flex-col py-6 px-3 z-20 glass-panel dark:bg-black/30 dark:border-white/10 rounded-[1.5rem] shadow-float shrink-0 transition-all duration-300 ease-in-out md:translate-x-0 md:static
                     ${isFocusMode ? 'md:hidden' : ''}
-                    ${activeZone && !isFocusMode ? 'md:flex' : 'md:hidden'}
+                    ${(activeZone && !isFocusMode && CORE_ZONES_WITH_PANELS.includes(activeZone) && (activeZone !== 'admin' || isAuthenticated)) ? 'md:flex' : 'md:hidden'}
                     ${isSidebarOpen ? 'translate-x-0 fixed inset-y-0 left-0 flex' : 'hidden'}
                 `}>
                     {/* Mobile Close Button */}
@@ -2662,11 +2800,13 @@ const Docs = () => {
                             <GalleryPanel />
                         )}
 
-                        {activeZone === 'admin' && (
+                        {activeZone === 'admin' && isAuthenticated && (
                             <AdminPanel 
-                                activeSettingGroup={activeSettingGroup} 
+                                onSelectView={(view) => {
+                                    setActiveSettingGroup(view);
+                                    setIsSecondaryPanelOpen(true);
+                                }}
                                 zones={zonesTransform}
-                                setZones={setZonesTransform}
                             />
                         )}
                     </div>
@@ -2687,6 +2827,21 @@ const Docs = () => {
                         isFocusMode={isFocusMode}
                         onAddNote={() => setIsNoteModalOpen(true)}
                     />
+                    {activeZone === 'admin' && isAuthenticated && (
+                        <AdminSecondaryPanel
+                            isOpen={isSecondaryPanelOpen}
+                            onClose={() => setIsSecondaryPanelOpen(false)}
+                            activeView={activeSettingGroup}
+                            zones={zonesTransform}
+                            setZones={setZonesTransform}
+                            customModels={customModels}
+                            selectedMesh={selectedMesh}
+                            setSelectedMesh={setSelectedMesh}
+                            setSelectedZone={setSelectedZone}
+                            handleDeleteCustomModel={handleDeleteCustomModel}
+                            onUpdateCustomModels={setCustomModels}
+                        />
+                    )}
                 </div>
 
                 {/* Main Content */}
@@ -2756,7 +2911,7 @@ const Docs = () => {
                                             }}
                                         >
                                             <div 
-                                                className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode && draggingZone === zoneName ? 'opacity-80' : ''}`}
+                                                className={`iso-floor flex items-center justify-center cursor-pointer ${isEditMode === 'zones' && draggingZone === zoneName ? 'opacity-80' : ''}`}
                                                 style={{ 
                                                     backgroundColor: `rgba(var(--color-${zoneColor}-rgb, 6, 182, 212), 0.05)`, 
                                                     borderColor: `rgba(var(--color-${zoneColor}-rgb, 6, 182, 212), 0.3)`,
@@ -2782,6 +2937,48 @@ const Docs = () => {
                                     );
                                 })}
 
+                                {/* ==== SYSTEM MODELS ==== */}
+                                {Object.entries(modelsTransform).map(([meshId, transform]) => (
+                                    <div
+                                        key={meshId}
+                                        className={`absolute transition-all duration-300 ${isEditMode && selectedMesh === meshId ? 'ring-4 ring-cyan-500 shadow-2xl rounded-3xl bg-cyan-500/10' : ''}`}
+                                        style={{
+                                            left: `${transform.x}px`,
+                                            top: `${transform.y}px`,
+                                            width: '300px',
+                                            height: '300px',
+                                            transform: `translateZ(20px) rotateZ(45deg) rotateX(-60deg) scale(${transform.scale || 1})`,
+                                            transformStyle: 'preserve-3d',
+                                            pointerEvents: isEditMode === 'models' ? 'auto' : 'none',
+                                            cursor: isEditMode === 'models' ? 'move' : 'default',
+                                            zIndex: selectedMesh === meshId ? 100 : 10
+                                        }}
+                                        onPointerDown={(e) => handleMeshPointerDown(e, meshId)}
+                                    >
+                                        {transform.src ? (
+                                            <model-viewer
+                                                src={transform.src}
+                                                onError={(e) => console.warn(`Failed to load system model: ${meshId}`, transform.src)}
+                                                alt={meshId}
+                                                crossorigin="anonymous"
+                                                camera-orbit="45deg 55deg auto"
+                                                orientation={`${transform.rot_x || 0}deg ${transform.rot_y || 0}deg ${transform.rotation || 0}deg`}
+                                                disable-zoom="true"
+                                                disable-tap="true"
+                                                disable-pan="true"
+                                                interaction-prompt="none"
+                                                shadow-intensity="1"
+                                                autoplay="true"
+                                                style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-cyan-500/5 border border-cyan-500/20 rounded-3xl text-[10px] text-cyan-500 font-bold uppercase tracking-widest text-center px-4">
+                                                No path set for {meshId}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
                                 {/* ==== CUSTOM IMPORTED MODELS ==== */}
                                 {customModels.map(model => (
                                     <div
@@ -2794,11 +2991,11 @@ const Docs = () => {
                                             height: '300px',
                                             transform: `translateZ(40px) rotateZ(45deg) rotateX(-60deg) scale(${model.scale || 1})`,
                                             transformStyle: 'preserve-3d',
-                                            pointerEvents: isEditMode ? 'auto' : 'none',
-                                            cursor: isEditMode ? 'move' : 'default'
+                                            pointerEvents: isEditMode === 'models' ? 'auto' : 'none',
+                                            cursor: isEditMode === 'models' ? 'move' : 'default'
                                         }}
                                         onPointerDown={(e) => {
-                                            if (!isEditMode) return;
+                                            if (isEditMode !== 'models') return;
                                             e.stopPropagation();
                                             setSelectedMesh(model.id);
                                             setSelectedZone(null);
@@ -2808,26 +3005,32 @@ const Docs = () => {
                                             dragOffset.current = { x: e.clientX, y: e.clientY };
                                         }}
                                     >
-                                        <model-viewer
-                                            src={model.src}
-                                            alt={model.name}
-                                            crossorigin="anonymous"
-                                            camera-orbit="45deg 55deg auto"
-                                            orientation={`${model.rotX || 0}deg ${model.rotY || 0}deg ${model.rotation || 0}deg`}
-                                            disable-zoom="true"
-                                            disable-tap="true"
-                                            disable-pan="true"
-                                            interaction-prompt="none"
-                                            shadow-intensity="1"
-                                            autoplay="true"
-                                            loading="lazy"
-                                            style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
-                                            onError={(e) => console.error("Model Viewer Error:", model.name, e)}
-                                        >
-                                            <div slot="poster" className="absolute inset-0 flex items-center justify-center bg-black/20 text-white text-[10px] rounded-xl font-bold">
-                                                Đang tải...
+                                        {model.src ? (
+                                            <model-viewer
+                                                src={model.src}
+                                                alt={model.name}
+                                                crossorigin="anonymous"
+                                                camera-orbit="45deg 55deg auto"
+                                                orientation={`${model.rot_x || 0}deg ${model.rot_y || 0}deg ${model.rotation || 0}deg`}
+                                                disable-zoom="true"
+                                                disable-tap="true"
+                                                disable-pan="true"
+                                                interaction-prompt="none"
+                                                shadow-intensity="1"
+                                                autoplay="true"
+                                                loading="lazy"
+                                                onError={(e) => console.error("Model Viewer Error:", model.name, e)}
+                                                style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+                                            >
+                                                <div slot="poster" className="absolute inset-0 flex items-center justify-center bg-black/20 text-white text-[10px] rounded-xl font-bold">
+                                                    Đang tải...
+                                                </div>
+                                            </model-viewer>
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-purple-500/5 border border-purple-500/20 rounded-3xl text-[10px] text-purple-500 font-bold uppercase tracking-widest text-center px-4">
+                                                No source set for {model.name}
                                             </div>
-                                        </model-viewer>
+                                        )}
                                         {isEditMode && selectedMesh === model.id && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }}
@@ -2857,7 +3060,7 @@ const Docs = () => {
                                     onTransitionEnd={(e) => {
                                         // Khi CSS transition kết thúc (agent đã đến đích), đổi về Walking
                                         if (e.propertyName === 'left' && modelViewerRef.current) {
-                                            modelViewerRef.current.setAttribute('src', '/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb');
+                                            modelViewerRef.current.setAttribute('src', '/models/Agent_Walking.glb');
                                         }
                                     }}
                                     onClick={(e) => {
@@ -2867,7 +3070,7 @@ const Docs = () => {
                                 >
                                     <model-viewer
                                         ref={modelViewerRef}
-                                        src="/models/Meshy_AI_Bamboo_Chef_Chibi_biped_Animation_Walking_withSkin.glb"
+                                        src="/models/Agent_Walking.glb"
                                         alt="3D AI Agent"
                                         camera-orbit={`${agentFacingAngle}deg 90deg auto`}
                                         min-camera-orbit={`${agentFacingAngle}deg 90deg auto`}
@@ -2897,7 +3100,7 @@ const Docs = () => {
                             </div>
 
                             {selectedMesh ? (() => {
-                                const isCustom = selectedMesh.startsWith('custom-');
+                                const isCustom = selectedMesh.startsWith('custom-') || selectedMesh.includes('-');
                                 const cm = isCustom ? customModels.find(m => m.id === selectedMesh) : null;
                                 const getVal = (prop) => isCustom ? (cm?.[prop] ?? 0) : (modelsTransform[selectedMesh]?.[prop] ?? 0);
                                 const setVal = (prop, val) => {
@@ -2934,15 +3137,15 @@ const Docs = () => {
                                         <div className="flex flex-col">
                                             <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot X</label>
                                             <input type="number"
-                                                value={getVal('rotX')}
-                                                onChange={(e) => setVal('rotX', Number(e.target.value))}
+                                                value={getVal('rot_x')}
+                                                onChange={(e) => setVal('rot_x', Number(e.target.value))}
                                                 className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                         </div>
                                         <div className="flex flex-col">
                                             <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rot Y</label>
                                             <input type="number"
-                                                value={getVal('rotY')}
-                                                onChange={(e) => setVal('rotY', Number(e.target.value))}
+                                                value={getVal('rot_y')}
+                                                onChange={(e) => setVal('rot_y', Number(e.target.value))}
                                                 className="w-16 bg-white dark:bg-black/50 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-cyan-500 outline-none text-slate-700 dark:text-slate-200" />
                                         </div>
                                         <div className="flex flex-col">
@@ -3012,12 +3215,40 @@ const Docs = () => {
                                 </button>
                                 <button onClick={async () => {
                                     setIsEditMode(false);
-                                    const result = await updateWorldConfig({ modelsTransform, zonesTransform, customModels });
-                                    if (result.error) {
-                                        showToast('Lỗi lưu Supabase: ' + (result.error.message || 'Xem Console'));
-                                    } else {
-                                        showToast('Đã lưu cấu hình không gian!');
+                                    
+                                    // 1. Save Zones (Admin only)
+                                    if (isAdmin) {
+                                        const zonePromises = Object.entries(zonesTransform).map(([key, z]) => 
+                                            updateWorldZone({
+                                                id: z.id,
+                                                zone_key: key,
+                                                x: z.x, y: z.y, w: z.w, h: z.h,
+                                                label: z.label, color: z.color, shape: z.shape
+                                            })
+                                        );
+                                        await Promise.all(zonePromises);
                                     }
+
+                                    // 2. Save all local models to ensure consistency
+                                    const systemPromises = Object.entries(modelsTransform).map(([key, t]) => 
+                                        updateWorldObject({
+                                            id: t.id,
+                                            object_key: key,
+                                            x: t.x, y: t.y, scale: t.scale, 
+                                            rotation: t.rotation, rot_x: t.rot_x, rot_y: t.rot_y,
+                                            zone: t.zone, name: t.name, src: t.src, type: 'system'
+                                        })
+                                    );
+
+                                    const customPromises = customModels.map(m => 
+                                        updateWorldObject({
+                                            ...m,
+                                            type: 'custom'
+                                        })
+                                    );
+
+                                    await Promise.all([...systemPromises, ...customPromises]);
+                                    showToast('Đã lưu cấu hình không gian!');
                                 }} className="px-4 py-2 text-xs font-bold bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 shadow-lg shadow-cyan-500/30 transition whitespace-nowrap">
                                     Lưu Thay Đổi
                                 </button>
@@ -3025,50 +3256,7 @@ const Docs = () => {
                         </div>
                     )}
 
-                    {/* WORLD EDITOR MODEL LIST - Floating at Left */}
-                    {isEditMode && (
-                        <div className="absolute top-24 left-4 z-50 bg-white/90 dark:bg-[#131b19]/90 backdrop-blur-xl p-4 rounded-3xl shadow-xl shadow-cyan-900/10 dark:shadow-black/50 border border-white/50 dark:border-white/5 w-64 max-h-[60vh] flex flex-col pointer-events-auto">
-                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-3 flex items-center justify-between shrink-0">
-                                Mô Hình Đã Nhập
-                                <span className="bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-2 rounded-full text-[10px]">{customModels.length}</span>
-                            </h3>
-                            <div className="space-y-2 overflow-y-auto custom-scrollbar pr-1 flex-1">
-                                {customModels.length === 0 ? (
-                                    <div className="text-[11px] text-slate-400 italic text-center py-4 bg-black/5 dark:bg-white/5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                        Chưa có mô hình nào.<br />Nhấn "Import Model" để thêm.
-                                    </div>
-                                ) : customModels.map(model => (
-                                    <div
-                                        key={model.id}
-                                        onClick={() => {
-                                            setSelectedMesh(model.id);
-                                            setSelectedZone(null);
-                                        }}
-                                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer text-xs font-medium transition-all ${selectedMesh === model.id
-                                            ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
-                                            : 'bg-slate-100 dark:bg-black/30 hover:bg-slate-200 dark:hover:bg-black/50 text-slate-700 dark:text-slate-300'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2 truncate">
-                                            <span className="material-symbols-outlined text-[16px] opacity-70">view_in_ar</span>
-                                            <span className="truncate">{model.name}</span>
-                                        </div>
-                                        {selectedMesh === model.id && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteCustomModel(model.id); }}
-                                                className="text-white hover:text-rose-200 opacity-80 hover:opacity-100 flex-shrink-0"
-                                                title="Xóa"
-                                            >
-                                                <span className="material-symbols-outlined text-[16px]">close</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ACTUAL EDITOR CONTENT */}
+                    {/* WORLD EDITOR MODEL LIST - Moved to AdminSecondaryPanel */}
                     <article id="editor-content" className={`max-w-5xl w-full mx-auto p-8 md:p-12 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-none relative z-20 overflow-y-auto h-full border border-white/60 dark:border-white/5 bg-gradient-to-br from-white/95 to-slate-50/80 dark:from-[#131b19]/90 dark:to-[#0f1412]/95 backdrop-blur-3xl flex flex-col transition-colors duration-500 delay-100 ${showEditor ? 'active' : ''}`}>
 
                         {/* Header actions */}

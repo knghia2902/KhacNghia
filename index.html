@@ -13,12 +13,14 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap"
     rel="stylesheet" />
-  <!-- Import Model Viewer -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <!-- Import Model Viewer and Meshopt Decoder -->
   <script type="module">
     import { ModelViewerElement } from "https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js";
-    import { MeshoptDecoder } from "https://unpkg.com/three@0.160.0/examples/jsm/libs/meshopt_decoder.module.js";
-    ModelViewerElement.meshoptDecoder = MeshoptDecoder;
+    
+    // Set the decoder location globally for model-viewer to handle compressed GLBs
+    ModelViewerElement.meshoptDecoderLocation = 'https://unpkg.com/meshoptimizer@0.21.0/meshopt_decoder.js';
+    
+    console.log('[System] MeshoptDecoder location set');
   </script>
 </head>
 

@@ -10,6 +10,19 @@
 
 ## Phase 3: Profiling & Database Indexing
 
+### Phase 03.6: Đồng bộ hóa Database & Khôi phục Models (INSERTED)
+
+**Goal**: Cập nhật frontend tương thích với bảng `world_objects`.
+**Requirements**: 
+- Fetch dữ liệu từ `world_objects`.
+- Map dữ liệu vào `modelsTransform` và `customModels`.
+- Triển khai logic Migration từ `world_config`.
+**Depends on**: Phase 03.5
+**Plans**: 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 03.6 to break down)
+
 ### Phase 03.5: Quản lý vùng tùy chỉnh và hình dạng [DONE]
 
 **Goal:** Triển khai cơ chế tạo vùng động và tùy chọn hình dạng (Chữ nhật/Tròn) thông qua Admin Panel.

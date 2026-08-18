@@ -1099,8 +1099,8 @@ const Docs = () => {
                 { data: docsData, error: dError }
             ] = await Promise.all([
                 supabase.from('folders').select('*').order('sort_order', { ascending: true }),
-                // Fetch lightweight metadata only, content is lazy-loaded
-                supabase.from('docs').select('id, title, parentId, date, tags, bg, is_locked, is_hidden, icon, color').order('date', { ascending: false })
+                // Fetch docs including content for instant preview
+                supabase.from('docs').select('id, title, content, parentId, date, tags, bg, is_locked, is_hidden, icon, color').order('date', { ascending: false })
             ]);
 
             if (fError || dError) throw fError || dError;
@@ -2049,7 +2049,7 @@ const Docs = () => {
                                         </div>
                                     </div>
                                     <p className="text-xs text-[#1d2624]/60 dark:text-white/70 line-clamp-2 mb-3 break-words overflow-hidden">
-                                        {doc.content !== undefined ? (doc.content.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...') : <span className="opacity-50 italic">Đang tải...</span>}
+                                        {doc.content ? (doc.content.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim().substring(0, 90) + '...') : <span className="opacity-40 italic">Chưa có nội dung</span>}
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {doc.tags.map((tag, idx) => (

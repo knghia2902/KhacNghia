@@ -1,9 +1,19 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 
 const INITIAL_TOOLS = [
+    {
+        id: 'network-commands',
+        title: "Network Command Lookup",
+        desc: "Tra cứu cú pháp lệnh mạng đa hãng (Cisco, Fortinet, Juniper, MikroTik, Huawei...) kèm giải thích chi tiết.",
+        icon: "terminal",
+        iconBg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent",
+        link: "/tools/network-commands",
+        is_system: true
+    },
     {
         id: 1,
         title: "Analytics",
@@ -85,10 +95,16 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick, onEdit, onDelete, en
             </div>
         );
     }
+
+    const isSystemTool = tool.link === '/tools/network-commands' || tool.is_system || tool.id === 'network-commands';
+    const iconBgStyle = isSystemTool
+        ? "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent"
+        : (tool.icon_bg || tool.iconBg || "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent");
+
     return (
         <div className="group relative flex flex-col p-6 h-64 bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-[2rem] hover:bg-white/60 dark:hover:bg-white/10 transition-all duration-300 hover:-translate-y-1 shadow-sm">
             <div className="flex justify-between items-start mb-4">
-                <div className={`size-12 rounded-2xl ${tool.icon_bg || tool.iconBg} flex items-center justify-center text-[#1d2624] dark:text-white border border-white/50 dark:border-white/5 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`size-12 rounded-2xl ${iconBgStyle} flex items-center justify-center text-[#1d2624] dark:text-white border border-white/50 dark:border-white/5 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                     <span className="material-symbols-outlined !text-[28px] font-light">{tool.icon}</span>
                 </div>
                 <div className="flex gap-2">
@@ -97,9 +113,11 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick, onEdit, onDelete, en
                             <button onClick={(e) => { e.stopPropagation(); onEdit(tool); }} className="text-[#1d2624]/40 dark:text-white/40 hover:text-blue-500 transition-colors" title="Edit">
                                 <span className="material-symbols-outlined !text-[20px]">edit</span>
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(tool); }} className="text-[#1d2624]/40 dark:text-white/40 hover:text-red-500 transition-colors" title="Delete">
-                                <span className="material-symbols-outlined !text-[20px]">delete</span>
-                            </button>
+                            {!isSystemTool && (
+                                <button onClick={(e) => { e.stopPropagation(); onDelete(tool); }} className="text-[#1d2624]/40 dark:text-white/40 hover:text-red-500 transition-colors" title="Delete">
+                                    <span className="material-symbols-outlined !text-[20px]">delete</span>
+                                </button>
+                            )}
                         </>
                     )}
                     <button className="text-[#1d2624]/40 dark:text-white/40 hover:text-secondary transition-colors" title="Quick Favorite">
@@ -122,26 +140,26 @@ const ToolCard = ({ tool, onLaunch, isAdd = false, onClick, onEdit, onDelete, en
 };
 
 const AddToolModal = ({ isOpen, onClose, onAdd, initialData = null }) => {
-    const [formData, setFormData] = useState({ title: '', desc: '', icon: 'extension', link: '' });
-
-    useEffect(() => {
-        if (initialData) {
-            setFormData({
-                title: initialData.title,
-                desc: initialData.description || initialData.desc || '',
-                icon: initialData.icon,
-                link: initialData.link || ''
-            });
-        } else {
-            setFormData({ title: '', desc: '', icon: 'extension', link: '' });
-        }
-    }, [initialData, isOpen]);
-
     if (!isOpen) return null;
+    return <AddToolModalContent onClose={onClose} onAdd={onAdd} initialData={initialData} />;
+};
+
+const AddToolModalContent = ({ onClose, onAdd, initialData = null }) => {
+    const isSystemTool = initialData && (initialData.link === '/tools/network-commands' || initialData.is_system || initialData.id === 'network-commands');
+
+    const [formData, setFormData] = useState({
+        title: initialData?.title || '',
+        desc: initialData?.description || initialData?.desc || '',
+        icon: initialData?.icon || 'extension',
+        link: initialData?.link || ''
+    });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onAdd(formData);
+        onAdd({
+            ...formData,
+            link: isSystemTool ? initialData.link : formData.link
+        });
         onClose();
     };
 
@@ -178,8 +196,11 @@ const AddToolModal = ({ isOpen, onClose, onAdd, initialData = null }) => {
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[#1d2624]/60 dark:text-white/60 mb-2">Link (URL)</label>
                             <input
-                                type="url"
-                                className="w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                type="text"
+                                disabled={isSystemTool}
+                                className={`w-full px-4 py-3 bg-[#1d2624]/5 dark:bg-white/5 border border-[#1d2624]/10 dark:border-white/10 rounded-xl text-[#1d2624] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                                    isSystemTool ? 'opacity-60 cursor-not-allowed select-none bg-black/5 dark:bg-white/5' : ''
+                                }`}
                                 placeholder="https://..."
                                 value={formData.link}
                                 onChange={(e) => setFormData({ ...formData, link: e.target.value })}
@@ -208,51 +229,13 @@ const AddToolModal = ({ isOpen, onClose, onAdd, initialData = null }) => {
 };
 
 const Tools = () => {
+    const navigate = useNavigate();
     const [tools, setTools] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTool, setEditingTool] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, toolId: null, title: '', message: '' });
     const { isAuthenticated } = useAuth(); // Destructure for cleaner access
-
-    // Fetch tools from Supabase
-    useEffect(() => {
-        const fetchTools = async () => {
-            const { data, error } = await supabase
-                .from('tools')
-                .select('*')
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.error('Error fetching tools:', error);
-            } else {
-                // Auto-seed if empty
-                if (data.length === 0) {
-                    seedTools();
-                } else {
-                    setTools(data);
-                }
-            }
-        };
-
-        fetchTools();
-
-        // Real-time subscription
-        const channel = supabase
-            .channel('tools_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, (payload) => {
-                if (payload.eventType === 'INSERT') {
-                    setTools(prev => [...prev, payload.new]);
-                } else if (payload.eventType === 'DELETE') {
-                    setTools(prev => prev.filter(t => t.id !== payload.old.id));
-                }
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
 
     const seedTools = async () => {
         const mappedTools = INITIAL_TOOLS.map(t => ({
@@ -268,16 +251,91 @@ const Tools = () => {
         else setTools(data);
     };
 
+    // Fetch tools from Supabase
+    useEffect(() => {
+        const fetchTools = async () => {
+            const { data, error } = await supabase
+                .from('tools')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching tools:', error);
+                // Fallback to INITIAL_TOOLS on network or DB error
+                setTools(INITIAL_TOOLS.map(t => ({
+                    id: t.id,
+                    title: t.title,
+                    description: t.desc,
+                    icon: t.icon,
+                    icon_bg: t.iconBg,
+                    link: t.link,
+                    is_system: t.is_system
+                })));
+            } else {
+                // Auto-seed if empty
+                if (data.length === 0) {
+                    seedTools();
+                } else {
+                    // Check if Network Command Lookup tool is present, if not inject it into tools list
+                    const hasNetworkTool = data.some(t => t.link === '/tools/network-commands' || t.title === 'Network Command Lookup');
+                    if (!hasNetworkTool) {
+                        const networkTool = INITIAL_TOOLS.find(t => t.id === 'network-commands');
+                        if (networkTool) {
+                            const newTool = {
+                                title: networkTool.title,
+                                description: networkTool.desc,
+                                icon: networkTool.icon,
+                                icon_bg: networkTool.iconBg,
+                                link: networkTool.link
+                            };
+                            supabase.from('tools').insert([newTool]).select().then(({ data: inserted }) => {
+                                if (inserted) {
+                                    setTools(prev => [inserted[0], ...prev]);
+                                }
+                            });
+                        }
+                    } else {
+                        // Ensure database has mint/neutral icon_bg for network tool
+                        const netTool = data.find(t => t.link === '/tools/network-commands');
+                        if (netTool && netTool.icon_bg !== "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent") {
+                            supabase.from('tools').update({ icon_bg: "bg-gradient-to-br from-mint-soft to-white/50 dark:from-white/10 dark:to-transparent" }).eq('id', netTool.id);
+                        }
+                    }
+                    setTools(data);
+                }
+            }
+        };
+
+        fetchTools();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel('tools_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    setTools(prev => [payload.new, ...prev]);
+                } else if (payload.eventType === 'DELETE') {
+                    setTools(prev => prev.filter(t => t.id !== payload.old.id));
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
     const handleSaveTool = async (formData) => {
         if (!isAuthenticated) return;
 
         if (editingTool) {
             // Update existing tool
+            const isSystemTool = editingTool.link === '/tools/network-commands' || editingTool.is_system || editingTool.id === 'network-commands';
             const updates = {
                 title: formData.title,
                 description: formData.desc,
                 icon: formData.icon,
-                link: formData.link
+                link: isSystemTool ? editingTool.link : formData.link
             };
 
             const { error } = await supabase.from('tools').update(updates).eq('id', editingTool.id);
@@ -309,6 +367,9 @@ const Tools = () => {
     };
 
     const confirmDelete = (tool) => {
+        if (tool.link === '/tools/network-commands' || tool.is_system || tool.id === 'network-commands') {
+            return;
+        }
         setConfirmModal({
             isOpen: true,
             toolId: tool.id,
@@ -337,17 +398,27 @@ const Tools = () => {
     };
 
     const handleLaunch = (tool) => {
-        if (tool.link && tool.link !== '#') {
+        if (tool.link && tool.link.startsWith('/')) {
+            navigate(tool.link);
+        } else if (tool.link && tool.link !== '#') {
             window.open(tool.link, '_blank');
         } else {
             alert(`Launching ${tool.title}... (No URL configured)`);
         }
     };
 
-    const filteredTools = tools.filter(tool =>
-        tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (tool.description && tool.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredTools = tools
+        .filter(tool =>
+            tool.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (tool.description && tool.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+        .sort((a, b) => {
+            const aIsSystem = a.link === '/tools/network-commands' || a.is_system || a.id === 'network-commands' || a.title === 'Network Command Lookup';
+            const bIsSystem = b.link === '/tools/network-commands' || b.is_system || b.id === 'network-commands' || b.title === 'Network Command Lookup';
+            if (aIsSystem && !bIsSystem) return -1;
+            if (!aIsSystem && bIsSystem) return 1;
+            return 0;
+        });
 
     return (
         <div className="flex flex-col w-full h-full relative">

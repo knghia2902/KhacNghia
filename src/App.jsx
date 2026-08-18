@@ -9,6 +9,7 @@ import Docs from './pages/Docs';
 import Tools from './pages/Tools';
 import Images from './pages/Images';
 import Login from './pages/Login';
+import NetworkCommands from './pages/NetworkCommands';
 
 // Protected Route Component (Inline for simplicity or could be separate)
 const ProtectedRoute = () => {
@@ -35,6 +36,7 @@ function App() {
 
             <Route path="/docs" element={<Docs />} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/tools/network-commands" element={<NetworkCommands />} />
             <Route path="/gallery" element={<Images />} />
             <Route path="/login" element={<Login />} />
             {/* Redirect unknown routes to Home */}

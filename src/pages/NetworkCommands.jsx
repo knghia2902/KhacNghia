@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCommandSearch } from '../hooks/useCommandSearch';
 import { copyToClipboard } from '../utils/commandUtils';
-import SearchHeader from '../components/network-commands/SearchHeader';
 import FilterBar from '../components/network-commands/FilterBar';
 import CommandCard from '../components/network-commands/CommandCard';
 import CommandDrawer from '../components/network-commands/CommandDrawer';
@@ -18,8 +17,6 @@ export default function NetworkCommands() {
         setSelectedDeviceType,
         selectedCategory,
         setSelectedCategory,
-        favoritesOnly,
-        setFavoritesOnly,
         commands,
         loading,
         error,
@@ -53,16 +50,16 @@ export default function NetworkCommands() {
     };
 
     const hasActiveFilters = Boolean(
-        query || selectedVendor || selectedDeviceType || selectedCategory || favoritesOnly
+        query || selectedVendor || selectedDeviceType || selectedCategory
     );
 
     return (
         <div className="flex flex-col w-full h-full relative">
-            {/* Header Area */}
-            <div className="shrink-0 px-8 pt-5 pb-3 border-b border-white/20 dark:border-white/5 space-y-3">
-                {/* Row 1: Back + Title & Search Bar */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-3">
+            {/* Header Area: Unified Single-Row Layout */}
+            <div className="shrink-0 px-8 py-3.5 border-b border-white/20 dark:border-white/5">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3.5">
+                    {/* Left: Back Button + Title */}
+                    <div className="flex items-center gap-3 shrink-0">
                         <Link
                             to="/tools"
                             className="size-9 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-[#1d2624] dark:text-white transition-all shadow-xs shrink-0"
@@ -70,35 +67,28 @@ export default function NetworkCommands() {
                         >
                             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                         </Link>
-                        <h1 className="text-2xl md:text-3xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight leading-none">
+                        <h1 className="text-2xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight leading-none">
                             Tra cứu <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Lệnh Mạng</span>
                         </h1>
                     </div>
 
-                    <div className="w-full md:w-80 lg:w-96">
-                        <SearchHeader
-                            query={query}
-                            setQuery={setQuery}
-                        />
-                    </div>
+                    {/* Right: Search Input + Dropdowns (all aligned right) */}
+                    <FilterBar
+                        query={query}
+                        setQuery={setQuery}
+                        metadata={metadata}
+                        selectedVendor={selectedVendor}
+                        setSelectedVendor={setSelectedVendor}
+                        selectedDeviceType={selectedDeviceType}
+                        setSelectedDeviceType={setSelectedDeviceType}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        hasActiveFilters={hasActiveFilters}
+                        onReset={resetFilters}
+                        totalResults={commands.length}
+                        loading={loading}
+                    />
                 </div>
-
-                {/* Row 2: Unified Filter Toolbar */}
-                <FilterBar
-                    metadata={metadata}
-                    selectedVendor={selectedVendor}
-                    setSelectedVendor={setSelectedVendor}
-                    selectedDeviceType={selectedDeviceType}
-                    setSelectedDeviceType={setSelectedDeviceType}
-                    selectedCategory={selectedCategory}
-                    setSelectedCategory={setSelectedCategory}
-                    favoritesOnly={favoritesOnly}
-                    setFavoritesOnly={setFavoritesOnly}
-                    hasActiveFilters={hasActiveFilters}
-                    onReset={resetFilters}
-                    totalResults={commands.length}
-                    loading={loading}
-                />
             </div>
 
             {/* Main Command Container */}
@@ -147,7 +137,7 @@ export default function NetworkCommands() {
                 )}
             </div>
 
-            {/* Slide-over Detail Drawer (Contains Interactive Topology Diagram) */}
+            {/* Slide-over Detail Drawer */}
             <CommandDrawer
                 command={selectedCommand}
                 isOpen={Boolean(selectedCommand)}

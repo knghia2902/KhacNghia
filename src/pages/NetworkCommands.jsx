@@ -70,16 +70,9 @@ export default function NetworkCommands() {
                         >
                             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                         </Link>
-                        <div>
-                            <div className="flex items-center gap-2 text-xs font-semibold text-[#1d2624]/50 dark:text-white/50">
-                                <Link to="/tools" className="hover:underline">Tools</Link>
-                                <span>/</span>
-                                <span className="text-[#1d2624]/80 dark:text-white/80 font-bold">Network Commands</span>
-                            </div>
-                            <h1 className="text-2xl md:text-3xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight">
-                                Tra cứu <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Lệnh Mạng</span>
-                            </h1>
-                        </div>
+                        <h1 className="text-2xl md:text-3xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight">
+                            Tra cứu <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Lệnh Mạng</span>
+                        </h1>
                     </div>
 
                     <div className="w-full md:w-80 lg:w-96">

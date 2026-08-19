@@ -35,18 +35,28 @@ export default function FilterBar({
 
     return (
         <div className="flex items-center justify-end gap-2 flex-wrap text-xs">
-            {/* Search Input (same row, h-7) */}
+            {/* Search Input with Pure Vector SVG (Exact size, no font glyph overflow) */}
             <div className="relative w-48 sm:w-56 md:w-64">
-                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 text-[12px] pointer-events-none">
-                    search
-                </span>
+                <svg
+                    className="w-3.5 h-3.5 text-[#1d2624]/40 dark:text-white/40 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                    />
+                </svg>
                 <input
                     ref={inputRef}
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Tìm câu lệnh, từ khóa..."
-                    className="w-full h-7 pl-6.5 pr-14 bg-white/40 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-xs text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                    className="w-full h-7 pl-8 pr-14 bg-white/40 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-xs text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {query && (
@@ -56,7 +66,9 @@ export default function FilterBar({
                             className="p-0.5 rounded text-[#1d2624]/40 dark:text-white/40 hover:text-[#1d2624] dark:hover:text-white transition-colors"
                             title="Xóa tìm kiếm"
                         >
-                            <span className="material-symbols-outlined text-[12px]">close</span>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     )}
                     <kbd className="hidden sm:inline-flex items-center px-1 py-0.2 text-[9px] font-semibold text-[#1d2624]/40 dark:text-white/40 bg-black/5 dark:bg-white/10 rounded border border-black/5 dark:border-white/10">

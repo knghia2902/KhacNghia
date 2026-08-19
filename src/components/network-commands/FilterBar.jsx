@@ -37,7 +37,7 @@ export default function FilterBar({
         <div className="flex items-center justify-end gap-2 flex-wrap text-xs">
             {/* Search Input (same row, h-7) */}
             <div className="relative w-48 sm:w-56 md:w-64">
-                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 text-[14px] pointer-events-none">
+                <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#1d2624]/40 dark:text-white/40 text-[12px] pointer-events-none">
                     search
                 </span>
                 <input
@@ -46,7 +46,7 @@ export default function FilterBar({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Tìm câu lệnh, từ khóa..."
-                    className="w-full h-7 pl-8 pr-14 bg-white/40 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-xs text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                    className="w-full h-7 pl-6.5 pr-14 bg-white/40 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-xs text-[#1d2624] dark:text-white placeholder:text-[#1d2624]/40 dark:placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                 />
                 <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {query && (

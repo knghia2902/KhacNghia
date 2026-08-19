@@ -65,12 +65,12 @@ export default function NetworkCommands() {
                     <div className="flex items-center gap-3">
                         <Link
                             to="/tools"
-                            className="size-10 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-[#1d2624] dark:text-white transition-all shadow-xs shrink-0"
+                            className="size-9 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 flex items-center justify-center text-[#1d2624] dark:text-white transition-all shadow-xs shrink-0"
                             title="Quay lại danh sách Tools"
                         >
                             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                         </Link>
-                        <h1 className="text-2xl md:text-3xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight">
+                        <h1 className="text-2xl md:text-3xl font-display font-bold text-[#1d2624] dark:text-white tracking-tight leading-none">
                             Tra cứu <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Lệnh Mạng</span>
                         </h1>
                     </div>
